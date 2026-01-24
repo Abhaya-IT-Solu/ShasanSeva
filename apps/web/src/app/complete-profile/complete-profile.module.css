@@ -1,0 +1,150 @@
+.container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background: var(--color-gray-50);
+}
+
+.card {
+    width: 100%;
+    max-width: 500px;
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-lg);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+
+.icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: var(--space-4);
+}
+
+.header h1 {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: var(--space-2);
+}
+
+.header p {
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+}
+
+.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+    text-align: center;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+/* Category Selection */
+.categorySection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.categoryGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.categoryCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    background: var(--color-white);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.categoryCard:hover:not(:disabled) {
+    border-color: var(--color-gray-300);
+    background: var(--color-gray-50);
+}
+
+.categoryCard.selected {
+    border-color: var(--color-primary);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.categoryCard:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.categoryIcon {
+    font-size: 1.75rem;
+}
+
+.categoryLabel {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-gray-700);
+}
+
+.categoryCard.selected .categoryLabel {
+    color: var(--color-primary);
+}
+
+/* Address Section */
+.addressSection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.addressGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+}
+
+@media (min-width: 480px) {
+    .addressGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .addressGrid input:first-child {
+        grid-column: span 2;
+    }
+}
+
+/* Skip Button */
+.skipBtn {
+    background: none;
+    border: none;
+    color: var(--color-gray-500);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    padding: var(--space-2);
+    text-align: center;
+}
+
+.skipBtn:hover:not(:disabled) {
+    color: var(--color-gray-700);
+}

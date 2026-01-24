@@ -1,0 +1,217 @@
+.main {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    background: var(--color-gray-50);
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: var(--space-8);
+}
+
+.logoIcon {
+    font-size: var(--text-2xl);
+}
+
+.card {
+    width: 100%;
+    background: var(--color-white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-lg);
+}
+
+.title {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+    text-align: center;
+    margin-bottom: var(--space-2);
+}
+
+.subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+
+.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-4);
+    text-align: center;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+/* Phone Input */
+.phoneInput {
+    display: flex;
+    align-items: stretch;
+}
+
+.countryCode {
+    display: flex;
+    align-items: center;
+    padding: 0 var(--space-4);
+    background: var(--color-gray-100);
+    border: 1px solid var(--color-gray-300);
+    border-right: none;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-gray-600);
+}
+
+.phoneInput .input {
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+/* OTP Methods */
+.otpMethods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+.methodBtn {
+    padding: var(--space-3);
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-gray-600);
+    background: var(--color-white);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.methodBtn:hover:not(:disabled) {
+    border-color: var(--color-gray-300);
+    background: var(--color-gray-50);
+}
+
+.methodBtn.active {
+    border-color: var(--color-primary);
+    background: rgba(37, 99, 235, 0.05);
+    color: var(--color-primary);
+}
+
+.methodBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* OTP Input */
+.otpInput {
+    text-align: center;
+    font-size: var(--text-2xl);
+    letter-spacing: 0.5em;
+    font-weight: 600;
+}
+
+/* Resend */
+.resend {
+    text-align: center;
+}
+
+.resendBtn {
+    color: var(--color-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: var(--space-2);
+}
+
+.resendBtn:disabled {
+    color: var(--color-gray-400);
+    cursor: not-allowed;
+}
+
+/* Change Number */
+.changeNumber {
+    color: var(--color-gray-500);
+    font-size: var(--text-sm);
+    text-align: center;
+    background: none;
+    border: none;
+    padding: var(--space-2);
+    cursor: pointer;
+}
+
+.changeNumber:hover {
+    color: var(--color-gray-700);
+}
+
+/* Footer */
+.footer {
+    margin-top: var(--space-6);
+    font-size: var(--text-xs);
+    color: var(--color-gray-400);
+    text-align: center;
+}
+
+/* Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--color-gray-400);
+    font-size: var(--text-sm);
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-gray-200);
+}
+
+/* Google Button */
+.googleBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.googleBtn:hover {
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-400);
+}
