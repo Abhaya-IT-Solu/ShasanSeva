@@ -1,6 +1,6 @@
 import app from './app.js';
-import { env } from './config/env';
-import { logger } from './lib/utils';
+import { env } from './config/env.js';
+import { logger } from './lib/utils.js';
 
 const PORT = parseInt(env.API_PORT || '3001', 10);
 
