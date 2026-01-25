@@ -1,11 +1,11 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import routes from './routes';
-import { errorHandler } from './middleware/validation.middleware';
-import { apiRateLimiter } from './middleware/rateLimit.middleware';
-import { env } from './config/env';
-import { logger } from './lib/utils';
+import routes from './routes/index.js';
+import { errorHandler } from './middleware/validation.middleware.js';
+import { apiRateLimiter } from './middleware/rateLimit.middleware.js';
+import { env } from './config/env.js';
+import { logger } from './lib/utils.js';
 
 const app: Application = express();
 
