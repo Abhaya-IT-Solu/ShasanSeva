@@ -8,18 +8,18 @@ export const orders = pgTable('orders', {
     userId: uuid('user_id').references(() => users.id).notNull(),
     schemeId: uuid('scheme_id').references(() => schemes.id).notNull(),
 
-    status: varchar('status', { length: 30 }).default('PAID').notNull(),
-    // PAID, IN_PROGRESS, PROOF_UPLOADED, COMPLETED, CANCELLED
+    status: varchar('status', { length: 30 }).default('PENDING_PAYMENT').notNull(),
+    // PENDING_PAYMENT, PAID, IN_PROGRESS, PROOF_UPLOADED, COMPLETED, CANCELLED
 
-    // Payment Info
-    paymentId: varchar('payment_id', { length: 255 }).notNull(),
+    // Payment Info (nullable until payment is completed)
+    paymentId: varchar('payment_id', { length: 255 }),
     razorpayOrderId: varchar('razorpay_order_id', { length: 255 }),
     paymentAmount: decimal('payment_amount', { precision: 10, scale: 2 }).notNull(),
-    paymentTimestamp: timestamp('payment_timestamp').notNull(),
+    paymentTimestamp: timestamp('payment_timestamp'),
 
-    // Consent
-    consentTimestamp: timestamp('consent_timestamp').notNull(),
-    termsVersion: varchar('terms_version', { length: 50 }).notNull(),
+    // Consent (nullable for legacy/pending orders)
+    consentTimestamp: timestamp('consent_timestamp'),
+    termsVersion: varchar('terms_version', { length: 50 }),
 
     // Admin Assignment
     assignedTo: uuid('assigned_to').references(() => admins.id),

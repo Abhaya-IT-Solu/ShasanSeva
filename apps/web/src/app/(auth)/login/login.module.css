@@ -91,82 +91,69 @@
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
-/* OTP Methods */
-.otpMethods {
+/* Tabs */
+.tabs {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
-}
-
-.methodBtn {
-    padding: var(--space-3);
-    border: 2px solid var(--color-gray-200);
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    background: var(--color-gray-100);
+    padding: var(--space-1);
     border-radius: var(--radius-md);
+}
+
+.tab {
+    padding: var(--space-3);
+    border: none;
+    border-radius: var(--radius-sm);
     font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--color-gray-600);
-    background: var(--color-white);
-    transition: all var(--transition-fast);
-    cursor: pointer;
-}
-
-.methodBtn:hover:not(:disabled) {
-    border-color: var(--color-gray-300);
-    background: var(--color-gray-50);
-}
-
-.methodBtn.active {
-    border-color: var(--color-primary);
-    background: rgba(37, 99, 235, 0.05);
-    color: var(--color-primary);
-}
-
-.methodBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* OTP Input */
-.otpInput {
-    text-align: center;
-    font-size: var(--text-2xl);
-    letter-spacing: 0.5em;
     font-weight: 600;
-}
-
-/* Resend */
-.resend {
-    text-align: center;
-}
-
-.resendBtn {
-    color: var(--color-primary);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: var(--space-2);
-}
-
-.resendBtn:disabled {
-    color: var(--color-gray-400);
-    cursor: not-allowed;
-}
-
-/* Change Number */
-.changeNumber {
     color: var(--color-gray-500);
-    font-size: var(--text-sm);
-    text-align: center;
-    background: none;
-    border: none;
-    padding: var(--space-2);
+    background: transparent;
     cursor: pointer;
+    transition: all var(--transition-fast);
 }
 
-.changeNumber:hover {
+.tab:hover {
     color: var(--color-gray-700);
+}
+
+.activeTab {
+    background: var(--color-white);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Password Input */
+.passwordInput {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.passwordInput .input {
+    padding-right: var(--space-12);
+}
+
+.togglePassword {
+    position: absolute;
+    right: var(--space-3);
+    padding: var(--space-1);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: var(--text-lg);
+    opacity: 0.6;
+}
+
+.togglePassword:hover {
+    opacity: 1;
+}
+
+.hint {
+    font-size: var(--text-xs);
+    color: var(--color-gray-400);
+    margin-top: var(--space-1);
 }
 
 /* Footer */

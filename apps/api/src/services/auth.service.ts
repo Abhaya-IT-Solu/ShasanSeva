@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { env } from '../config/env';
 import { db, users, admins } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
@@ -12,16 +13,138 @@ interface JwtPayload {
     role?: string;
 }
 
+const SALT_ROUNDS = 10;
+
+// Password validation: 8+ chars, must include at least one number
+export function validatePassword(password: string): { valid: boolean; error?: string } {
+    if (password.length < 8) {
+        return { valid: false, error: 'Password must be at least 8 characters' };
+    }
+    if (!/\d/.test(password)) {
+        return { valid: false, error: 'Password must include at least one number' };
+    }
+    return { valid: true };
+}
+
+export async function hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(password, hash);
+}
+
 /**
- * Find or create a user by phone number
+ * Register a new user with phone and password
  */
-export async function findOrCreateUser(phone: string): Promise<UserProfile> {
+export async function registerUser(
+    phone: string,
+    password: string,
+    name?: string
+): Promise<{ success: true; user: UserProfile } | { success: false; error: string }> {
     // Check if user exists
     const existingUsers = await db.select().from(users).where(eq(users.phone, phone));
 
     if (existingUsers.length > 0) {
-        const user = existingUsers[0];
+        return { success: false, error: 'Phone number already registered' };
+    }
+
+    // Validate password
+    const validation = validatePassword(password);
+    if (!validation.valid) {
+        return { success: false, error: validation.error! };
+    }
+
+    // Hash password and create user
+    const passwordHash = await hashPassword(password);
+
+    const newUsers = await db.insert(users).values({
+        phone,
+        name: name || undefined,
+        passwordHash,
+        profileComplete: false,
+    }).returning();
+
+    const newUser = newUsers[0];
+    logger.info('New user registered', { userId: newUser.id, phone });
+
+    return {
+        success: true,
+        user: {
+            id: newUser.id,
+            phone: newUser.phone,
+            email: undefined,
+            name: newUser.name || undefined,
+            category: undefined,
+            profileComplete: false,
+            createdAt: newUser.createdAt.toISOString(),
+        },
+    };
+}
+
+/**
+ * Authenticate user with phone and password
+ */
+export async function authenticateUser(
+    phone: string,
+    password: string
+): Promise<{ success: true; user: UserProfile; isAdmin: false } | { success: true; admin: AdminProfile; isAdmin: true } | { success: false; error: string }> {
+    // Check admin first
+    const existingAdmins = await db.select().from(admins).where(eq(admins.phone, phone));
+
+    if (existingAdmins.length > 0) {
+        const admin = existingAdmins[0];
+
+        if (!admin.isActive) {
+            return { success: false, error: 'Account is deactivated' };
+        }
+
+        if (!admin.passwordHash) {
+            return { success: false, error: 'Password not set. Please contact support.' };
+        }
+
+        const isValid = await verifyPassword(password, admin.passwordHash);
+        if (!isValid) {
+            return { success: false, error: 'Invalid phone or password' };
+        }
+
         return {
+            success: true,
+            isAdmin: true,
+            admin: {
+                id: admin.id,
+                phone: admin.phone,
+                email: admin.email || undefined,
+                name: admin.name,
+                role: admin.role as 'ADMIN' | 'SUPER_ADMIN',
+                isActive: admin.isActive || true,
+                createdAt: admin.createdAt.toISOString(),
+            },
+        };
+    }
+
+    // Check user
+    const existingUsers = await db.select().from(users).where(eq(users.phone, phone));
+
+    if (existingUsers.length === 0) {
+        return { success: false, error: 'Invalid phone or password' };
+    }
+
+    const user = existingUsers[0];
+
+    if (!user.passwordHash) {
+        return { success: false, error: 'Password not set. Please register again.' };
+    }
+
+    const isValid = await verifyPassword(password, user.passwordHash);
+    if (!isValid) {
+        return { success: false, error: 'Invalid phone or password' };
+    }
+
+    return {
+        success: true,
+        isAdmin: false,
+        user: {
             id: user.id,
             phone: user.phone,
             email: user.email || undefined,
@@ -30,27 +153,61 @@ export async function findOrCreateUser(phone: string): Promise<UserProfile> {
             profileComplete: user.profileComplete || false,
             address: user.address || undefined,
             createdAt: user.createdAt.toISOString(),
-        };
+        },
+    };
+}
+
+/**
+ * Update user password
+ */
+export async function updateUserPassword(
+    userId: string,
+    userType: 'USER' | 'ADMIN',
+    oldPassword: string,
+    newPassword: string
+): Promise<{ success: boolean; error?: string }> {
+    // Validate new password
+    const validation = validatePassword(newPassword);
+    if (!validation.valid) {
+        return { success: false, error: validation.error };
     }
 
-    // Create new user
-    const newUsers = await db.insert(users).values({
-        phone,
-        profileComplete: false,
-    }).returning();
+    if (userType === 'ADMIN') {
+        const existingAdmins = await db.select().from(admins).where(eq(admins.id, userId));
+        if (existingAdmins.length === 0) {
+            return { success: false, error: 'Admin not found' };
+        }
 
-    const newUser = newUsers[0];
-    logger.info('New user created', { userId: newUser.id, phone });
+        const admin = existingAdmins[0];
+        if (admin.passwordHash) {
+            const isValid = await verifyPassword(oldPassword, admin.passwordHash);
+            if (!isValid) {
+                return { success: false, error: 'Current password is incorrect' };
+            }
+        }
 
-    return {
-        id: newUser.id,
-        phone: newUser.phone,
-        email: undefined,
-        name: undefined,
-        category: undefined,
-        profileComplete: false,
-        createdAt: newUser.createdAt.toISOString(),
-    };
+        const newHash = await hashPassword(newPassword);
+        await db.update(admins).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(admins.id, userId));
+    } else {
+        const existingUsers = await db.select().from(users).where(eq(users.id, userId));
+        if (existingUsers.length === 0) {
+            return { success: false, error: 'User not found' };
+        }
+
+        const user = existingUsers[0];
+        if (user.passwordHash) {
+            const isValid = await verifyPassword(oldPassword, user.passwordHash);
+            if (!isValid) {
+                return { success: false, error: 'Current password is incorrect' };
+            }
+        }
+
+        const newHash = await hashPassword(newPassword);
+        await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, userId));
+    }
+
+    logger.info('Password updated', { userId, userType });
+    return { success: true };
 }
 
 /**
@@ -134,9 +291,10 @@ export async function findAdminByPhone(phone: string): Promise<AdminProfile | nu
 export function createToken(userId: string, userType: 'USER' | 'ADMIN', role?: string): string {
     const payload: JwtPayload = { userId, userType, role };
 
+    // Cast expiresIn to string to satisfy jsonwebtoken types
     return jwt.sign(payload, env.JWT_SECRET || 'dev-secret', {
-        expiresIn: env.JWT_EXPIRES_IN || '7d',
-    });
+        expiresIn: String(env.JWT_EXPIRES_IN || '7d'),
+    } as jwt.SignOptions);
 }
 
 /**

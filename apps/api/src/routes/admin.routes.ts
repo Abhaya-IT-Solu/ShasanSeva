@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { db, admins, adminAnalytics, users } from '@shasansetu/db';
-import { eq, count } from 'drizzle-orm';
+import { db, admins, adminAnalytics, users, orders } from '@shasansetu/db';
+import { eq, count, and, gte } from 'drizzle-orm';
 import { authMiddleware, adminMiddleware, superAdminMiddleware } from '../middleware/auth.middleware';
 import { validateBody } from '../middleware/validation.middleware';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
-import bcrypt from 'crypto';
 
-const router = Router();
+
+const router: Router = Router();
 
 // All admin routes require authentication
 router.use(authMiddleware, adminMiddleware);
@@ -16,17 +16,37 @@ router.use(authMiddleware, adminMiddleware);
  * GET /api/admin/stats
  * Get dashboard statistics
  */
-router.get('/stats', async (req, res) => {
+router.get('/stats', async (_req, res) => {
     try {
         // Get total users count
         const usersCount = await db.select({ count: count() }).from(users);
 
-        // Placeholder stats - will be implemented with orders
+        // Get order counts by status
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const newOrdersCount = await db.select({ count: count() })
+            .from(orders)
+            .where(eq(orders.status, 'PAID'));
+
+        const inProgressCount = await db.select({ count: count() })
+            .from(orders)
+            .where(eq(orders.status, 'IN_PROGRESS'));
+
+        const completedTodayCount = await db.select({ count: count() })
+            .from(orders)
+            .where(
+                and(
+                    eq(orders.status, 'COMPLETED'),
+                    gte(orders.updatedAt, today)
+                )
+            );
+
         const stats = {
             totalUsers: usersCount[0]?.count || 0,
-            newOrders: 0,
-            inProgress: 0,
-            completedToday: 0,
+            newOrders: newOrdersCount[0]?.count || 0,
+            inProgress: inProgressCount[0]?.count || 0,
+            completedToday: completedTodayCount[0]?.count || 0,
         };
 
         return res.json(successResponse(stats));
@@ -45,7 +65,7 @@ router.get('/stats', async (req, res) => {
  * GET /api/admin/users
  * List all users (admin)
  */
-router.get('/users', async (req, res) => {
+router.get('/users', async (_req, res) => {
     try {
         const result = await db.select({
             id: users.id,
@@ -148,7 +168,7 @@ router.get('/my-analytics', async (req, res) => {
  * GET /api/admin/admins
  * List all admins (super admin only)
  */
-router.get('/admins', superAdminMiddleware, async (req, res) => {
+router.get('/admins', superAdminMiddleware, async (_req, res) => {
     try {
         const result = await db.select({
             id: admins.id,
@@ -172,12 +192,15 @@ router.get('/admins', superAdminMiddleware, async (req, res) => {
     }
 });
 
+import { hashPassword } from '../services/auth.service';
+
 // Validation for creating admin
 const createAdminSchema = z.object({
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
     email: z.string().email().optional(),
     name: z.string().min(2).max(255),
     role: z.enum(['ADMIN', 'SUPER_ADMIN']).default('ADMIN'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
 /**
@@ -186,7 +209,7 @@ const createAdminSchema = z.object({
  */
 router.post('/admins', superAdminMiddleware, validateBody(createAdminSchema), async (req, res) => {
     try {
-        const data = req.body;
+        const { password, ...data } = req.body;
         const creatorId = req.user!.userId;
 
         // Check if phone already exists
@@ -217,8 +240,11 @@ router.post('/admins', superAdminMiddleware, validateBody(createAdminSchema), as
             );
         }
 
+        const passwordHash = await hashPassword(password);
+
         const result = await db.insert(admins).values({
             ...data,
+            passwordHash,
             createdBy: creatorId,
         }).returning();
 

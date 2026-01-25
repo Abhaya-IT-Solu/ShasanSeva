@@ -145,6 +145,26 @@
     margin-left: var(--space-1);
 }
 
+.recommended {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-warning);
+    background: rgba(245, 158, 11, 0.1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-2);
+}
+
+.skipNote {
+    padding: var(--space-4);
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    color: var(--color-primary);
+    margin-bottom: var(--space-6);
+}
+
 .docDesc {
     font-size: var(--text-sm);
     color: var(--color-gray-500);

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import styles from './dashboard/dashboard.module.css';
+import styles from '../dashboard/dashboard.module.css';
 import schemeStyles from './schemes.module.css';
 
 interface Scheme {

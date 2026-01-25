@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
@@ -152,18 +152,6 @@ export default function ApplyPage() {
         }
     };
 
-    // Check if all required docs are uploaded
-    const allRequiredDocsUploaded = useCallback(() => {
-        if (!scheme) return false;
-        const requiredTypes = scheme.requiredDocs
-            .filter(d => d.required)
-            .map(d => d.type);
-
-        return requiredTypes.every(type =>
-            uploadedDocs.some(d => d.documentType === type && d.status === 'uploaded')
-        );
-    }, [scheme, uploadedDocs]);
-
     // Handle payment
     const handlePayment = async () => {
         if (!scheme) return;
@@ -281,8 +269,14 @@ export default function ApplyPage() {
             <main className={styles.main}>
                 {currentStep === 'documents' && (
                     <div className={styles.documentsStep}>
-                        <h2>Upload Required Documents</h2>
-                        <p className={styles.subtitle}>Please upload clear, readable copies of the following documents</p>
+                        <h2>Upload Documents (Optional)</h2>
+                        <p className={styles.subtitle}>
+                            Upload your documents now, or skip and upload them later from your orders page.
+                        </p>
+
+                        <div className={styles.skipNote}>
+                            💡 You can proceed to payment without uploading documents. Our team will contact you for any missing documents.
+                        </div>
 
                         <div className={styles.docsList}>
                             {scheme.requiredDocs.map((doc) => {
@@ -293,7 +287,7 @@ export default function ApplyPage() {
                                         <div className={styles.docInfo}>
                                             <span className={styles.docLabel}>
                                                 {doc.label}
-                                                {doc.required && <span className={styles.required}>*</span>}
+                                                {doc.required && <span className={styles.recommended}>Recommended</span>}
                                             </span>
                                             {doc.description && (
                                                 <span className={styles.docDesc}>{doc.description}</span>
@@ -330,8 +324,13 @@ export default function ApplyPage() {
 
                         <div className={styles.actions}>
                             <button
+                                className="btn btn-secondary"
+                                onClick={() => setCurrentStep('review')}
+                            >
+                                Skip for Now
+                            </button>
+                            <button
                                 className="btn btn-primary btn-lg"
-                                disabled={!allRequiredDocsUploaded()}
                                 onClick={() => setCurrentStep('review')}
                             >
                                 Continue to Review

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
 import styles from './schemes.module.css';
 
 interface Scheme {
@@ -21,6 +20,10 @@ const CATEGORIES = [
     { value: 'STUDENT', label: 'Student' },
     { value: 'FARMER', label: 'Farmer' },
     { value: 'LOAN', label: 'Loan' },
+    { value: 'CERTIFICATE', label: 'Important Certificates' },
+    { value: 'JOBS', label: 'Jobs Application Assistance' },
+    { value: 'OTHER', label: 'Other Services' },
+    { value: 'HEALTH', label: 'Health Schemes' },
 ];
 
 const SCHEME_TYPES = [
@@ -76,6 +79,10 @@ export default function SchemesPage() {
             case 'STUDENT': return styles.categoryStudent;
             case 'FARMER': return styles.categoryFarmer;
             case 'LOAN': return styles.categoryLoan;
+            case 'CERTIFICATE': return styles.categoryCertificate;
+            case 'JOBS': return styles.categoryJobs;
+            case 'OTHER': return styles.categoryOther;
+            case 'HEALTH': return styles.categoryHealth;
             default: return '';
         }
     };

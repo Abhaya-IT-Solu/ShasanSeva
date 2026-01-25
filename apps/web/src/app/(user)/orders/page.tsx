@@ -8,11 +8,12 @@ import styles from './orders.module.css';
 
 interface Order {
     id: string;
-    schemeName: string;
-    amountPaid: string;
+    schemeName: string | null;
+    schemeCategory: string | null;
+    paymentAmount: string;
     status: string;
     createdAt: string;
-    paidAt: string | null;
+    paymentTimestamp: string | null;
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -106,13 +107,13 @@ export default function OrdersPage() {
                             return (
                                 <Link key={order.id} href={`/orders/${order.id}`} className={styles.orderCard}>
                                     <div className={styles.orderInfo}>
-                                        <h3>{order.schemeName}</h3>
+                                        <h3>{order.schemeName || 'Unknown Scheme'}</h3>
                                         <p className={styles.orderDate}>
                                             Applied on {new Date(order.createdAt).toLocaleDateString()}
                                         </p>
                                     </div>
                                     <div className={styles.orderMeta}>
-                                        <span className={styles.amount}>₹{order.amountPaid}</span>
+                                        <span className={styles.amount}>₹{order.paymentAmount}</span>
                                         <span className={`${styles.status} ${styles[statusInfo.color]}`}>
                                             {statusInfo.label}
                                         </span>

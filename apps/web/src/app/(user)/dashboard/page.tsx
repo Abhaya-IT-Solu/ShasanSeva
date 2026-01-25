@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 
 interface Order {
@@ -16,8 +15,8 @@ interface Order {
 export default function UserDashboard() {
     const { user, logout } = useAuth();
     const [showUserMenu, setShowUserMenu] = useState(false);
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [orders, _setOrders] = useState<Order[]>([]);
+    const [_isLoading, _setIsLoading] = useState(true);
 
     // Close dropdown when clicking outside
     useEffect(() => {

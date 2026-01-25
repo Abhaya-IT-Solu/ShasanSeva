@@ -1,122 +1,172 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { sendSmsOtp, sendWhatsAppOtp, verifyOtp } from '../services/otp.service';
-import { findOrCreateUser, findAdminByPhone, createSession, invalidateSession } from '../services/auth.service';
+import {
+    registerUser,
+    authenticateUser,
+    updateUserPassword,
+    createSession,
+    invalidateSession
+} from '../services/auth.service';
 import { validateBody } from '../middleware/validation.middleware';
 import { authMiddleware } from '../middleware/auth.middleware';
-import { otpRateLimiter } from '../middleware/rateLimit.middleware';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
-const sendOtpSchema = z.object({
+const registerSchema = z.object({
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian phone number'),
-    method: z.enum(['SMS', 'WHATSAPP']).default('SMS'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    name: z.string().min(2, 'Name must be at least 2 characters').optional(),
 });
 
-const verifyOtpSchema = z.object({
+const loginSchema = z.object({
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian phone number'),
-    otp: z.string().length(6, 'OTP must be 6 digits'),
+    password: z.string().min(1, 'Password is required'),
+});
+
+const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(8, 'New password must be at least 8 characters'),
 });
 
 /**
- * POST /api/auth/send-otp
- * Send OTP to phone number
+ * POST /api/auth/register
+ * Register new user with phone + password
  */
-router.post('/send-otp', otpRateLimiter, validateBody(sendOtpSchema), async (req, res) => {
+router.post('/register', validateBody(registerSchema), async (req, res) => {
     try {
-        const { phone, method } = req.body;
+        const { phone, password, name } = req.body;
 
-        let result;
-        if (method === 'WHATSAPP') {
-            result = await sendWhatsAppOtp(phone);
-        } else {
-            result = await sendSmsOtp(phone);
-        }
+        const result = await registerUser(phone, password, name);
 
         if (!result.success) {
             return res.status(400).json(
                 errorResponse({
-                    code: ErrorCodes.OTP_SEND_FAILED,
-                    message: result.error || 'Failed to send OTP',
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: result.error,
                 })
             );
         }
 
-        return res.json(
+        // Create session and return token
+        const token = await createSession(result.user.id, 'USER', result.user);
+
+        return res.status(201).json(
             successResponse({
                 success: true,
-                message: `OTP sent via ${method}`,
-                expiresIn: 300, // 5 minutes
+                token,
+                user: result.user,
+                userType: 'USER',
             })
         );
     } catch (error) {
-        logger.error('Send OTP error', error);
+        logger.error('Register error', error);
         return res.status(500).json(
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
-                message: 'Failed to send OTP',
+                message: 'Registration failed',
             })
         );
     }
 });
 
 /**
- * POST /api/auth/verify-otp
- * Verify OTP and login/register user
+ * POST /api/auth/login
+ * Login with phone + password (works for both users and admins)
  */
-router.post('/verify-otp', validateBody(verifyOtpSchema), async (req, res) => {
+router.post('/login', validateBody(loginSchema), async (req, res) => {
     try {
-        const { phone, otp } = req.body;
+        const { phone, password } = req.body;
 
-        // Verify OTP with 2factor.in
-        const verification = await verifyOtp(phone, otp);
+        const result = await authenticateUser(phone, password);
 
-        if (!verification.success) {
-            return res.status(400).json(
+        if (!result.success) {
+            return res.status(401).json(
                 errorResponse({
-                    code: ErrorCodes.OTP_INVALID,
-                    message: verification.error || 'Invalid OTP',
+                    code: ErrorCodes.UNAUTHORIZED,
+                    message: result.error,
                 })
             );
         }
 
-        // Check if phone belongs to an admin
-        const admin = await findAdminByPhone(phone);
-
-        if (admin) {
-            // Admin login
-            const token = await createSession(admin.id, 'ADMIN', admin);
-
+        if (result.isAdmin) {
+            const token = await createSession(result.admin.id, 'ADMIN', result.admin);
             return res.json(
                 successResponse({
                     success: true,
                     token,
-                    user: admin,
+                    user: result.admin,
                     userType: 'ADMIN',
                 })
             );
         }
 
-        // User login/registration
-        const user = await findOrCreateUser(phone);
-        const token = await createSession(user.id, 'USER', user);
-
+        const token = await createSession(result.user.id, 'USER', result.user);
         return res.json(
             successResponse({
                 success: true,
                 token,
-                user,
+                user: result.user,
                 userType: 'USER',
             })
         );
     } catch (error) {
-        logger.error('Verify OTP error', error);
+        logger.error('Login error', error);
         return res.status(500).json(
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
-                message: 'Authentication failed',
+                message: 'Login failed',
+            })
+        );
+    }
+});
+
+/**
+ * POST /api/auth/change-password
+ * Change password for authenticated user/admin
+ */
+router.post('/change-password', authMiddleware, validateBody(changePasswordSchema), async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json(
+                errorResponse({
+                    code: ErrorCodes.UNAUTHORIZED,
+                    message: 'Not authenticated',
+                })
+            );
+        }
+
+        const { currentPassword, newPassword } = req.body;
+
+        const result = await updateUserPassword(
+            req.user.userId,
+            req.user.userType,
+            currentPassword,
+            newPassword
+        );
+
+        if (!result.success) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: result.error || 'Password change failed',
+                })
+            );
+        }
+
+        return res.json(
+            successResponse({
+                success: true,
+                message: 'Password changed successfully',
+            })
+        );
+    } catch (error) {
+        logger.error('Change password error', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Password change failed',
             })
         );
     }

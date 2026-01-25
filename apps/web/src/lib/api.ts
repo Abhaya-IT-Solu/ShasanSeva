@@ -76,22 +76,34 @@ class ApiClient {
     }
 
     // Auth endpoints
-    async sendOtp(phone: string, method: 'SMS' | 'WHATSAPP' = 'SMS') {
-        return this.request('/api/auth/send-otp', {
-            method: 'POST',
-            body: { phone, method },
-        });
-    }
-
-    async verifyOtp(phone: string, otp: string) {
+    async register(phone: string, password: string, name?: string) {
         return this.request<{
             success: boolean;
             token: string;
             user: unknown;
             userType: 'USER' | 'ADMIN';
-        }>('/api/auth/verify-otp', {
+        }>('/api/auth/register', {
             method: 'POST',
-            body: { phone, otp },
+            body: { phone, password, name },
+        });
+    }
+
+    async login(phone: string, password: string) {
+        return this.request<{
+            success: boolean;
+            token: string;
+            user: unknown;
+            userType: 'USER' | 'ADMIN';
+        }>('/api/auth/login', {
+            method: 'POST',
+            body: { phone, password },
+        });
+    }
+
+    async changePassword(currentPassword: string, newPassword: string) {
+        return this.request('/api/auth/change-password', {
+            method: 'POST',
+            body: { currentPassword, newPassword },
         });
     }
 
@@ -113,6 +125,7 @@ class ApiClient {
     async updateProfile(data: {
         name?: string;
         email?: string;
+        phone?: string;
         category?: string;
         address?: {
             line1?: string;

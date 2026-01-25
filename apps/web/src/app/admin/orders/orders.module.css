@@ -1,0 +1,216 @@
+/* Container */
+.container {
+    padding: var(--space-6);
+}
+
+/* Status Tabs */
+.tabsContainer {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: var(--space-4);
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    /* Hide scrollbar */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tabsContainer::-webkit-scrollbar {
+    display: none;
+}
+
+.tab {
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.tabActive {
+    background: var(--color-primary);
+    color: var(--color-white);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+}
+
+.tabInactive {
+    background: var(--color-white);
+    color: var(--color-gray-600);
+    border-color: var(--color-gray-200);
+}
+
+.tabInactive:hover {
+    background: var(--color-gray-50);
+}
+
+/* Table container */
+.tableContainer {
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.tableWrapper {
+    overflow-x: auto;
+}
+
+/* Table Styles */
+.table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+}
+
+.tableHead {
+    background: var(--color-gray-50);
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.tableHeadCell {
+    padding: var(--space-4) var(--space-6);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tableBody tr {
+    transition: background-color var(--transition-fast);
+}
+
+.tableBody tr:hover {
+    background: var(--color-gray-50);
+}
+
+.tableCell {
+    padding: var(--space-4) var(--space-6);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--color-gray-100);
+}
+
+/* Order Details */
+.orderId {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-gray-900);
+}
+
+.orderDate {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+}
+
+/* User Info */
+.userName {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-gray-900);
+}
+
+.userPhone {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+}
+
+/* Scheme Info */
+.schemeName {
+    font-size: var(--text-sm);
+    color: var(--color-gray-900);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Status Badges */
+.statusBadge {
+    display: inline-flex;
+    padding: 0.125rem 0.5rem;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    border-radius: var(--radius-full);
+}
+
+.statusPendingPayment {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.statusPaid {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.statusInProgress {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.statusProofUploaded {
+    background: #f3e8ff;
+    color: #7e22ce;
+}
+
+.statusCompleted {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.statusCancelled {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* Amount */
+.amount {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-gray-900);
+}
+
+/* Actions */
+.viewLink {
+    text-decoration: none;
+    color: var(--color-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: color var(--transition-fast);
+}
+
+.viewLink:hover {
+    color: var(--color-primary-dark);
+}
+
+.textRight {
+    text-align: right;
+}
+
+/* Use spinner and empty state from shared or duplicate */
+.emptyState {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--color-gray-500);
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-gray-200);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 0.5rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

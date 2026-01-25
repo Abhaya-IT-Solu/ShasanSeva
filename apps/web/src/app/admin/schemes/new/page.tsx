@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
+import layoutStyles from '../../dashboard/dashboard.module.css';
 import styles from './newScheme.module.css';
 
 interface RequiredDoc {
@@ -16,9 +17,10 @@ interface RequiredDoc {
 
 export default function NewSchemePage() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
     const [formData, setFormData] = useState({
         name: '',
@@ -91,194 +93,241 @@ export default function NewSchemePage() {
     };
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <Link href="/admin/schemes" className={styles.backLink}>
-                    ← Back to Schemes
-                </Link>
-                <h1>Add New Scheme</h1>
-            </header>
-
-            {error && (
-                <div className={styles.error}>{error}</div>
-            )}
-
-            <form onSubmit={handleSubmit} className={styles.form}>
-                {/* Basic Info */}
-                <section className={styles.section}>
-                    <h2>Basic Information</h2>
-
-                    <div className={styles.row}>
-                        <div className="input-group">
-                            <label className="input-label">Scheme Name *</label>
-                            <input
-                                type="text"
-                                name="name"
-                                className="input"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                required
-                            />
-                        </div>
-
-                        <div className="input-group">
-                            <label className="input-label">Slug *</label>
-                            <input
-                                type="text"
-                                name="slug"
-                                className="input"
-                                value={formData.slug}
-                                onChange={handleInputChange}
-                                pattern="[a-z0-9-]+"
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div className="input-group">
-                        <label className="input-label">Description</label>
-                        <textarea
-                            name="description"
-                            className={`input ${styles.textarea}`}
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={3}
-                        />
-                    </div>
-
-                    <div className={styles.row}>
-                        <div className="input-group">
-                            <label className="input-label">Category *</label>
-                            <select
-                                name="category"
-                                className="input"
-                                value={formData.category}
-                                onChange={handleInputChange}
-                            >
-                                <option value="STUDENT">Student</option>
-                                <option value="FARMER">Farmer</option>
-                                <option value="LOAN">Loan</option>
-                            </select>
-                        </div>
-
-                        <div className="input-group">
-                            <label className="input-label">Scheme Type *</label>
-                            <select
-                                name="schemeType"
-                                className="input"
-                                value={formData.schemeType}
-                                onChange={handleInputChange}
-                            >
-                                <option value="GOVERNMENT">Government</option>
-                                <option value="PRIVATE">Private</option>
-                            </select>
-                        </div>
-
-                        <div className="input-group">
-                            <label className="input-label">Service Fee (₹) *</label>
-                            <input
-                                type="number"
-                                name="serviceFee"
-                                className="input"
-                                value={formData.serviceFee}
-                                onChange={handleInputChange}
-                                min="0"
-                                step="0.01"
-                                required
-                            />
-                        </div>
-                    </div>
-                </section>
-
-                {/* Eligibility & Benefits */}
-                <section className={styles.section}>
-                    <h2>Eligibility & Benefits</h2>
-
-                    <div className="input-group">
-                        <label className="input-label">Eligibility Criteria</label>
-                        <textarea
-                            name="eligibility"
-                            className={`input ${styles.textarea}`}
-                            value={formData.eligibility}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="Enter eligibility criteria..."
-                        />
-                    </div>
-
-                    <div className="input-group">
-                        <label className="input-label">Benefits</label>
-                        <textarea
-                            name="benefits"
-                            className={`input ${styles.textarea}`}
-                            value={formData.benefits}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="Enter scheme benefits..."
-                        />
-                    </div>
-                </section>
-
-                {/* Required Documents */}
-                <section className={styles.section}>
-                    <div className={styles.sectionHeader}>
-                        <h2>Required Documents</h2>
-                        <button type="button" onClick={addDocument} className="btn btn-secondary">
-                            + Add Document
-                        </button>
-                    </div>
-
-                    <div className={styles.documentsList}>
-                        {requiredDocs.map((doc, index) => (
-                            <div key={index} className={styles.documentRow}>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="Type (e.g., AADHAAR)"
-                                    value={doc.type}
-                                    onChange={(e) => updateDocument(index, 'type', e.target.value)}
-                                />
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="Label (e.g., Aadhaar Card)"
-                                    value={doc.label}
-                                    onChange={(e) => updateDocument(index, 'label', e.target.value)}
-                                />
-                                <label className={styles.checkboxLabel}>
-                                    <input
-                                        type="checkbox"
-                                        checked={doc.required}
-                                        onChange={(e) => updateDocument(index, 'required', e.target.checked)}
-                                    />
-                                    Required
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => removeDocument(index)}
-                                    className={styles.removeBtn}
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* Submit */}
-                <div className={styles.submitRow}>
-                    <Link href="/admin/schemes" className="btn btn-secondary">
-                        Cancel
+        <div className={layoutStyles.container}>
+            {/* Sidebar */}
+            <aside className={layoutStyles.sidebar}>
+                <div className={layoutStyles.sidebarHeader}>
+                    <Link href="/" className={layoutStyles.logo}>
+                        <span className={layoutStyles.logoIcon}>🏛️</span>
+                        ShasanSetu
                     </Link>
-                    <button
-                        type="submit"
-                        className="btn btn-primary btn-lg"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? <span className="spinner" /> : 'Create Scheme'}
+                    <span className={layoutStyles.badge}>
+                        {isSuperAdmin ? 'Super Admin' : 'Admin'}
+                    </span>
+                </div>
+
+                <nav className={layoutStyles.nav}>
+                    <Link href="/admin/dashboard" className={layoutStyles.navLink}>
+                        📊 Dashboard
+                    </Link>
+                    <Link href="/admin/orders" className={layoutStyles.navLink}>
+                        📦 Orders
+                    </Link>
+                    <Link href="/admin/schemes" className={`${layoutStyles.navLink} ${layoutStyles.active}`}>
+                        📋 Schemes
+                    </Link>
+                    <Link href="/admin/users" className={layoutStyles.navLink}>
+                        👥 Users
+                    </Link>
+                    {isSuperAdmin && (
+                        <Link href="/admin/admins" className={layoutStyles.navLink}>
+                            🛡️ Manage Admins
+                        </Link>
+                    )}
+                </nav>
+
+                <div className={layoutStyles.sidebarFooter}>
+                    <span className={layoutStyles.userName}>{user?.name || user?.phone}</span>
+                    <button onClick={logout} className="btn btn-secondary btn-full">
+                        Logout
                     </button>
                 </div>
-            </form>
+            </aside>
+
+            {/* Main Content */}
+            <main className={layoutStyles.main}>
+                <header className={layoutStyles.pageHeader}>
+                    <Link href="/admin/schemes" className={styles.backLink}>
+                        ← Back to Schemes
+                    </Link>
+                    <h1>Add New Scheme</h1>
+                </header>
+
+                {error && (
+                    <div className={styles.error}>{error}</div>
+                )}
+
+                <form onSubmit={handleSubmit} className={styles.form}>
+                    {/* Basic Info */}
+                    <section className={styles.section}>
+                        <h2>Basic Information</h2>
+
+                        <div className={styles.row}>
+                            <div className="input-group">
+                                <label className="input-label">Scheme Name *</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    className="input"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Slug *</label>
+                                <input
+                                    type="text"
+                                    name="slug"
+                                    className="input"
+                                    value={formData.slug}
+                                    onChange={handleInputChange}
+                                    pattern="[a-z0-9-]+"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label">Description</label>
+                            <textarea
+                                name="description"
+                                className={`input ${styles.textarea}`}
+                                value={formData.description}
+                                onChange={handleInputChange}
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className={styles.row}>
+                            <div className="input-group">
+                                <label className="input-label">Category *</label>
+                                <select
+                                    name="category"
+                                    className="input"
+                                    value={formData.category}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="STUDENT">Student</option>
+                                    <option value="FARMER">Farmer</option>
+                                    <option value="LOAN">Loan</option>
+                                    <option value="CERTIFICATE">Important Certificates</option>
+                                    <option value="JOBS">Jobs Application Assistance</option>
+                                    <option value="OTHER">Other Services</option>
+                                    <option value="HEALTH">Health Schemes</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Scheme Type *</label>
+                                <select
+                                    name="schemeType"
+                                    className="input"
+                                    value={formData.schemeType}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="GOVERNMENT">Government</option>
+                                    <option value="PRIVATE">Private</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Service Fee (₹) *</label>
+                                <input
+                                    type="number"
+                                    name="serviceFee"
+                                    className="input"
+                                    value={formData.serviceFee}
+                                    onChange={handleInputChange}
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Eligibility & Benefits */}
+                    <section className={styles.section}>
+                        <h2>Eligibility & Benefits</h2>
+
+                        <div className="input-group">
+                            <label className="input-label">Eligibility Criteria</label>
+                            <textarea
+                                name="eligibility"
+                                className={`input ${styles.textarea}`}
+                                value={formData.eligibility}
+                                onChange={handleInputChange}
+                                rows={4}
+                                placeholder="Enter eligibility criteria..."
+                            />
+                        </div>
+
+                        <div className="input-group">
+                            <label className="input-label">Benefits</label>
+                            <textarea
+                                name="benefits"
+                                className={`input ${styles.textarea}`}
+                                value={formData.benefits}
+                                onChange={handleInputChange}
+                                rows={4}
+                                placeholder="Enter scheme benefits..."
+                            />
+                        </div>
+                    </section>
+
+                    {/* Required Documents */}
+                    <section className={styles.section}>
+                        <div className={styles.sectionHeader}>
+                            <h2>Required Documents</h2>
+                            <button type="button" onClick={addDocument} className="btn btn-secondary">
+                                + Add Document
+                            </button>
+                        </div>
+
+                        <div className={styles.documentsList}>
+                            {requiredDocs.map((doc, index) => (
+                                <div key={index} className={styles.documentRow}>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Type (e.g., AADHAAR)"
+                                        value={doc.type}
+                                        onChange={(e) => updateDocument(index, 'type', e.target.value)}
+                                    />
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Label (e.g., Aadhaar Card)"
+                                        value={doc.label}
+                                        onChange={(e) => updateDocument(index, 'label', e.target.value)}
+                                    />
+                                    <label className={styles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={doc.required}
+                                            onChange={(e) => updateDocument(index, 'required', e.target.checked)}
+                                        />
+                                        Required
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeDocument(index)}
+                                        className={styles.removeBtn}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Submit */}
+                    <div className={styles.submitRow}>
+                        <Link href="/admin/schemes" className="btn btn-secondary">
+                            Cancel
+                        </Link>
+                        <button
+                            type="submit"
+                            className="btn btn-primary btn-lg"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? <span className="spinner" /> : 'Create Scheme'}
+                        </button>
+                    </div>
+                </form>
+            </main>
         </div>
     );
 }

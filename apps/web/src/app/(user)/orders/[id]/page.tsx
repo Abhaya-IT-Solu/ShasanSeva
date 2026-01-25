@@ -34,7 +34,7 @@ const STATUS_STEPS = ['PAID', 'IN_PROGRESS', 'DOCUMENTS_VERIFIED', 'COMPLETED'];
 
 export default function OrderDetailPage() {
     const params = useParams();
-    const { user } = useAuth();
+    useAuth(); // Ensure user is authenticated
     const [order, setOrder] = useState<Order | null>(null);
     const [documents, setDocuments] = useState<Document[]>([]);
     const [isLoading, setIsLoading] = useState(true);

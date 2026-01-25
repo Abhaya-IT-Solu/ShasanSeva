@@ -35,6 +35,10 @@ export const SchemeCategory = {
     STUDENT: 'STUDENT',
     FARMER: 'FARMER',
     LOAN: 'LOAN',
+    CERTIFICATE: 'CERTIFICATE',   // Important Certificates
+    JOBS: 'JOBS',                  // Jobs Application Assistance
+    OTHER: 'OTHER',                // Other Services
+    HEALTH: 'HEALTH',              // Health Schemes
 } as const;
 
 export type SchemeCategoryType = (typeof SchemeCategory)[keyof typeof SchemeCategory];

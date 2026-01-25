@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import routes from './routes';
@@ -7,7 +7,7 @@ import { apiRateLimiter } from './middleware/rateLimit.middleware';
 import { env } from './config/env';
 import { logger } from './lib/utils';
 
-const app = express();
+const app: Application = express();
 
 // Security middleware
 app.use(helmet());
@@ -25,7 +25,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
     logger.info(`${req.method} ${req.path}`, {
         ip: req.ip,
         userAgent: req.headers['user-agent'],

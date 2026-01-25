@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { redis, REDIS_KEYS, REDIS_TTL } from '../lib/redis';
+import { redis, REDIS_KEYS } from '../lib/redis';
 import { errorResponse, ErrorCodes } from '../lib/utils';
 
 interface RateLimitOptions {

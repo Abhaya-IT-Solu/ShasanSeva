@@ -7,11 +7,13 @@ import adminRoutes from './admin.routes';
 import documentRoutes from './document.routes';
 import paymentRoutes from './payment.routes';
 import orderRoutes from './order.routes';
+import notificationRoutes from './notification.routes';
+import proofRoutes from './proof.routes';
 
-const router = Router();
+const router: Router = Router();
 
 // Health check
-router.get('/health', (req, res) => {
+router.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -24,5 +26,7 @@ router.use('/admin', adminRoutes);
 router.use('/documents', documentRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/proofs', proofRoutes);
 
 export default router;

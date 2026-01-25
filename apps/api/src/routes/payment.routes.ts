@@ -65,8 +65,7 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
         const orderResult = await db.insert(orders).values({
             userId,
             schemeId,
-            schemeName: scheme.name,
-            amountPaid: scheme.serviceFee,
+            paymentAmount: scheme.serviceFee,
             status: 'PENDING_PAYMENT',
         }).returning();
 
@@ -173,8 +172,8 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
         await db.update(orders)
             .set({
                 status: 'PAID',
-                razorpayPaymentId,
-                paidAt: new Date(),
+                paymentId: razorpayPaymentId,
+                paymentTimestamp: new Date(),
                 updatedAt: new Date(),
             })
             .where(eq(orders.id, orderId));
@@ -220,20 +219,20 @@ router.post('/webhook', async (req: Request, res: Response) => {
         switch (eventType) {
             case 'payment.captured':
                 // Payment was successfully captured
-                const paymentId = event.payload.payment.entity.id;
+                const capturedPaymentId = event.payload.payment.entity.id;
                 const orderId = event.payload.payment.entity.notes?.orderId;
 
                 if (orderId) {
                     await db.update(orders)
                         .set({
                             status: 'PAID',
-                            razorpayPaymentId: paymentId,
-                            paidAt: new Date(),
+                            paymentId: capturedPaymentId,
+                            paymentTimestamp: new Date(),
                             updatedAt: new Date(),
                         })
                         .where(eq(orders.id, orderId));
 
-                    logger.info('Payment captured via webhook', { orderId, paymentId });
+                    logger.info('Payment captured via webhook', { orderId, paymentId: capturedPaymentId });
                 }
                 break;
 

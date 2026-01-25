@@ -22,6 +22,7 @@ export default function CompleteProfilePage() {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
+        phone: '',
         category: '',
         address: {
             line1: '',
@@ -32,10 +33,18 @@ export default function CompleteProfilePage() {
         },
     });
 
+    // Check if phone is needed (OAuth users have empty phone)
+    const [needsPhone, setNeedsPhone] = useState(false);
+
     // Pre-fill from user if available
     useEffect(() => {
         if (user?.name) setFormData(prev => ({ ...prev, name: user.name || '' }));
         if (user?.email) setFormData(prev => ({ ...prev, email: user.email || '' }));
+        if (user?.phone) setFormData(prev => ({ ...prev, phone: user.phone || '' }));
+        // If phone is empty, OAuth user needs to add it
+        if (!user?.phone || user.phone === '') {
+            setNeedsPhone(true);
+        }
     }, [user]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -65,6 +74,12 @@ export default function CompleteProfilePage() {
             return;
         }
 
+        // Phone is required for OAuth users
+        if (needsPhone && !/^[6-9]\d{9}$/.test(formData.phone)) {
+            setError('Please enter a valid 10-digit mobile number');
+            return;
+        }
+
         if (!formData.category) {
             setError('Please select a category');
             return;
@@ -76,6 +91,7 @@ export default function CompleteProfilePage() {
             const response = await api.updateProfile({
                 name: formData.name.trim(),
                 email: formData.email.trim() || undefined,
+                phone: needsPhone ? formData.phone.trim() : undefined,
                 category: formData.category,
                 address: {
                     line1: formData.address.line1.trim() || undefined,
@@ -146,6 +162,32 @@ export default function CompleteProfilePage() {
                             disabled={isLoading}
                         />
                     </div>
+
+                    {/* Phone - Only for OAuth users who don't have phone */}
+                    {needsPhone && (
+                        <div className="input-group">
+                            <label htmlFor="phone" className="input-label">
+                                Mobile Number *
+                            </label>
+                            <div className={styles.phoneInput}>
+                                <span className={styles.countryCode}>+91</span>
+                                <input
+                                    id="phone"
+                                    name="phone"
+                                    type="tel"
+                                    className="input"
+                                    placeholder="Enter 10-digit mobile number"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData(prev => ({
+                                        ...prev,
+                                        phone: e.target.value.replace(/\D/g, '').slice(0, 10)
+                                    }))}
+                                    maxLength={10}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Category Selection */}
                     <div className={styles.categorySection}>

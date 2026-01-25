@@ -6,14 +6,14 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware';
 import { validateBody, validateQuery } from '../middleware/validation.middleware';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
 
-const router = Router();
+const router: Router = Router();
 
 // Validation schemas
 const createSchemeSchema = z.object({
     name: z.string().min(3).max(255),
     slug: z.string().min(3).max(255).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
     description: z.string().optional(),
-    category: z.enum(['STUDENT', 'FARMER', 'LOAN']),
+    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH']),
     schemeType: z.enum(['GOVERNMENT', 'PRIVATE']),
     eligibility: z.string().optional(),
     benefits: z.string().optional(),
@@ -30,7 +30,7 @@ const createSchemeSchema = z.object({
 const updateSchemeSchema = createSchemeSchema.partial();
 
 const schemeFiltersSchema = z.object({
-    category: z.enum(['STUDENT', 'FARMER', 'LOAN']).optional(),
+    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH']).optional(),
     schemeType: z.enum(['GOVERNMENT', 'PRIVATE']).optional(),
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
     search: z.string().optional(),

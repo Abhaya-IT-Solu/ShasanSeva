@@ -37,6 +37,15 @@ export default function ProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [showUserMenu, setShowUserMenu] = useState(false);
 
+    // Password change state
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -53,6 +62,44 @@ export default function ProfilePage() {
 
         fetchProfile();
     }, []);
+
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordError('');
+        setPasswordSuccess('');
+
+        if (newPassword.length < 8) {
+            setPasswordError('New password must be at least 8 characters');
+            return;
+        }
+        if (!/\d/.test(newPassword)) {
+            setPasswordError('New password must include at least one number');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setPasswordError('New passwords do not match');
+            return;
+        }
+
+        setIsChangingPassword(true);
+
+        try {
+            const response = await api.changePassword(currentPassword, newPassword);
+            if (response.success) {
+                setPasswordSuccess('Password changed successfully!');
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+                setShowPasswordForm(false);
+            } else {
+                setPasswordError(response.error?.message || 'Failed to change password');
+            }
+        } catch {
+            setPasswordError('Something went wrong. Please try again.');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -161,6 +208,81 @@ export default function ProfilePage() {
                                 </span>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Password Change */}
+                    <div className={styles.section}>
+                        <h3>Security</h3>
+                        {passwordSuccess && (
+                            <div className={styles.successMessage}>{passwordSuccess}</div>
+                        )}
+                        {!showPasswordForm ? (
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowPasswordForm(true)}
+                            >
+                                🔐 Change Password
+                            </button>
+                        ) : (
+                            <form onSubmit={handlePasswordChange} className={styles.passwordForm}>
+                                {passwordError && (
+                                    <div className={styles.errorMessage}>{passwordError}</div>
+                                )}
+                                <div className="input-group">
+                                    <label className="input-label">Current Password</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">New Password</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Min 8 chars, must include a number"
+                                        required
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className={styles.passwordActions}>
+                                    <button
+                                        type="button"
+                                        className="btn btn-secondary"
+                                        onClick={() => {
+                                            setShowPasswordForm(false);
+                                            setPasswordError('');
+                                            setCurrentPassword('');
+                                            setNewPassword('');
+                                            setConfirmPassword('');
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={isChangingPassword}
+                                    >
+                                        {isChangingPassword ? 'Changing...' : 'Change Password'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             </main>

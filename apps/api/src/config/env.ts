@@ -13,10 +13,6 @@ const envSchema = z.object({
     UPSTASH_REDIS_REST_URL: z.string().min(1, 'UPSTASH_REDIS_REST_URL is required'),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1, 'UPSTASH_REDIS_REST_TOKEN is required'),
 
-    // MSG91 OTP
-    MSG91_AUTH_KEY: z.string().min(1, 'MSG91_AUTH_KEY is required'),
-    MSG91_TEMPLATE_ID: z.string().min(1, 'MSG91_TEMPLATE_ID is required'),
-
     // Google OAuth
     GOOGLE_CLIENT_ID: z.string().min(1, 'GOOGLE_CLIENT_ID is required'),
     GOOGLE_CLIENT_SECRET: z.string().min(1, 'GOOGLE_CLIENT_SECRET is required'),

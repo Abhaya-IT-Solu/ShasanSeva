@@ -61,7 +61,7 @@ export function validateQuery<T>(schema: ZodSchema<T>) {
 /**
  * Global error handler
  */
-export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
+export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction) {
     logger.error('Unhandled error', err);
 
     return res.status(500).json(

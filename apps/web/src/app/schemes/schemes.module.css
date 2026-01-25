@@ -178,6 +178,26 @@
     color: #d97706;
 }
 
+.categoryCertificate {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+}
+
+.categoryJobs {
+    background: rgba(236, 72, 153, 0.1);
+    color: #db2777;
+}
+
+.categoryOther {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+}
+
+.categoryHealth {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
 .type {
     font-size: var(--text-xs);
     color: var(--color-gray-500);

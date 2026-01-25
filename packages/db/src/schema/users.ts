@@ -25,6 +25,7 @@ export const users = pgTable('users', {
     name: varchar('name', { length: 255 }),
     category: varchar('category', { length: 50 }), // STUDENT, FARMER, LOAN_CANDIDATE, OTHER
     googleId: varchar('google_id', { length: 255 }),
+    passwordHash: varchar('password_hash', { length: 255 }),
 
     // Profile Details (optional)
     address: jsonb('address').$type<UserAddress>(),

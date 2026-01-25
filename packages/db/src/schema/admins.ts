@@ -7,6 +7,7 @@ export const admins = pgTable('admins', {
     name: varchar('name', { length: 255 }).notNull(),
     role: varchar('role', { length: 20 }).notNull(), // ADMIN, SUPER_ADMIN
     googleId: varchar('google_id', { length: 255 }),
+    passwordHash: varchar('password_hash', { length: 255 }),
 
     isActive: boolean('is_active').default(true),
     createdBy: uuid('created_by'), // References admins(id) - Super Admin who created

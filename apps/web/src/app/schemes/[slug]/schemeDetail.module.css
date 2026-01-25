@@ -126,6 +126,26 @@
     color: #d97706;
 }
 
+.categoryCERTIFICATE {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+}
+
+.categoryJOBS {
+    background: rgba(236, 72, 153, 0.1);
+    color: #db2777;
+}
+
+.categoryOTHER {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+}
+
+.categoryHEALTH {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
 .type {
     font-size: var(--text-sm);
     color: var(--color-gray-500);
