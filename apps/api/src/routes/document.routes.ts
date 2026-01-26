@@ -1,17 +1,17 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware';
-import { validateBody } from '../middleware/validation.middleware';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
+import { validateBody } from '../middleware/validation.middleware.js';
 import {
     getUploadUrl,
     getDownloadUrl,
     getExtensionFromContentType,
     ALLOWED_CONTENT_TYPES,
     MAX_FILE_SIZE,
-} from '../services/r2.service';
+} from '../services/r2.service.js';
 import { db, documents } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
-import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
+import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
 

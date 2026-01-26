@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError, ZodSchema } from 'zod';
-import { errorResponse, ErrorCodes, logger } from '../lib/utils';
+import { errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 /**
  * Validation middleware factory

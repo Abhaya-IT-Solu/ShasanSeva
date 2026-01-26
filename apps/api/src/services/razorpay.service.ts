@@ -1,7 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import { env } from '../config/env';
-import { logger } from '../lib/utils';
+import { env } from '../config/env.js';
+import { logger } from '../lib/utils.js';
 
 // Initialize Razorpay instance
 const razorpay = new Razorpay({

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import { verifyToken, validateSession } from '../services/auth.service';
-import { errorResponse, ErrorCodes } from '../lib/utils';
+import { verifyToken, validateSession } from '../services/auth.service.js';
+import { errorResponse, ErrorCodes } from '../lib/utils.js';
 import type { AuthSession } from '@shasansetu/types';
 
 // Extend Express Request type

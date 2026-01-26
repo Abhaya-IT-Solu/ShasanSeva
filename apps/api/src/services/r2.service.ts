@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '../config/env';
-import { logger } from '../lib/utils';
+import { env } from '../config/env.js';
+import { logger } from '../lib/utils.js';
 
 // R2 uses S3-compatible API
 const r2Client = new S3Client({

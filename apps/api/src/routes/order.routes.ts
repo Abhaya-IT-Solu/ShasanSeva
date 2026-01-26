@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware';
-import { validateBody } from '../middleware/validation.middleware';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
+import { validateBody } from '../middleware/validation.middleware.js';
 import { db, orders, documents, schemes, users } from '@shasansetu/db';
 import { eq, desc } from 'drizzle-orm';
-import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
+import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
 

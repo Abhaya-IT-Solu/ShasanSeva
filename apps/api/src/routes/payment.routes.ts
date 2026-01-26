@@ -1,16 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { validateBody } from '../middleware/validation.middleware';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { validateBody } from '../middleware/validation.middleware.js';
 import {
     createRazorpayOrder,
     verifyPaymentSignature,
     verifyWebhookSignature,
-} from '../services/razorpay.service';
+} from '../services/razorpay.service.js';
 import { db, orders, schemes } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
-import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
-import { env } from '../config/env';
+import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
+import { env } from '../config/env.js';
 
 const router: Router = Router();
 

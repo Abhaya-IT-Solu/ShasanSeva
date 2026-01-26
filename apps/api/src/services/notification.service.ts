@@ -1,6 +1,6 @@
 import { db, notifications } from '@shasansetu/db';
 import { and, eq, desc } from 'drizzle-orm';
-import { logger } from '../lib/utils';
+import { logger } from '../lib/utils.js';
 
 interface CreateNotificationParams {
     recipientId: string;

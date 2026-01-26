@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
-import { redis, REDIS_KEYS } from '../lib/redis';
-import { errorResponse, ErrorCodes } from '../lib/utils';
+import { redis, REDIS_KEYS } from '../lib/redis.js';
+import { errorResponse, ErrorCodes } from '../lib/utils.js';
 
 interface RateLimitOptions {
     windowMs: number;       // Time window in milliseconds

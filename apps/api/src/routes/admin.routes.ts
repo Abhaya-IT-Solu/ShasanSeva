@@ -2,9 +2,9 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db, admins, adminAnalytics, users, orders } from '@shasansetu/db';
 import { eq, count, and, gte } from 'drizzle-orm';
-import { authMiddleware, adminMiddleware, superAdminMiddleware } from '../middleware/auth.middleware';
-import { validateBody } from '../middleware/validation.middleware';
-import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
+import { authMiddleware, adminMiddleware, superAdminMiddleware } from '../middleware/auth.middleware.js';
+import { validateBody } from '../middleware/validation.middleware.js';
+import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 
 const router: Router = Router();

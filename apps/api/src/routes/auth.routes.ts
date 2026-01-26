@@ -6,10 +6,10 @@ import {
     updateUserPassword,
     createSession,
     invalidateSession
-} from '../services/auth.service';
-import { validateBody } from '../middleware/validation.middleware';
-import { authMiddleware } from '../middleware/auth.middleware';
-import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
+} from '../services/auth.service.js';
+import { validateBody } from '../middleware/validation.middleware.js';
+import { authMiddleware } from '../middleware/auth.middleware.js';
+import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
 

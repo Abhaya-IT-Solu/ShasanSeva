@@ -1,14 +1,14 @@
 import { Router } from 'express';
-import authRoutes from './auth.routes';
-import oauthRoutes from './oauth.routes';
-import userRoutes from './user.routes';
-import schemeRoutes from './scheme.routes';
-import adminRoutes from './admin.routes';
-import documentRoutes from './document.routes';
-import paymentRoutes from './payment.routes';
-import orderRoutes from './order.routes';
-import notificationRoutes from './notification.routes';
-import proofRoutes from './proof.routes';
+import authRoutes from './auth.routes.js';
+import oauthRoutes from './oauth.routes.js';
+import userRoutes from './user.routes.js';
+import schemeRoutes from './scheme.routes.js';
+import adminRoutes from './admin.routes.js';
+import documentRoutes from './document.routes.js';
+import paymentRoutes from './payment.routes.js';
+import orderRoutes from './order.routes.js';
+import notificationRoutes from './notification.routes.js';
+import proofRoutes from './proof.routes.js';
 
 const router: Router = Router();
 

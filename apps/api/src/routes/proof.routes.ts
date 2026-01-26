@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware';
-import { validateBody } from '../middleware/validation.middleware';
+import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
+import { validateBody } from '../middleware/validation.middleware.js';
 import { db, proofs, orders } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
 import {
@@ -9,9 +9,9 @@ import {
     getDownloadUrl,
     getExtensionFromContentType,
     ALLOWED_CONTENT_TYPES,
-} from '../services/r2.service';
-import { createNotification, NotificationTypes } from '../services/notification.service';
-import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils';
+} from '../services/r2.service.js';
+import { createNotification, NotificationTypes } from '../services/notification.service.js';
+import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
 

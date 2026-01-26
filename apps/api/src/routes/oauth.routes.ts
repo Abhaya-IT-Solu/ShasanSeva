@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { env } from '../config/env';
-import { createSession, findOrCreateUserByEmail } from '../services/auth.service';
-import { logger } from '../lib/utils';
+import { env } from '../config/env.js';
+import { createSession, findOrCreateUserByEmail } from '../services/auth.service.js';
+import { logger } from '../lib/utils.js';
 
 const router: Router = Router();
 

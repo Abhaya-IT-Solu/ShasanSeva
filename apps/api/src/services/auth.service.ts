@@ -1,10 +1,10 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { env } from '../config/env';
+import { env } from '../config/env.js';
 import { db, users, admins } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
-import { redis, REDIS_KEYS, REDIS_TTL } from '../lib/redis';
-import { logger } from '../lib/utils';
+import { redis, REDIS_KEYS, REDIS_TTL } from '../lib/redis.js';
+import { logger } from '../lib/utils.js';
 import type { AuthSession, UserProfile, AdminProfile } from '@shasansetu/types';
 
 interface JwtPayload {
