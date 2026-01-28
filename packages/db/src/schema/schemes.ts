@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, text, decimal, timestamp, jsonb } from 'drizzle-orm/pg-core';
-import { admins } from './admins';
+import { admins } from './admins.js';
 
 // Required Document definition
 export interface RequiredDocument {

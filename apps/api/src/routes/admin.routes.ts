@@ -192,7 +192,7 @@ router.get('/admins', superAdminMiddleware, async (_req, res) => {
     }
 });
 
-import { hashPassword } from '../services/auth.service';
+import { hashPassword } from '../services/auth.service.js';
 
 // Validation for creating admin
 const createAdminSchema = z.object({

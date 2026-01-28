@@ -1,7 +1,7 @@
 import { pgTable, uuid, varchar, text, decimal, timestamp } from 'drizzle-orm/pg-core';
-import { users } from './users';
-import { schemes } from './schemes';
-import { admins } from './admins';
+import { users } from './users.js';
+import { schemes } from './schemes.js';
+import { admins } from './admins.js';
 
 export const orders = pgTable('orders', {
     id: uuid('id').defaultRandom().primaryKey(),

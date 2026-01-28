@@ -1,5 +1,5 @@
 import { pgTable, uuid, integer, decimal, timestamp } from 'drizzle-orm/pg-core';
-import { admins } from './admins';
+import { admins } from './admins.js';
 
 export const adminAnalytics = pgTable('admin_analytics', {
     id: uuid('id').defaultRandom().primaryKey(),

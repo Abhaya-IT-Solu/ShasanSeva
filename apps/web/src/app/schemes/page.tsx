@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from './schemes.module.css';
 
@@ -15,40 +16,36 @@ interface Scheme {
     status: string;
 }
 
-const CATEGORIES = [
-    { value: '', label: 'All Categories' },
-    { value: 'STUDENT', label: 'Student' },
-    { value: 'FARMER', label: 'Farmer' },
-    { value: 'LOAN', label: 'Loan' },
-    { value: 'CERTIFICATE', label: 'Important Certificates' },
-    { value: 'JOBS', label: 'Jobs Application Assistance' },
-    { value: 'OTHER', label: 'Other Services' },
-    { value: 'HEALTH', label: 'Health Schemes' },
-];
+const CATEGORY_LABELS: Record<string, string> = {
+    STUDENT: 'Student Schemes',
+    FARMER: 'Farmer Schemes',
+    LOAN: 'Loan Schemes',
+    CERTIFICATE: 'Important Certificates',
+    EMPLOYMENT: 'Employment Schemes',
+    HEALTH: 'Health Schemes',
+    WOMEN: 'Women Welfare',
+    SENIOR: 'Senior Citizens',
+    OTHER: 'Other Services',
+};
 
-const SCHEME_TYPES = [
-    { value: '', label: 'All Types' },
-    { value: 'GOVERNMENT', label: 'Government' },
-    { value: 'PRIVATE', label: 'Private' },
-];
+function SchemesContent() {
+    const searchParams = useSearchParams();
+    const categoryFromUrl = searchParams.get('category') || '';
 
-export default function SchemesPage() {
     const [schemes, setSchemes] = useState<Scheme[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [category, setCategory] = useState('');
-    const [schemeType, setSchemeType] = useState('');
     const [search, setSearch] = useState('');
+    const [showSearch, setShowSearch] = useState(false);
 
-    const fetchSchemes = async () => {
+    const fetchSchemes = async (searchTerm?: string) => {
         setIsLoading(true);
         setError('');
 
         try {
             const params = new URLSearchParams();
-            if (category) params.append('category', category);
-            if (schemeType) params.append('schemeType', schemeType);
-            if (search) params.append('search', search);
+            if (categoryFromUrl) params.append('category', categoryFromUrl);
+            if (searchTerm) params.append('search', searchTerm);
 
             const response = await fetch(`/api/schemes?${params.toString()}`);
             const data = await response.json();
@@ -67,11 +64,11 @@ export default function SchemesPage() {
 
     useEffect(() => {
         fetchSchemes();
-    }, [category, schemeType]);
+    }, [categoryFromUrl]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        fetchSchemes();
+        fetchSchemes(search);
     };
 
     const getCategoryColor = (cat?: string) => {
@@ -80,74 +77,78 @@ export default function SchemesPage() {
             case 'FARMER': return styles.categoryFarmer;
             case 'LOAN': return styles.categoryLoan;
             case 'CERTIFICATE': return styles.categoryCertificate;
-            case 'JOBS': return styles.categoryJobs;
-            case 'OTHER': return styles.categoryOther;
+            case 'EMPLOYMENT': return styles.categoryEmployment;
             case 'HEALTH': return styles.categoryHealth;
+            case 'WOMEN': return styles.categoryWomen;
+            case 'SENIOR': return styles.categorySenior;
+            case 'OTHER': return styles.categoryOther;
             default: return '';
         }
     };
 
+    const pageTitle = categoryFromUrl
+        ? CATEGORY_LABELS[categoryFromUrl] || 'Schemes'
+        : 'All Schemes';
+
     return (
         <div className={styles.container}>
-            {/* Header */}
-            <header className={styles.header}>
-                <div className={styles.headerContent}>
-                    <Link href="/" className={styles.logo}>
-                        <span className={styles.logoIcon}>🏛️</span>
-                        ShasanSetu
-                    </Link>
-                    <nav className={styles.nav}>
-                        <Link href="/dashboard" className="btn btn-primary">
-                            Dashboard
-                        </Link>
-                    </nav>
-                </div>
-            </header>
-
             {/* Main Content */}
             <main className={styles.main}>
-                <h1 className={styles.title}>Browse Schemes</h1>
-                <p className={styles.subtitle}>
-                    Find government and private schemes you're eligible for
-                </p>
-
-                {/* Filters */}
-                <div className={styles.filters}>
-                    <div className={styles.filterRow}>
-                        <select
-                            className={styles.select}
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                        >
-                            {CATEGORIES.map(cat => (
-                                <option key={cat.value} value={cat.value}>{cat.label}</option>
-                            ))}
-                        </select>
-
-                        <select
-                            className={styles.select}
-                            value={schemeType}
-                            onChange={(e) => setSchemeType(e.target.value)}
-                        >
-                            {SCHEME_TYPES.map(type => (
-                                <option key={type.value} value={type.value}>{type.label}</option>
-                            ))}
-                        </select>
+                <div className={styles.titleRow}>
+                    <div>
+                        <h1 className={styles.title}>{pageTitle}</h1>
+                        <p className={styles.subtitle}>
+                            {categoryFromUrl
+                                ? `Showing all ${pageTitle.toLowerCase()}`
+                                : 'Find government and private schemes you\'re eligible for'}
+                        </p>
                     </div>
-
-                    <form onSubmit={handleSearch} className={styles.searchForm}>
-                        <input
-                            type="text"
-                            className="input"
-                            placeholder="Search schemes..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                        <button type="submit" className="btn btn-primary">
+                    <div className={styles.titleActions}>
+                        {categoryFromUrl && (
+                            <Link href="/schemes" className={styles.viewAllLink}>
+                                ← View All
+                            </Link>
+                        )}
+                        {/* Search Icon */}
+                        <button
+                            className={styles.searchToggle}
+                            onClick={() => setShowSearch(!showSearch)}
+                            aria-label="Toggle search"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
                             Search
                         </button>
-                    </form>
+                    </div>
                 </div>
+
+                {/* Expandable Search Bar */}
+                {showSearch && (
+                    <div className={styles.searchBarWrapper}>
+                        <form onSubmit={handleSearch} className={styles.searchForm}>
+                            <input
+                                type="text"
+                                className={styles.searchInput}
+                                placeholder="Search schemes by name..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                autoFocus
+                            />
+                            <button type="submit" className={styles.searchBtn}>
+                                Search
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.closeBtn}
+                                onClick={() => { setShowSearch(false); setSearch(''); fetchSchemes(); }}
+                            >
+                                ✕
+                            </button>
+                        </form>
+                    </div>
+                )}
 
                 {/* Error State */}
                 {error && (
@@ -167,7 +168,7 @@ export default function SchemesPage() {
                     <>
                         {schemes.length === 0 ? (
                             <div className={styles.emptyState}>
-                                <p>No schemes found matching your criteria</p>
+                                <p>No schemes found{search ? ` for "${search}"` : ''}</p>
                             </div>
                         ) : (
                             <div className={styles.grid}>
@@ -210,5 +211,13 @@ export default function SchemesPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+export default function SchemesPage() {
+    return (
+        <Suspense fallback={<div className={styles.loading}><div className="spinner" /><p>Loading...</p></div>}>
+            <SchemesContent />
+        </Suspense>
     );
 }

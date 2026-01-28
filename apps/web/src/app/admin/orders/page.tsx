@@ -3,218 +3,288 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { api } from '@/lib/api';
-import layoutStyles from '../dashboard/dashboard.module.css';
 import styles from './orders.module.css';
 
-interface AdminOrder {
+type OrderStatus = 'PAID' | 'IN_PROGRESS' | 'PROOF_UPLOADED' | 'COMPLETED' | 'CANCELLED';
+
+interface Order {
     id: string;
     userId: string;
     userName: string | null;
-    userPhone: string | null;
+    userPhone: string;
     schemeId: string;
     schemeName: string | null;
-    paymentAmount: number;
-    status: 'PENDING_PAYMENT' | 'PAID' | 'IN_PROGRESS' | 'PROOF_UPLOADED' | 'COMPLETED' | 'CANCELLED';
+    paymentAmount: string;
+    status: OrderStatus;
     createdAt: string;
     paymentTimestamp: string | null;
     assignedTo: string | null;
 }
 
-export default function AdminOrdersPage() {
-    const { user, logout } = useAuth();
-    const [orders, setOrders] = useState<AdminOrder[]>([]);
-    const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [isLoading, setIsLoading] = useState(true);
+const STATUS_TABS: { label: string; value: OrderStatus | 'ALL' }[] = [
+    { label: 'All', value: 'ALL' },
+    { label: 'Paid', value: 'PAID' },
+    { label: 'In Progress', value: 'IN_PROGRESS' },
+    { label: 'Proof Uploaded', value: 'PROOF_UPLOADED' },
+    { label: 'Completed', value: 'COMPLETED' },
+    { label: 'Cancelled', value: 'CANCELLED' },
+];
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+export default function OrdersPage() {
+    const { user, token, isLoading: authLoading } = useAuth();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
+    const [updating, setUpdating] = useState<string | null>(null);
+
     const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
     useEffect(() => {
-        fetchOrders();
-    }, [statusFilter]);
+        if (token) {
+            fetchOrders();
+        }
+    }, [token]);
 
     const fetchOrders = async () => {
-        setIsLoading(true);
         try {
-            const queryParams = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
-            const response = await api.request(`/api/orders/admin/queue${queryParams}`);
-            if (response.success) {
-                setOrders(response.data as AdminOrder[]);
+            const res = await fetch(`${API_URL}/api/orders/admin/queue`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (data.success) {
+                setOrders(data.data);
+            } else {
+                setError(data.error?.message || 'Failed to load orders');
             }
-        } catch (error) {
-            console.error('Failed to fetch orders:', error);
+        } catch {
+            setError('Failed to connect to server');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
-    const filteredOrders = orders.filter(order =>
-        (order.userName && order.userName.toLowerCase().includes(search.toLowerCase())) ||
-        (order.userPhone && order.userPhone.includes(search)) ||
-        (order.schemeName && order.schemeName.toLowerCase().includes(search.toLowerCase()))
-    );
-
-    const getStatusBadgeClass = (status: string) => {
-        const statusMap: Record<string, string> = {
-            'PENDING_PAYMENT': styles.statusPendingPayment,
-            'PAID': styles.statusPaid,
-            'IN_PROGRESS': styles.statusInProgress,
-            'PROOF_UPLOADED': styles.statusProofUploaded,
-            'COMPLETED': styles.statusCompleted,
-            'CANCELLED': styles.statusCancelled,
-        };
-        return statusMap[status] || styles.statusPendingPayment;
+    const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {
+        setUpdating(orderId);
+        try {
+            const res = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ status: newStatus }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchOrders();
+            } else {
+                setError(data.error?.message || 'Failed to update status');
+            }
+        } catch {
+            setError('Failed to connect to server');
+        } finally {
+            setUpdating(null);
+        }
     };
 
-    return (
-        <div className={layoutStyles.container}>
-            {/* Sidebar */}
-            <aside className={layoutStyles.sidebar}>
-                <div className={layoutStyles.sidebarHeader}>
-                    <Link href="/" className={layoutStyles.logo}>
-                        <span className={layoutStyles.logoIcon}>🏛️</span>
-                        ShasanSetu
-                    </Link>
-                    <span className={layoutStyles.badge}>
-                        {isSuperAdmin ? 'Super Admin' : 'Admin'}
-                    </span>
-                </div>
+    const handleComplete = async (orderId: string) => {
+        setUpdating(orderId);
+        try {
+            const res = await fetch(`${API_URL}/api/orders/${orderId}/complete`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchOrders();
+            } else {
+                setError(data.error?.message || 'Failed to complete order');
+            }
+        } catch {
+            setError('Failed to connect to server');
+        } finally {
+            setUpdating(null);
+        }
+    };
 
-                <nav className={layoutStyles.nav}>
-                    <Link href="/admin/dashboard" className={layoutStyles.navLink}>
-                        📊 Dashboard
-                    </Link>
-                    <Link href="/admin/orders" className={`${layoutStyles.navLink} ${layoutStyles.active}`}>
-                        📦 Orders
-                    </Link>
-                    <Link href="/admin/schemes" className={layoutStyles.navLink}>
-                        📋 Schemes
-                    </Link>
-                    <Link href="/admin/users" className={layoutStyles.navLink}>
-                        👥 Users
-                    </Link>
+    const filteredOrders = activeTab === 'ALL'
+        ? orders
+        : orders.filter((o) => o.status === activeTab);
+
+    const formatDate = (dateStr: string) => {
+        return new Date(dateStr).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+        });
+    };
+
+    const formatAmount = (amount: string) => {
+        return `₹${parseFloat(amount).toLocaleString('en-IN')}`;
+    };
+
+    const getStatusClass = (status: OrderStatus) => {
+        switch (status) {
+            case 'PAID': return styles.statusPaid;
+            case 'IN_PROGRESS': return styles.statusProgress;
+            case 'PROOF_UPLOADED': return styles.statusProof;
+            case 'COMPLETED': return styles.statusComplete;
+            case 'CANCELLED': return styles.statusCancelled;
+            default: return '';
+        }
+    };
+
+    // const getNextStatus = (current: OrderStatus): OrderStatus | null => {
+    //     switch (current) {
+    //         case 'PAID': return 'IN_PROGRESS';
+    //         case 'IN_PROGRESS': return 'PROOF_UPLOADED';
+    //         case 'PROOF_UPLOADED': return 'COMPLETED';
+    //         default: return null;
+    //     }
+    // };
+
+    if (authLoading) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.loading}>
+                    <div className="spinner" />
+                    <p>Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={styles.container}>
+            {/* Sidebar */}
+            <aside className={styles.sidebar}>
+                <div className={styles.sidebarHeader}>
+                    <div className={styles.logo}>
+                        <span className={styles.logoIcon}>🏛️</span>
+                        ShasanSetu
+                    </div>
+                    <span className={styles.badge}>{isSuperAdmin ? 'Super Admin' : 'Admin'}</span>
+                </div>
+                <nav className={styles.nav}>
+                    <Link href="/admin/dashboard" className={styles.navLink}>📊 Dashboard</Link>
+                    <Link href="/admin/schemes" className={styles.navLink}>📋 Schemes</Link>
+                    <Link href="/admin/orders" className={`${styles.navLink} ${styles.active}`}>📦 Orders</Link>
+                    <Link href="/admin/users" className={styles.navLink}>👥 Users</Link>
                     {isSuperAdmin && (
-                        <Link href="/admin/admins" className={layoutStyles.navLink}>
-                            🛡️ Manage Admins
-                        </Link>
+                        <Link href="/admin/admins" className={styles.navLink}>🔐 Admins</Link>
                     )}
                 </nav>
-
-                <div className={layoutStyles.sidebarFooter}>
-                    <span className={layoutStyles.userName}>{user?.name || user?.phone}</span>
-                    <button onClick={logout} className="btn btn-secondary btn-full">
-                        Logout
-                    </button>
-                </div>
             </aside>
 
             {/* Main Content */}
-            <main className={layoutStyles.main}>
-                <header className={layoutStyles.pageHeader}>
-                    <h1>Order Management</h1>
-                    <p style={{ color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>Track and process scheme application orders</p>
-                </header>
+            <main className={styles.main}>
+                <div className={styles.pageHeader}>
+                    <div>
+                        <h1>Orders</h1>
+                        <p className={styles.subtitle}>Manage service orders and applications</p>
+                    </div>
+                </div>
 
                 {/* Status Tabs */}
-                <div className={styles.tabsContainer}>
-                    {['all', 'PAID', 'IN_PROGRESS', 'PROOF_UPLOADED', 'COMPLETED', 'CANCELLED'].map((status) => (
+                <div className={styles.tabs}>
+                    {STATUS_TABS.map((tab) => (
                         <button
-                            key={status}
-                            onClick={() => setStatusFilter(status)}
-                            className={`${styles.tab} ${statusFilter === status
-                                ? styles.tabActive
-                                : styles.tabInactive
-                                }`}
+                            key={tab.value}
+                            className={`${styles.tab} ${activeTab === tab.value ? styles.tabActive : ''}`}
+                            onClick={() => setActiveTab(tab.value)}
                         >
-                            {status === 'all' ? 'All Orders' : status.replace('_', ' ')}
+                            {tab.label}
+                            {tab.value !== 'ALL' && (
+                                <span className={styles.tabCount}>
+                                    {orders.filter((o) => o.status === tab.value).length}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
 
-                {/* Search */}
-                <div style={{ marginBottom: 'var(--space-4)' }}>
-                    <input
-                        type="text"
-                        placeholder="Search by user, phone or scheme..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="input"
-                        style={{ maxWidth: '400px' }}
-                    />
-                </div>
+                {error && <div className={styles.error}>{error}</div>}
 
-                <div className={styles.tableContainer}>
+                {loading ? (
+                    <div className={styles.loading}><div className="spinner" /></div>
+                ) : (
                     <div className={styles.tableWrapper}>
                         <table className={styles.table}>
-                            <thead className={styles.tableHead}>
+                            <thead>
                                 <tr>
-                                    <th className={styles.tableHeadCell}>Order ID / Date</th>
-                                    <th className={styles.tableHeadCell}>User Details</th>
-                                    <th className={styles.tableHeadCell}>Scheme</th>
-                                    <th className={styles.tableHeadCell}>Internal Status</th>
-                                    <th className={styles.tableHeadCell}>Amount</th>
-                                    <th className={styles.tableHeadCell} style={{ textAlign: 'right' }}>Action</th>
+                                    <th>Order ID</th>
+                                    <th>User</th>
+                                    <th>Scheme</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={6} className={styles.emptyState}>
-                                            <div className={styles.spinner} />
-                                            <div style={{ color: 'var(--color-gray-500)', fontSize: 'var(--text-sm)' }}>Loading orders...</div>
+                                {filteredOrders.map((order) => (
+                                    <tr key={order.id}>
+                                        <td className={styles.orderId}>
+                                            {order.id.slice(0, 8)}...
                                         </td>
-                                    </tr>
-                                ) : filteredOrders.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className={styles.emptyState}>
-                                            No orders found matching your criteria.
+                                        <td>
+                                            <div className={styles.userCell}>
+                                                <span className={styles.userName}>{order.userName || 'Unknown'}</span>
+                                                <span className={styles.userPhone}>{order.userPhone}</span>
+                                            </div>
                                         </td>
-                                    </tr>
-                                ) : (
-                                    filteredOrders.map((order, index) => (
-                                        <tr key={order.id}>
-                                            <td className={styles.tableCell}>
-                                                <div className={styles.orderId}>
-                                                    #{index + 1} · {order.id.slice(0, 8)}
-                                                </div>
-                                                <div className={styles.orderDate}>
-                                                    {new Date(order.createdAt).toLocaleDateString()}
-                                                </div>
-                                            </td>
-                                            <td className={styles.tableCell}>
-                                                <div className={styles.userName}>{order.userName || 'Unknown'}</div>
-                                                <div className={styles.userPhone}>{order.userPhone}</div>
-                                            </td>
-                                            <td className={styles.tableCell}>
-                                                <div className={styles.schemeName} title={order.schemeName || ''}>
-                                                    {order.schemeName || 'Unknown Scheme'}
-                                                </div>
-                                            </td>
-                                            <td className={styles.tableCell}>
-                                                <span className={`${styles.statusBadge} ${getStatusBadgeClass(order.status)}`}>
-                                                    {order.status.replace('_', ' ')}
-                                                </span>
-                                            </td>
-                                            <td className={styles.tableCell}>
-                                                <span className={styles.amount}>
-                                                    ₹{order.paymentAmount}
-                                                </span>
-                                            </td>
-                                            <td className={styles.tableCell} style={{ textAlign: 'right' }}>
-                                                <Link
-                                                    href={`/admin/orders/${order.id}`}
-                                                    className={styles.viewLink}
+                                        <td>{order.schemeName || '-'}</td>
+                                        <td className={styles.amount}>{formatAmount(order.paymentAmount)}</td>
+                                        <td>
+                                            <span className={`${styles.statusBadge} ${getStatusClass(order.status)}`}>
+                                                {order.status.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                        <td>{formatDate(order.createdAt)}</td>
+                                        <td className={styles.actions}>
+                                            {order.status === 'PAID' && (
+                                                <button
+                                                    className={styles.pickupBtn}
+                                                    onClick={() => handleStatusUpdate(order.id, 'IN_PROGRESS')}
+                                                    disabled={updating === order.id}
                                                 >
-                                                    View Details
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
+                                                    {updating === order.id ? '...' : 'Pick Up'}
+                                                </button>
+                                            )}
+                                            {order.status === 'PROOF_UPLOADED' && (
+                                                <button
+                                                    className={styles.completeBtn}
+                                                    onClick={() => handleComplete(order.id)}
+                                                    disabled={updating === order.id}
+                                                >
+                                                    {updating === order.id ? '...' : 'Complete'}
+                                                </button>
+                                            )}
+                                            {order.status === 'IN_PROGRESS' && order.assignedTo === user?.userId && (
+                                                <button
+                                                    className={styles.progressBtn}
+                                                    onClick={() => handleStatusUpdate(order.id, 'PROOF_UPLOADED')}
+                                                    disabled={updating === order.id}
+                                                >
+                                                    {updating === order.id ? '...' : 'Upload Proof'}
+                                                </button>
+                                            )}
+                                            {(order.status === 'COMPLETED' || order.status === 'CANCELLED') && (
+                                                <span className={styles.noAction}>-</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
+                        {filteredOrders.length === 0 && (
+                            <div className={styles.empty}>No orders found</div>
+                        )}
                     </div>
-                </div>
+                )}
             </main>
         </div>
     );

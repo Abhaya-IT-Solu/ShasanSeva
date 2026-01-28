@@ -4,297 +4,283 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import layoutStyles from '../dashboard/dashboard.module.css';
+import { useRouter } from 'next/navigation';
 import styles from './admins.module.css';
 
 interface Admin {
     id: string;
+    name: string;
     phone: string;
     email: string | null;
-    name: string;
     role: 'ADMIN' | 'SUPER_ADMIN';
     isActive: boolean;
     createdAt: string;
 }
 
-interface AdminAnalytics {
-    totalOrdersHandled: number;
-    ordersCompleted: number;
-    ordersCancelled: number;
-    ordersInProgress: number;
-    documentsVerified: number;
-    documentsRejected: number;
-    avgCompletionTimeHours: number | null;
-    lastActiveAt: string | null;
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-export default function AdminsPage() {
-    const { user, logout } = useAuth();
+export default function AdminManagementPage() {
+    const { user, isLoading: authLoading } = useAuth();
+    const router = useRouter();
     const [admins, setAdmins] = useState<Admin[]>([]);
-    const [search, setSearch] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-    const [expandedAdmin, setExpandedAdmin] = useState<string | null>(null);
-    const [analytics, setAnalytics] = useState<Record<string, AdminAnalytics>>({});
-    const [loadingAnalytics, setLoadingAnalytics] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [toggling, setToggling] = useState<string | null>(null);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        password: '',
+        role: 'ADMIN' as 'ADMIN' | 'SUPER_ADMIN',
+    });
+
     const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
     useEffect(() => {
-        fetchAdmins();
-    }, []);
+        if (!authLoading && !isSuperAdmin) {
+            router.push('/admin/dashboard');
+        }
+    }, [authLoading, isSuperAdmin, router]);
+
+    useEffect(() => {
+        if (api.getToken() && isSuperAdmin) {
+            fetchAdmins();
+        }
+    }, [isSuperAdmin]);
 
     const fetchAdmins = async () => {
         try {
-            const response = await api.request('/api/admin/admins');
-            if (response.success) {
-                setAdmins(response.data as Admin[]);
-            }
-        } catch (error) {
-            console.error('Failed to fetch admins:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const toggleStatus = async (id: string) => {
-        try {
-            const response = await api.request(`/api/admin/admins/${id}/toggle-active`, {
-                method: 'PATCH',
+            const res = await fetch(`${API_URL}/api/admin/admins`, {
+                headers: { Authorization: `Bearer ${api.getToken()}` },
             });
-
-            if (response.success) {
-                setAdmins(admins.map(admin =>
-                    admin.id === id ? { ...admin, isActive: !admin.isActive } : admin
-                ));
+            const data = await res.json();
+            if (data.success) {
+                setAdmins(data.data);
+            } else {
+                setError(data.error?.message || 'Failed to load admins');
             }
-        } catch (error) {
-            console.error('Failed to toggle status:', error);
-            alert('Failed to update status');
+        } catch {
+            setError('Failed to connect to server');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const toggleExpand = async (id: string) => {
-        if (expandedAdmin === id) {
-            setExpandedAdmin(null);
-            return;
-        }
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setCreating(true);
+        setError('');
 
-        setExpandedAdmin(id);
-
-        if (!analytics[id]) {
-            setLoadingAnalytics(id);
-            try {
-                const response = await api.request(`/api/admin/admins/${id}/analytics`);
-                if (response.success) {
-                    setAnalytics(prev => ({
-                        ...prev,
-                        [id]: response.data as AdminAnalytics
-                    }));
-                }
-            } catch (error) {
-                console.error('Failed to fetch analytics:', error);
-            } finally {
-                setLoadingAnalytics(null);
+        try {
+            const res = await fetch(`${API_URL}/api/admin/admins`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${api.getToken()}`,
+                },
+                body: JSON.stringify(formData),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setShowCreateModal(false);
+                setFormData({ name: '', phone: '', email: '', password: '', role: 'ADMIN' });
+                fetchAdmins();
+            } else {
+                setError(data.error?.message || 'Failed to create admin');
             }
+        } catch {
+            setError('Failed to connect to server');
+        } finally {
+            setCreating(false);
         }
     };
 
-    const filteredAdmins = admins.filter(admin =>
-        admin.name.toLowerCase().includes(search.toLowerCase()) ||
-        admin.phone.includes(search) ||
-        (admin.email && admin.email.toLowerCase().includes(search.toLowerCase()))
-    );
+    const handleToggleActive = async (adminId: string) => {
+        setToggling(adminId);
+        try {
+            const res = await fetch(`${API_URL}/api/admin/admins/${adminId}/toggle-active`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${api.getToken()}` },
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchAdmins();
+            } else {
+                setError(data.error?.message || 'Failed to toggle status');
+            }
+        } catch {
+            setError('Failed to connect to server');
+        } finally {
+            setToggling(null);
+        }
+    };
+
+    if (authLoading || !isSuperAdmin) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.loading}>
+                    <div className="spinner" />
+                    <p>Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className={layoutStyles.container}>
+        <div className={styles.container}>
             {/* Sidebar */}
-            <aside className={layoutStyles.sidebar}>
-                <div className={layoutStyles.sidebarHeader}>
-                    <Link href="/" className={layoutStyles.logo}>
-                        <span className={layoutStyles.logoIcon}>🏛️</span>
+            <aside className={styles.sidebar}>
+                <div className={styles.sidebarHeader}>
+                    <div className={styles.logo}>
+                        <span className={styles.logoIcon}>🏛️</span>
                         ShasanSetu
-                    </Link>
-                    <span className={layoutStyles.badge}>
-                        {isSuperAdmin ? 'Super Admin' : 'Admin'}
-                    </span>
+                    </div>
+                    <span className={styles.badge}>Super Admin</span>
                 </div>
-
-                <nav className={layoutStyles.nav}>
-                    <Link href="/admin/dashboard" className={layoutStyles.navLink}>
-                        📊 Dashboard
-                    </Link>
-                    <Link href="/admin/orders" className={layoutStyles.navLink}>
-                        📦 Orders
-                    </Link>
-                    <Link href="/admin/schemes" className={layoutStyles.navLink}>
-                        📋 Schemes
-                    </Link>
-                    <Link href="/admin/users" className={layoutStyles.navLink}>
-                        👥 Users
-                    </Link>
-                    {isSuperAdmin && (
-                        <Link href="/admin/admins" className={`${layoutStyles.navLink} ${layoutStyles.active}`}>
-                            🛡️ Manage Admins
-                        </Link>
-                    )}
+                <nav className={styles.nav}>
+                    <Link href="/admin/dashboard" className={styles.navLink}>📊 Dashboard</Link>
+                    <Link href="/admin/schemes" className={styles.navLink}>📋 Schemes</Link>
+                    <Link href="/admin/orders" className={styles.navLink}>📦 Orders</Link>
+                    <Link href="/admin/users" className={styles.navLink}>👥 Users</Link>
+                    <Link href="/admin/admins" className={`${styles.navLink} ${styles.active}`}>🔐 Admins</Link>
                 </nav>
-
-                <div className={layoutStyles.sidebarFooter}>
-                    <span className={layoutStyles.userName}>{user?.name || user?.phone}</span>
-                    <button onClick={logout} className="btn btn-secondary btn-full">
-                        Logout
-                    </button>
-                </div>
             </aside>
 
             {/* Main Content */}
-            <main className={layoutStyles.main}>
-                <header className={layoutStyles.pageHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <main className={styles.main}>
+                <div className={styles.pageHeader}>
                     <div>
-                        <h1>Manage Admins</h1>
-                        <p style={{ color: 'var(--color-gray-500)', marginTop: '0.25rem' }}>Manage administrative access and monitor performance</p>
+                        <h1>Admin Management</h1>
+                        <p className={styles.subtitle}>Manage admin accounts and permissions</p>
                     </div>
-                    <Link href="/admin/admins/new" className="btn btn-primary">
-                        + Add New Admin
-                    </Link>
-                </header>
-
-                {/* Search */}
-                <div style={{ marginBottom: 'var(--space-4)' }}>
-                    <input
-                        type="text"
-                        placeholder="Search by name, phone or email..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="input"
-                        style={{ maxWidth: '400px' }}
-                    />
+                    <button className={styles.createBtn} onClick={() => setShowCreateModal(true)}>
+                        + Add Admin
+                    </button>
                 </div>
 
-                {isLoading ? (
-                    <div className={styles.spinnerWrapper}>
-                        <div className={styles.spinner} />
-                    </div>
-                ) : (
-                    <div className={styles.tableContainer}>
-                        <div className={styles.tableWrapper}>
-                            <table className={styles.table}>
-                                <thead className={styles.tableHead}>
-                                    <tr>
-                                        <th className={styles.tableHeadCell}>Name/Contact</th>
-                                        <th className={styles.tableHeadCell}>Role</th>
-                                        <th className={styles.tableHeadCell}>Status</th>
-                                        <th className={styles.tableHeadCell}>Created</th>
-                                        <th className={styles.tableHeadCell} style={{ textAlign: 'right' }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className={styles.tableBody}>
-                                    {filteredAdmins.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={5} className={styles.emptyState}>
-                                                No admins found matching your search.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredAdmins.map((admin) => (
-                                            <>
-                                                <tr key={admin.id}>
-                                                    <td className={styles.tableCell}>
-                                                        <div className={styles.userInfo}>
-                                                            <button
-                                                                onClick={() => toggleExpand(admin.id)}
-                                                                className={styles.expandButton}
-                                                            >
-                                                                {expandedAdmin === admin.id ? '▼' : '▶'}
-                                                            </button>
-                                                            <div className={styles.userDetails}>
-                                                                <div className={styles.userName}>{admin.name}</div>
-                                                                <div className={styles.userEmail}>{admin.email}</div>
-                                                                <div className={styles.userPhone}>{admin.phone}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className={styles.tableCell}>
-                                                        <span className={`${styles.badge} ${admin.role === 'SUPER_ADMIN'
-                                                            ? styles.badgeSuperAdmin
-                                                            : styles.badgeAdmin
-                                                            }`}>
-                                                            {admin.role.replace('_', ' ')}
-                                                        </span>
-                                                    </td>
-                                                    <td className={styles.tableCell}>
-                                                        <span className={`${styles.badge} ${admin.isActive
-                                                            ? styles.badgeActive
-                                                            : styles.badgeInactive
-                                                            }`}>
-                                                            {admin.isActive ? 'Active' : 'Inactive'}
-                                                        </span>
-                                                    </td>
-                                                    <td className={styles.tableCell} style={{ color: 'var(--color-gray-500)', fontSize: 'var(--text-sm)' }}>
-                                                        {new Date(admin.createdAt).toLocaleDateString()}
-                                                    </td>
-                                                    <td className={styles.tableCell} style={{ textAlign: 'right' }}>
-                                                        {admin.role !== 'SUPER_ADMIN' && (
-                                                            <button
-                                                                onClick={() => toggleStatus(admin.id)}
-                                                                className={`${styles.actionButton} ${admin.isActive
-                                                                    ? styles.btnDeactivate
-                                                                    : styles.btnActivate
-                                                                    }`}
-                                                            >
-                                                                {admin.isActive ? 'Deactivate' : 'Activate'}
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                </tr>
+                {error && <div className={styles.error}>{error}</div>}
 
-                                                {/* Expanded Analytics Row */}
-                                                {expandedAdmin === admin.id && (
-                                                    <tr className={styles.analyticsRow}>
-                                                        <td colSpan={5}>
-                                                            {loadingAnalytics === admin.id ? (
-                                                                <div className={styles.spinnerWrapper} style={{ minHeight: '100px' }}>
-                                                                    <div className={styles.spinner} />
-                                                                </div>
-                                                            ) : analytics[admin.id] ? (
-                                                                <div className={styles.analyticsContainer}>
-                                                                    <div className={styles.analyticsCard}>
-                                                                        <div className={styles.analyticsLabel}>Total Orders</div>
-                                                                        <div className={styles.analyticsValue}>{analytics[admin.id].totalOrdersHandled}</div>
-                                                                    </div>
-                                                                    <div className={styles.analyticsCard}>
-                                                                        <div className={styles.analyticsLabel}>Documents Verified</div>
-                                                                        <div className={styles.analyticsValue}>{analytics[admin.id].documentsVerified}</div>
-                                                                    </div>
-                                                                    <div className={styles.analyticsCard}>
-                                                                        <div className={styles.analyticsLabel}>Last Active</div>
-                                                                        <div className={styles.analyticsValue}>
-                                                                            {analytics[admin.id].lastActiveAt
-                                                                                ? new Date(analytics[admin.id].lastActiveAt!).toLocaleString()
-                                                                                : 'Never'}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className={styles.analyticsCard}>
-                                                                        <div className={styles.analyticsLabel}>Orders In Progress</div>
-                                                                        <div className={`${styles.analyticsValue} ${styles.highlight}`}>{analytics[admin.id].ordersInProgress}</div>
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className={styles.emptyState}>
-                                                                    No data available
-                                                                </div>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                {loading ? (
+                    <div className={styles.loading}><div className="spinner" /></div>
+                ) : (
+                    <div className={styles.tableWrapper}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {admins.map((admin) => (
+                                    <tr key={admin.id}>
+                                        <td className={styles.nameCell}>{admin.name}</td>
+                                        <td>{admin.phone}</td>
+                                        <td>{admin.email || '-'}</td>
+                                        <td>
+                                            <span className={`${styles.roleBadge} ${admin.role === 'SUPER_ADMIN' ? styles.superAdmin : ''}`}>
+                                                {admin.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`${styles.statusBadge} ${admin.isActive ? styles.active : styles.inactive}`}>
+                                                {admin.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {admin.id !== user?.userId && (
+                                                <button
+                                                    className={`${styles.toggleBtn} ${admin.isActive ? styles.deactivate : styles.activate}`}
+                                                    onClick={() => handleToggleActive(admin.id)}
+                                                    disabled={toggling === admin.id}
+                                                >
+                                                    {toggling === admin.id ? '...' : admin.isActive ? 'Deactivate' : 'Activate'}
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {admins.length === 0 && (
+                            <div className={styles.empty}>No admins found</div>
+                        )}
                     </div>
                 )}
             </main>
+
+            {/* Create Modal */}
+            {showCreateModal && (
+                <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
+                    <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                        <h2>Add New Admin</h2>
+                        <form onSubmit={handleCreate}>
+                            <div className={styles.formGroup}>
+                                <label>Name *</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Phone *</label>
+                                <input
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Email</label>
+                                <input
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Password *</label>
+                                <input
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    required
+                                    minLength={8}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Role *</label>
+                                <select
+                                    value={formData.role}
+                                    onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'SUPER_ADMIN' })}
+                                >
+                                    <option value="ADMIN">Admin</option>
+                                    <option value="SUPER_ADMIN">Super Admin</option>
+                                </select>
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button type="button" className={styles.cancelBtn} onClick={() => setShowCreateModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className={styles.submitBtn} disabled={creating}>
+                                    {creating ? 'Creating...' : 'Create Admin'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
