@@ -12,7 +12,7 @@
         }
     },
     "scripts": {
-        "build": "pnpm exec tsc",
+        "build": "node ../../node_modules/typescript/bin/tsc",
         "clean": "rimraf dist"
     },
     "devDependencies": {
