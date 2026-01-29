@@ -154,13 +154,14 @@ importers:
         version: 5.9.3
 
   packages/types:
+    dependencies:
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
     devDependencies:
       rimraf:
         specifier: ^5.0.0
         version: 5.0.10
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
 
 packages:
 
