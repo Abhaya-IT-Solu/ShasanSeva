@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import styles from './dashboard.module.css';
@@ -13,62 +13,12 @@ interface Order {
 }
 
 export default function UserDashboard() {
-    const { user, logout } = useAuth();
-    const [showUserMenu, setShowUserMenu] = useState(false);
+    const { user } = useAuth();
     const [orders, _setOrders] = useState<Order[]>([]);
     const [_isLoading, _setIsLoading] = useState(true);
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClick = (e: MouseEvent) => {
-            if (!(e.target as Element).closest(`.${styles.userMenuWrapper}`)) {
-                setShowUserMenu(false);
-            }
-        };
-        document.addEventListener('click', handleClick);
-        return () => document.removeEventListener('click', handleClick);
-    }, []);
-
     return (
         <div className={styles.page}>
-            {/* Header with Avatar */}
-            <header className={styles.header}>
-                <Link href="/" className={styles.logo}>
-                    <span className={styles.logoIcon}>🏛️</span>
-                    ShasanSetu
-                </Link>
-
-                <div className={styles.userMenuWrapper}>
-                    <button
-                        className={styles.userMenuBtn}
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                    >
-                        <div className={styles.avatar}>
-                            {user?.name?.charAt(0).toUpperCase() || '👤'}
-                        </div>
-                        <span className={styles.userName}>{user?.name || user?.phone}</span>
-                        <span className={styles.chevron}>▼</span>
-                    </button>
-
-                    {showUserMenu && (
-                        <div className={styles.dropdown}>
-                            <Link href="/profile" className={styles.dropdownItem}>
-                                👤 View Profile
-                            </Link>
-                            <Link href="/complete-profile" className={styles.dropdownItem}>
-                                ✏️ Edit Profile
-                            </Link>
-                            <div className={styles.dropdownDivider} />
-                            <button
-                                onClick={logout}
-                                className={styles.dropdownItem}
-                            >
-                                🚪 Logout
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </header>
 
             {/* Main Content */}
             <main className={styles.main}>

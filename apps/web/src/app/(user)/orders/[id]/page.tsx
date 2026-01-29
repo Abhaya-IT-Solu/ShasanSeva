@@ -86,15 +86,6 @@ export default function OrderDetailPage() {
 
     return (
         <div className={styles.container}>
-            {/* Header */}
-            <header className={styles.header}>
-                <Link href="/orders" className={styles.backLink}>
-                    ← Back to My Applications
-                </Link>
-                <h1>{order.schemeName}</h1>
-                <p className={styles.orderId}>Order ID: {order.id}</p>
-            </header>
-
             {/* Timeline */}
             <section className={styles.timeline}>
                 <h2>Application Status</h2>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import styles from './profile.module.css';
 
@@ -24,6 +23,7 @@ interface UserProfile {
     createdAt: string;
 }
 
+
 const CATEGORY_LABELS: Record<string, string> = {
     STUDENT: '🎓 Student',
     FARMER: '🌾 Farmer',
@@ -32,10 +32,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function ProfilePage() {
-    const { user, logout } = useAuth();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [showUserMenu, setShowUserMenu] = useState(false);
 
     // Password change state
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -111,37 +109,6 @@ export default function ProfilePage() {
 
     return (
         <div className={styles.page}>
-            {/* Header */}
-            <header className={styles.header}>
-                <Link href="/" className={styles.logo}>
-                    <span className={styles.logoIcon}>🏛️</span>
-                    ShasanSetu
-                </Link>
-
-                <div className={styles.userMenuWrapper}>
-                    <button
-                        className={styles.userMenuBtn}
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                    >
-                        <div className={styles.avatar}>
-                            {user?.name?.charAt(0).toUpperCase() || '👤'}
-                        </div>
-                        <span className={styles.chevron}>▼</span>
-                    </button>
-
-                    {showUserMenu && (
-                        <div className={styles.dropdown}>
-                            <Link href="/dashboard" className={styles.dropdownItem}>
-                                📊 Dashboard
-                            </Link>
-                            <button onClick={logout} className={styles.dropdownItem}>
-                                🚪 Logout
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </header>
-
             {/* Main */}
             <main className={styles.main}>
                 <div className={styles.pageHeader}>

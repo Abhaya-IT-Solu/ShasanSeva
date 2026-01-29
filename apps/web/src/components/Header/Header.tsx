@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import styles from './Header.module.css';
@@ -45,8 +46,8 @@ export function Header() {
             <nav className={styles.navbar}>
                 <div className={styles.container}>
                     <div className={styles.navContent}>
-                        <Link href="/" className={styles.logo}>
-                            ShasanSetu
+                        <Link href="/" className= {`${styles.logo} h-sm w-sm`}>
+                            <Image src="/logo/logo_icon.png" alt="Logo" width={100} height={50} />
                         </Link>
                         <div className={styles.navActions}>
                             {authLoading ? (

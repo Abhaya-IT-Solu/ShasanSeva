@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import styles from './orders.module.css';
 
@@ -26,10 +25,8 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function OrdersPage() {
-    const { user, logout } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [showUserMenu, setShowUserMenu] = useState(false);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -50,38 +47,6 @@ export default function OrdersPage() {
 
     return (
         <div className={styles.page}>
-            {/* Header */}
-            <header className={styles.header}>
-                <Link href="/" className={styles.logo}>
-                    <span className={styles.logoIcon}>🏛️</span>
-                    ShasanSetu
-                </Link>
-
-                <div className={styles.userMenuWrapper}>
-                    <button
-                        className={styles.userMenuBtn}
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                    >
-                        <div className={styles.avatar}>
-                            {user?.name?.charAt(0).toUpperCase() || '👤'}
-                        </div>
-                    </button>
-
-                    {showUserMenu && (
-                        <div className={styles.dropdown}>
-                            <Link href="/dashboard" className={styles.dropdownItem}>
-                                📊 Dashboard
-                            </Link>
-                            <Link href="/profile" className={styles.dropdownItem}>
-                                👤 Profile
-                            </Link>
-                            <button onClick={logout} className={styles.dropdownItem}>
-                                🚪 Logout
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </header>
 
             {/* Main */}
             <main className={styles.main}>

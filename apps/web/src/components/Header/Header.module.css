@@ -52,13 +52,6 @@
     justify-content: space-between;
 }
 
-.logo {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--color-primary);
-    text-decoration: none;
-}
-
 .navActions {
     display: flex;
     align-items: center;
