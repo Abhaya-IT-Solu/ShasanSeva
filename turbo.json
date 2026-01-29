@@ -10,6 +10,7 @@
                 "^build"
             ],
             "outputs": [
+                "apps/web/.next/**",
                 ".next/**",
                 "!.next/cache/**",
                 "dist/**"
