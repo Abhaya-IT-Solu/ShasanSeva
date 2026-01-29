@@ -5,6 +5,7 @@
     ],
     "tasks": {
         "build": {
+            "env": ["NODE_ENV"],
             "dependsOn": [
                 "^build"
             ],
