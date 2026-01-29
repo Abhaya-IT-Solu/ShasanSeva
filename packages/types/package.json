@@ -12,7 +12,7 @@
         }
     },
     "scripts": {
-        "build": "npx tsc",
+        "build": "pnpm exec tsc",
         "clean": "rimraf dist"
     },
     "devDependencies": {
