@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import styles from './login.module.css';
@@ -127,8 +128,7 @@ export default function LoginPage() {
             <div className={styles.container}>
                 {/* Logo */}
                 <Link href="/" className={styles.logo}>
-                    <span className={styles.logoIcon}>🏛️</span>
-                    ShasanSetu
+                     <Image src="/logo/logo_text.png" alt="Logo" width={200} height={50} />
                 </Link>
 
                 {/* Login Card */}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import styles from './orders.module.css';
 
@@ -163,8 +164,7 @@ export default function OrdersPage() {
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarHeader}>
                     <div className={styles.logo}>
-                        <span className={styles.logoIcon}>🏛️</span>
-                        ShasanSetu
+                        <Image src="/logo/logo_icon.png" alt="Logo" width={200} height={100} />
                     </div>
                     <span className={styles.badge}>{isSuperAdmin ? 'Super Admin' : 'Admin'}</span>
                 </div>

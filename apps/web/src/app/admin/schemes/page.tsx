@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 import styles from '../dashboard/dashboard.module.css';
@@ -68,8 +69,7 @@ export default function AdminSchemesPage() {
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarHeader}>
                     <Link href="/" className={styles.logo}>
-                        <span className={styles.logoIcon}>🏛️</span>
-                        ShasanSetu
+                        <Image src="/logo/logo_icon.png" alt="Logo" width={200} height={100} />
                     </Link>
                     <span className={styles.badge}>
                         {isSuperAdmin ? 'Super Admin' : 'Admin'}

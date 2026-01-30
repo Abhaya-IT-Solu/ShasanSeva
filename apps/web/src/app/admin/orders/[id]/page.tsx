@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
@@ -138,8 +139,7 @@ export default function OrderDetailPage() {
             <aside className={layoutStyles.sidebar}>
                 <div className={layoutStyles.sidebarHeader}>
                     <Link href="/" className={layoutStyles.logo}>
-                        <span className={layoutStyles.logoIcon}>🏛️</span>
-                        ShasanSetu
+                        <Image src="/logo/logo_icon.png" alt="Logo" width={200} height={100} />
                     </Link>
                     <span className={layoutStyles.badge}>
                         {isSuperAdmin ? 'Super Admin' : 'Admin'}

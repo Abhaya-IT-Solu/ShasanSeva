@@ -3,12 +3,18 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import styles from './Header.module.css';
 
 export function Header() {
+    const pathname = usePathname();
     const { isAuthenticated, user, isLoading: authLoading, logout } = useAuth();
     const [showUserMenu, setShowUserMenu] = useState(false);
+
+    if (pathname?.startsWith('/admin')) {
+        return null;
+    }
 
     useEffect(() => {
         const handleClick = () => setShowUserMenu(false);
@@ -46,7 +52,7 @@ export function Header() {
             <nav className={styles.navbar}>
                 <div className={styles.container}>
                     <div className={styles.navContent}>
-                        <Link href="/" className= {`${styles.logo} h-sm w-sm`}>
+                        <Link href="/" className={`${styles.logo} h-sm w-sm`}>
                             <Image src="/logo/logo_icon.png" alt="Logo" width={100} height={50} />
                         </Link>
                         <div className={styles.navActions}>

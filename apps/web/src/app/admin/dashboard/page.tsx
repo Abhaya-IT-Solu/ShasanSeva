@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
 import styles from './dashboard.module.css';
 
@@ -14,8 +15,7 @@ export default function AdminDashboard() {
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarHeader}>
                     <Link href="/" className={styles.logo}>
-                        <span className={styles.logoIcon}>🏛️</span>
-                        ShasanSetu
+                       <Image src="/logo/logo_icon.png" alt="Logo" width={200} height={100} />
                     </Link>
                     <span className={styles.badge}>
                         {isSuperAdmin ? 'Super Admin' : 'Admin'}
