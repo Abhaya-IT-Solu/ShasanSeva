@@ -10,7 +10,13 @@ if (!connectionString) {
 }
 
 // For query purposes
-const queryClient = postgres(connectionString);
+const queryClient = postgres(connectionString, {
+  ssl: 'require',
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
+
 export const db = drizzle(queryClient, { schema });
 
 // Export schema for use elsewhere
