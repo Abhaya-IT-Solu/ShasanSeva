@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { usePathname } from 'next/navigation';
 import styles from './Header.module.css';
 
 export function Header() {
@@ -12,18 +12,18 @@ export function Header() {
     const { isAuthenticated, user, isLoading: authLoading, logout } = useAuth();
     const [showUserMenu, setShowUserMenu] = useState(false);
 
+    useEffect(() => {
+        const handleClick = () => setShowUserMenu(false);
+
+        if (!showUserMenu) return;
+
+        document.addEventListener('click', handleClick);
+        return () => document.removeEventListener('click', handleClick);
+    }, [showUserMenu]);
+
     if (pathname?.startsWith('/admin')) {
         return null;
     }
-
-    useEffect(() => {
-        const handleClick = () => setShowUserMenu(false);
-        if (showUserMenu) {
-            document.addEventListener('click', handleClick);
-            return () => document.removeEventListener('click', handleClick);
-        }
-    }, [showUserMenu]);
-
     return (
         <>
             {/* Utility Top Bar */}
