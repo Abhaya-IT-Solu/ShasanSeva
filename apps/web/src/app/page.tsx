@@ -1,7 +1,9 @@
 'use client';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
+import Footer from '@/components/Footer/Footer';
 
 // Category data
 const CATEGORIES = [
@@ -12,7 +14,7 @@ const CATEGORIES = [
         icon: '🎓',
         color: '#00897B',
         isNew: true,
-        imageLink: '/images/graduation.gif' 
+        imageLink: '/images/graduation.gif'
     },
     {
         id: 'FARMER',
@@ -88,6 +90,38 @@ const CATEGORIES = [
     },
 ];
 
+// Explore More Data
+const EXPLORE_ITEMS = [
+    {
+        title: 'Exam Results',
+        description: 'Check latest exam results across boards',
+        icon: '📝',
+        href: '/explore/results',
+        color: '#2563eb',
+    },
+    {
+        title: 'Job Notifications',
+        description: 'Latest government job openings',
+        icon: '💼',
+        href: '/explore/jobs',
+        color: '#059669',
+    },
+    {
+        title: 'News & Updates',
+        description: 'Government scheme announcements',
+        icon: '📰',
+        href: '/explore/news',
+        color: '#d97706',
+    },
+    {
+        title: 'Important Dates',
+        description: 'Deadlines and application windows',
+        icon: '📅',
+        href: '/explore/dates',
+        color: '#dc2626',
+    },
+];
+
 export default function HomePage() {
     const router = useRouter();
 
@@ -152,6 +186,99 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+
+            {/* Mobile App Showcase Section */}
+            <section className={styles.appShowcase}>
+                <div className={styles.container}>
+                    <div className={styles.appShowcaseContent}>
+                        <div className={styles.appShowcaseText}>
+                            <span className={styles.appBadge}>📱 Coming Soon</span>
+                            <h2 className={styles.appTitle}>
+                                Get ShasanSeva on Your Mobile
+                            </h2>
+                            <p className={styles.appDescription}>
+                                Apply for schemes, track applications, and receive instant updates - all from your smartphone. Download our mobile app for a seamless experience.
+                            </p>
+                            <div className={styles.appFeatures}>
+                                <div className={styles.appFeature}>
+                                    <span className={styles.featureIcon}>✓</span>
+                                    <span>Quick scheme applications</span>
+                                </div>
+                                <div className={styles.appFeature}>
+                                    <span className={styles.featureIcon}>✓</span>
+                                    <span>Real-time status tracking</span>
+                                </div>
+                                <div className={styles.appFeature}>
+                                    <span className={styles.featureIcon}>✓</span>
+                                    <span>Push notifications</span>
+                                </div>
+                                <div className={styles.appFeature}>
+                                    <span className={styles.featureIcon}>✓</span>
+                                    <span>Document scanner</span>
+                                </div>
+                            </div>
+                            <div className={styles.storeButtons}>
+                                <button className={styles.storeBtn} disabled>
+                                    <span className={styles.storeIcon}>🍎</span>
+                                    <span className={styles.storeText}>
+                                        <span className={styles.storeLabel}>Download on the</span>
+                                        <span className={styles.storeName}>App Store</span>
+                                    </span>
+                                </button>
+                                <button className={styles.storeBtn} disabled>
+                                    <span className={styles.storeIcon}>▶️</span>
+                                    <span className={styles.storeText}>
+                                        <span className={styles.storeLabel}>Get it on</span>
+                                        <span className={styles.storeName}>Google Play</span>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className={styles.appShowcaseImage}>
+                            <div className={styles.phoneMockup}>
+                                <div className={styles.phoneScreen}>
+                                    <div className={styles.mockupContent}>
+                                        <span className={styles.mockupLogo}>🏛️</span>
+                                        <span className={styles.mockupText}>ShasanSeva</span>
+                                        <span className={styles.mockupSubtext}>Your Government Helper</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Explore More Section */}
+            <section className={styles.exploreSection}>
+                <div className={styles.container}>
+                    <div className={styles.sectionHeader}>
+                        <h2 className={styles.sectionTitle}>Explore More</h2>
+                        <p className={styles.sectionSubtitle}>
+                            Stay updated with the latest information
+                        </p>
+                    </div>
+                    <div className={styles.exploreGrid}>
+                        {EXPLORE_ITEMS.map((item) => (
+                            <Link key={item.title} href={item.href} className={styles.exploreCard}>
+                                <div className={styles.exploreIconWrapper} style={{ background: `${item.color}15` }}>
+                                    <span className={styles.exploreIcon}>{item.icon}</span>
+                                </div>
+                                <h3 className={styles.exploreTitle} style={{ color: item.color }}>
+                                    {item.title}
+                                </h3>
+                                <p className={styles.exploreDescription}>{item.description}</p>
+                                <span className={styles.exploreLink} style={{ color: item.color }}>
+                                    Learn more →
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <Footer />
         </div>
     );
 }

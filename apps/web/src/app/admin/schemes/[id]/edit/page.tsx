@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import styles from '../../admin.module.css';
-import formStyles from './newScheme.module.css';
+import styles from '../../../admin.module.css';
+import formStyles from '../../new/newScheme.module.css';
 
 interface RequiredDoc {
     type: string;
@@ -14,11 +14,34 @@ interface RequiredDoc {
     description: string;
 }
 
+interface SchemeData {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    category: string;
+    schemeType: string;
+    eligibility: string;
+    benefits: string;
+    serviceFee: string;
+    status: string;
+    requiredDocs: RequiredDoc[];
+    // Marathi fields
+    nameMr?: string;
+    descriptionMr?: string;
+    eligibilityMr?: string;
+    benefitsMr?: string;
+}
+
 type TabType = 'english' | 'marathi';
 
-export default function NewSchemePage() {
+export default function EditSchemePage() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const params = useParams();
+    const schemeId = params.id as string;
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [activeTab, setActiveTab] = useState<TabType>('english');
@@ -44,19 +67,51 @@ export default function NewSchemePage() {
         benefitsMr: '',
     });
 
-    const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([
-        { type: 'AADHAAR', label: 'Aadhaar Card', required: true, description: '' },
-    ]);
+    const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
+
+    // Fetch existing scheme data
+    useEffect(() => {
+        const fetchScheme = async () => {
+            try {
+                const response = await api.request(`/api/schemes/${schemeId}`);
+                if (response.success) {
+                    const scheme = response.data as SchemeData;
+                    setFormData({
+                        name: scheme.name || '',
+                        slug: scheme.slug || '',
+                        description: scheme.description || '',
+                        category: scheme.category || 'STUDENT',
+                        schemeType: scheme.schemeType || 'GOVERNMENT',
+                        eligibility: scheme.eligibility || '',
+                        benefits: scheme.benefits || '',
+                        serviceFee: scheme.serviceFee || '',
+                        status: scheme.status || 'ACTIVE',
+                    });
+                    setMarathiData({
+                        nameMr: scheme.nameMr || '',
+                        descriptionMr: scheme.descriptionMr || '',
+                        eligibilityMr: scheme.eligibilityMr || '',
+                        benefitsMr: scheme.benefitsMr || '',
+                    });
+                    setRequiredDocs(scheme.requiredDocs || []);
+                } else {
+                    setError('Scheme not found');
+                }
+            } catch {
+                setError('Failed to load scheme');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (schemeId) {
+            fetchScheme();
+        }
+    }, [schemeId]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-
-        // Auto-generate slug from name
-        if (name === 'name') {
-            const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            setFormData(prev => ({ ...prev, slug }));
-        }
     };
 
     const handleMarathiChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -85,11 +140,11 @@ export default function NewSchemePage() {
         e.preventDefault();
         setError('');
         setSuccess('');
-        setIsLoading(true);
+        setIsSaving(true);
 
         try {
-            const response = await api.request('/api/schemes', {
-                method: 'POST',
+            const response = await api.request(`/api/schemes/${schemeId}`, {
+                method: 'PATCH',
                 body: {
                     ...formData,
                     ...marathiData,
@@ -98,19 +153,27 @@ export default function NewSchemePage() {
             });
 
             if (response.success) {
-                setSuccess('Scheme created successfully!');
+                setSuccess('Scheme updated successfully!');
                 setTimeout(() => {
                     router.push('/admin/schemes');
                 }, 1500);
             } else {
-                setError(response.error?.message || 'Failed to create scheme');
+                setError(response.error?.message || 'Failed to update scheme');
             }
         } catch {
             setError('Failed to connect to server');
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     };
+
+    if (isLoading) {
+        return (
+            <div className={formStyles.loading}>
+                <div className="spinner" />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -119,7 +182,7 @@ export default function NewSchemePage() {
                     <Link href="/admin/schemes" className={formStyles.backLink}>
                         ← Back to Schemes
                     </Link>
-                    <h1>Add New Scheme</h1>
+                    <h1>Edit Scheme</h1>
                 </div>
             </header>
 
@@ -241,6 +304,19 @@ export default function NewSchemePage() {
                                     />
                                 </div>
                             </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Status</label>
+                                <select
+                                    name="status"
+                                    className="input"
+                                    value={formData.status}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="INACTIVE">Inactive</option>
+                                </select>
+                            </div>
                         </section>
 
                         {/* Eligibility & Benefits */}
@@ -329,7 +405,7 @@ export default function NewSchemePage() {
                     </section>
                 )}
 
-                {/* Required Documents (shown on both tabs) */}
+                {/* Required Documents */}
                 <section className={formStyles.section}>
                     <div className={formStyles.sectionHeader}>
                         <h2>Required Documents</h2>
@@ -339,39 +415,45 @@ export default function NewSchemePage() {
                     </div>
 
                     <div className={formStyles.documentsList}>
-                        {requiredDocs.map((doc, index) => (
-                            <div key={index} className={formStyles.documentRow}>
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="Type (e.g., AADHAAR)"
-                                    value={doc.type}
-                                    onChange={(e) => updateDocument(index, 'type', e.target.value)}
-                                />
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="Label (e.g., Aadhaar Card)"
-                                    value={doc.label}
-                                    onChange={(e) => updateDocument(index, 'label', e.target.value)}
-                                />
-                                <label className={formStyles.checkboxLabel}>
+                        {requiredDocs.length === 0 ? (
+                            <p style={{ color: 'var(--color-gray-500)', textAlign: 'center', padding: 'var(--space-4)' }}>
+                                No documents added. Click "+ Add Document" to add required documents.
+                            </p>
+                        ) : (
+                            requiredDocs.map((doc, index) => (
+                                <div key={index} className={formStyles.documentRow}>
                                     <input
-                                        type="checkbox"
-                                        checked={doc.required}
-                                        onChange={(e) => updateDocument(index, 'required', e.target.checked)}
+                                        type="text"
+                                        className="input"
+                                        placeholder="Type (e.g., AADHAAR)"
+                                        value={doc.type}
+                                        onChange={(e) => updateDocument(index, 'type', e.target.value)}
                                     />
-                                    Required
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => removeDocument(index)}
-                                    className={formStyles.removeBtn}
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        ))}
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Label (e.g., Aadhaar Card)"
+                                        value={doc.label}
+                                        onChange={(e) => updateDocument(index, 'label', e.target.value)}
+                                    />
+                                    <label className={formStyles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={doc.required}
+                                            onChange={(e) => updateDocument(index, 'required', e.target.checked)}
+                                        />
+                                        Required
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeDocument(index)}
+                                        className={formStyles.removeBtn}
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </section>
 
@@ -383,9 +465,9 @@ export default function NewSchemePage() {
                     <button
                         type="submit"
                         className="btn btn-primary btn-lg"
-                        disabled={isLoading}
+                        disabled={isSaving}
                     >
-                        {isLoading ? <span className="spinner" /> : 'Create Scheme'}
+                        {isSaving ? <span className="spinner" /> : 'Update Scheme'}
                     </button>
                 </div>
             </form>

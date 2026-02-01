@@ -80,7 +80,7 @@
 /* Main Content */
 .main {
   flex: 1;
-  margin-left: 260px;
+  /* margin-left: 260px; */
   padding: var(--space-6);
 }
 

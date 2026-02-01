@@ -698,3 +698,274 @@
         gap: 0;
     }
 }
+
+/* ================================
+   Mobile App Showcase Section
+   ================================ */
+.appShowcase {
+    padding: 80px 0;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdfa 100%);
+}
+
+.appShowcaseContent {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    align-items: center;
+}
+
+@media (min-width: 1024px) {
+    .appShowcaseContent {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+.appShowcaseText {
+    flex: 1;
+    max-width: 560px;
+}
+
+.appBadge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+}
+
+.appTitle {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin-bottom: 16px;
+    line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+    .appTitle {
+        font-size: 40px;
+    }
+}
+
+.appDescription {
+    font-size: 16px;
+    color: var(--color-gray-600);
+    line-height: 1.7;
+    margin-bottom: 24px;
+}
+
+.appFeatures {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+@media (min-width: 640px) {
+    .appFeatures {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.appFeature {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--color-gray-700);
+}
+
+.featureIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.storeButtons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.storeBtn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: #1a1a2e;
+    color: white;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.storeBtn:hover:not(:disabled) {
+    background: #0f0f1a;
+    transform: translateY(-2px);
+}
+
+.storeBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.storeIcon {
+    font-size: 24px;
+}
+
+.storeText {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.storeLabel {
+    font-size: 10px;
+    color: #9ca3af;
+}
+
+.storeName {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.appShowcaseImage {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.phoneMockup {
+    width: 280px;
+    height: 560px;
+    background: linear-gradient(145deg, #2a2a40, #1a1a2e);
+    border-radius: 36px;
+    padding: 12px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+}
+
+.phoneScreen {
+    width: 100%;
+    height: 100%;
+    background: grey;
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mockupContent {
+    text-align: center;
+    color: white;
+}
+
+.mockupLogo {
+    display: block;
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.mockupText {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.mockupSubtext {
+    display: block;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* ================================
+   Explore More Section
+   ================================ */
+.exploreSection {
+    padding: 60px 0 80px;
+    background: #fff;
+}
+
+.exploreGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+@media (min-width: 640px) {
+    .exploreGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .exploreGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.exploreCard {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    background: #f8fafc;
+    border-radius: 16px;
+    border: 1px solid var(--color-gray-200);
+    transition: all 0.3s ease;
+}
+
+.exploreCard:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+.exploreIconWrapper {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.exploreIcon {
+    font-size: 28px;
+}
+
+.exploreTitle {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.exploreDescription {
+    font-size: 14px;
+    color: var(--color-gray-600);
+    line-height: 1.5;
+    flex: 1;
+    margin-bottom: 16px;
+}
+
+.exploreLink {
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+
+.exploreCard:hover .exploreLink {
+    transform: translateX(4px);
+}

@@ -32,6 +32,18 @@ interface Order {
 
 const STATUS_STEPS = ['PAID', 'IN_PROGRESS', 'DOCUMENTS_VERIFIED', 'COMPLETED'];
 
+const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+        PAID: '#2563eb',
+        IN_PROGRESS: '#f59e0b',
+        PROOF_UPLOADED: '#8b5cf6',
+        DOCUMENTS_VERIFIED: '#06b6d4',
+        COMPLETED: '#10b981',
+        REJECTED: '#ef4444',
+    };
+    return colors[status] || '#6b7280';
+};
+
 export default function OrderDetailPage() {
     const params = useParams();
     useAuth(); // Ensure user is authenticated
@@ -45,7 +57,7 @@ export default function OrderDetailPage() {
             try {
                 const response = await api.request(`/api/orders/${params.id}`);
                 if (response.success) {
-                    const data = response.data as any;
+                    const data = response.data as { order: Order; documents: Document[] };
                     setOrder(data.order);
                     setDocuments(data.documents || []);
                 } else {
@@ -83,9 +95,30 @@ export default function OrderDetailPage() {
     }
 
     const currentStepIndex = STATUS_STEPS.indexOf(order.status);
+    const schemeName = order.scheme?.name || order.schemeName || 'Unknown Scheme';
 
     return (
         <div className={styles.container}>
+            {/* Back Link & Header */}
+            <div className={styles.header}>
+                <Link href="/orders" className={styles.backLink}>
+                    ← Back to My Applications
+                </Link>
+                <h1 className={styles.pageTitle}>{schemeName}</h1>
+                <div className={styles.orderMeta}>
+                    <span className={styles.orderId}>Order #{order.id.slice(-8).toUpperCase()}</span>
+                    <span
+                        className={styles.statusBadge}
+                        style={{
+                            background: `${getStatusColor(order.status)}15`,
+                            color: getStatusColor(order.status)
+                        }}
+                    >
+                        {order.status.replace('_', ' ')}
+                    </span>
+                </div>
+            </div>
+
             {/* Timeline */}
             <section className={styles.timeline}>
                 <h2>Application Status</h2>
@@ -115,23 +148,46 @@ export default function OrderDetailPage() {
                 )}
             </section>
 
-            {/* Details */}
+            {/* Details Grid */}
             <section className={styles.details}>
                 <div className={styles.detailCard}>
+                    <span className={styles.cardIcon}>💰</span>
                     <h3>Payment</h3>
                     <p className={styles.amount}>₹{order.amountPaid}</p>
                     {order.paidAt && (
                         <p className={styles.date}>
-                            Paid on {new Date(order.paidAt).toLocaleString()}
+                            Paid on {new Date(order.paidAt).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric'
+                            })}
                         </p>
                     )}
                 </div>
 
                 <div className={styles.detailCard}>
+                    <span className={styles.cardIcon}>📅</span>
                     <h3>Timeline</h3>
-                    <p>Applied: {new Date(order.createdAt).toLocaleDateString()}</p>
+                    <p>Applied: {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    })}</p>
                     {order.completedAt && (
-                        <p>Completed: {new Date(order.completedAt).toLocaleDateString()}</p>
+                        <p>Completed: {new Date(order.completedAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        })}</p>
+                    )}
+                </div>
+
+                <div className={styles.detailCard}>
+                    <span className={styles.cardIcon}>📋</span>
+                    <h3>Scheme</h3>
+                    <p className={styles.schemeName}>{schemeName}</p>
+                    {order.scheme?.description && (
+                        <p className={styles.schemeDesc}>{order.scheme.description.substring(0, 100)}...</p>
                     )}
                 </div>
             </section>
@@ -141,15 +197,21 @@ export default function OrderDetailPage() {
                 <h2>Submitted Documents</h2>
                 <div className={styles.docsList}>
                     {documents.length === 0 ? (
-                        <p className={styles.noData}>No documents uploaded</p>
+                        <p className={styles.noData}>No documents uploaded yet</p>
                     ) : (
                         documents.map((doc) => (
                             <div key={doc.id} className={styles.docItem}>
-                                <span className={styles.docName}>{doc.fileName}</span>
+                                <div className={styles.docInfo}>
+                                    <span className={styles.docIcon}>📄</span>
+                                    <div>
+                                        <span className={styles.docName}>{doc.fileName}</span>
+                                        <span className={styles.docType}>{doc.documentType}</span>
+                                    </div>
+                                </div>
                                 <span className={`${styles.docStatus} ${styles[doc.status.toLowerCase()]}`}>
-                                    {doc.status === 'UPLOADED' ? '📄 Uploaded' :
-                                        doc.status === 'VERIFIED' ? '✓ Verified' :
-                                            doc.status === 'REJECTED' ? '✗ Rejected' : doc.status}
+                                    {doc.status === 'UPLOADED' ? '📤 Uploaded' :
+                                        doc.status === 'VERIFIED' ? '✅ Verified' :
+                                            doc.status === 'REJECTED' ? '❌ Rejected' : doc.status}
                                 </span>
                                 {doc.rejectionReason && (
                                     <span className={styles.rejectionReason}>{doc.rejectionReason}</span>
@@ -162,9 +224,16 @@ export default function OrderDetailPage() {
 
             {/* Help */}
             <section className={styles.help}>
-                <p>
-                    Need help? Contact us at <strong>support@shasansetu.com</strong>
-                </p>
+                <div className={styles.helpContent}>
+                    <span className={styles.helpIcon}>❓</span>
+                    <div>
+                        <h3>Need Help?</h3>
+                        <p>
+                            Contact us at <a href="mailto:support@shasanseva.com">support@shasanseva.com</a> or
+                            call <a href="tel:+919876543210">+91 98765 43210</a>
+                        </p>
+                    </div>
+                </div>
             </section>
         </div>
     );

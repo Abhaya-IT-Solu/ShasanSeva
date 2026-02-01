@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import styles from './admin.module.css';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading, user } = useAuth();
@@ -20,12 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     if (isLoading) {
         return (
-            <div style={{
-                minHeight: '100vh',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
+            <div className={styles.loadingContainer}>
                 <div className="spinner" />
             </div>
         );
@@ -35,5 +32,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null;
     }
 
-    return <>{children}</>;
+    return (
+        <div className={styles.adminLayout}>
+            <AdminSidebar />
+            <main className={styles.mainContent}>
+                {children}
+            </main>
+        </div>
+    );
 }
