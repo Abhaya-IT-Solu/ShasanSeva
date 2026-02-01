@@ -12,7 +12,7 @@ const CATEGORIES = [
         icon: '🎓',
         color: '#00897B',
         isNew: true,
-        imageLink: '/images/graduation.gif'
+        imageLink: '/images/graduation.gif' 
     },
     {
         id: 'FARMER',
