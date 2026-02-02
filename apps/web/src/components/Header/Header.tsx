@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link, usePathname } from '@/i18n/routing';
 import { useAuth } from '@/lib/auth';
-import { usePathname } from 'next/navigation';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import styles from './Header.module.css';
 
 export function Header() {
     const pathname = usePathname();
+    const t = useTranslations('Header');
     const { isAuthenticated, user, isLoading: authLoading, logout } = useAuth();
     const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -21,9 +23,11 @@ export function Header() {
         return () => document.removeEventListener('click', handleClick);
     }, [showUserMenu]);
 
+    // Don't show header on admin pages
     if (pathname?.startsWith('/admin')) {
         return null;
     }
+
     return (
         <>
             {/* Utility Top Bar */}
@@ -43,6 +47,9 @@ export function Header() {
                                 </svg>
                                 Helpline: 1800-123-456
                             </a>
+                        </div>
+                        <div className={styles.utilityRight}>
+                            <LocaleSwitcher />
                         </div>
                     </div>
                 </div>
@@ -73,16 +80,16 @@ export function Header() {
                                     </button>
                                     {showUserMenu && (
                                         <div className={styles.dropdown}>
-                                            <Link href="/dashboard" className={styles.dropdownItem}>📊 Dashboard</Link>
-                                            <Link href="/profile" className={styles.dropdownItem}>👤 Profile</Link>
-                                            <button onClick={logout} className={styles.dropdownItem}>🚪 Logout</button>
+                                            <Link href="/orders" className={styles.dropdownItem}>📦 {t('myOrders')}</Link>
+                                            <Link href="/profile" className={styles.dropdownItem}>👤 {t('profile')}</Link>
+                                            <button onClick={logout} className={styles.dropdownItem}>🚪 {t('logout')}</button>
                                         </div>
                                     )}
                                 </div>
                             ) : (
                                 <>
                                     <Link href="/login" className={styles.secondaryBtn}>
-                                        Login
+                                        {t('login')}
                                     </Link>
                                     <Link href="/login" className={styles.primaryBtn}>
                                         Register

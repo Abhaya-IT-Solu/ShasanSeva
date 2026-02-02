@@ -1,0 +1,193 @@
+{
+    "Common": {
+        "appName": "ShasanSeva",
+        "loading": "Loading...",
+        "error": "Something went wrong",
+        "retry": "Try Again",
+        "back": "Back",
+        "submit": "Submit",
+        "cancel": "Cancel",
+        "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete",
+        "search": "Search",
+        "noResults": "No results found",
+        "viewAll": "View All"
+    },
+    "Header": {
+        "home": "Home",
+        "schemes": "Schemes",
+        "myOrders": "My Orders",
+        "profile": "Profile",
+        "login": "Login",
+        "logout": "Logout",
+        "language": "Language"
+    },
+    "Footer": {
+        "aboutUs": "About Us",
+        "contactUs": "Contact Us",
+        "privacyPolicy": "Privacy Policy",
+        "termsOfService": "Terms of Service",
+        "copyright": "© 2024 ShasanSeva. All rights reserved.",
+        "description": "ShasanSeva helps citizens access government schemes and services with ease."
+    },
+    "HomePage": {
+        "ourServices": "Our Services",
+        "ourServicesSubtitle": "Browse schemes by category and find the right support for your needs",
+        "viewSchemes": "View Schemes",
+        "newBadge": "NEW",
+        "comingSoon": "Coming Soon",
+        "mobileAppTitle": "Get ShasanSeva on Your Mobile",
+        "mobileAppDescription": "Apply for schemes, track applications, and receive instant updates - all from your smartphone. Download our mobile app for a seamless experience.",
+        "feature1": "Quick scheme applications",
+        "feature2": "Real-time status tracking",
+        "feature3": "Push notifications",
+        "feature4": "Document scanner",
+        "downloadOn": "Download on the",
+        "getItOn": "Get it on",
+        "yourHelper": "Your Government Helper",
+        "exploreMore": "Explore More",
+        "exploreSubtitle": "Stay updated with the latest information",
+        "learnMore": "Learn more"
+    },
+    "Categories": {
+        "STUDENT": {
+            "name": "Student Schemes",
+            "description": "Scholarships, education loans, and skill development programs for students."
+        },
+        "FARMER": {
+            "name": "Farmer Schemes",
+            "description": "Agricultural support, subsidies, and credit facilities for farmers."
+        },
+        "LOAN": {
+            "name": "Loan Schemes",
+            "description": "Business loans, personal loans, and financial assistance programs."
+        },
+        "CERTIFICATE": {
+            "name": "Important Certificates",
+            "description": "Essential documents for various government and legal procedures."
+        },
+        "EMPLOYMENT": {
+            "name": "Employment Schemes",
+            "description": "Job assistance, skill training, and employment generation schemes."
+        },
+        "HEALTH": {
+            "name": "Health Schemes",
+            "description": "Health insurance, medical assistance, and wellness programs."
+        },
+        "WOMEN": {
+            "name": "Women Welfare",
+            "description": "Special schemes and programs designed for women empowerment."
+        },
+        "SENIOR": {
+            "name": "Senior Citizens",
+            "description": "Pension, healthcare, and welfare schemes for elderly citizens."
+        },
+        "OTHER": {
+            "name": "Other Services",
+            "description": "Miscellaneous government services and assistance programs."
+        }
+    },
+    "Explore": {
+        "examResults": {
+            "title": "Exam Results",
+            "description": "Check latest exam results across boards"
+        },
+        "jobNotifications": {
+            "title": "Job Notifications",
+            "description": "Latest government job openings"
+        },
+        "newsUpdates": {
+            "title": "News & Updates",
+            "description": "Government scheme announcements"
+        },
+        "importantDates": {
+            "title": "Important Dates",
+            "description": "Deadlines and application windows"
+        }
+    },
+    "LoginPage": {
+        "title": "Login to ShasanSeva",
+        "subtitle": "Enter your phone number to continue",
+        "phoneLabel": "Phone Number",
+        "phonePlaceholder": "Enter your 10-digit number",
+        "sendOtp": "Send OTP",
+        "otpTitle": "Verify OTP",
+        "otpSubtitle": "Enter the 6-digit code sent to your phone",
+        "otpLabel": "OTP",
+        "otpPlaceholder": "Enter 6-digit OTP",
+        "verifyOtp": "Verify OTP",
+        "resendOtp": "Resend OTP",
+        "resendIn": "Resend in {seconds}s",
+        "invalidPhone": "Please enter a valid 10-digit phone number",
+        "invalidOtp": "Please enter a valid 6-digit OTP",
+        "otpSent": "OTP sent successfully!",
+        "loginSuccess": "Login successful!"
+    },
+    "SchemesPage": {
+        "title": "Available Schemes",
+        "subtitle": "Browse and apply for government schemes",
+        "searchPlaceholder": "Search schemes...",
+        "filterByCategory": "Filter by Category",
+        "allCategories": "All Categories",
+        "viewDetails": "View Details",
+        "applyNow": "Apply Now",
+        "serviceFee": "Service Fee",
+        "noSchemes": "No schemes available at the moment"
+    },
+    "SchemePage": {
+        "eligibility": "Eligibility Criteria",
+        "benefits": "Benefits",
+        "requiredDocs": "Required Documents",
+        "serviceFee": "Service Fee",
+        "applyButton": "Apply for this Scheme",
+        "alreadyApplied": "You have already applied for this scheme",
+        "viewOrder": "View Application"
+    },
+    "OrdersPage": {
+        "title": "My Orders",
+        "subtitle": "Track your scheme applications",
+        "noOrders": "You haven't applied for any schemes yet",
+        "browseSchemes": "Browse Schemes",
+        "status": "Status",
+        "appliedOn": "Applied On",
+        "viewDetails": "View Details"
+    },
+    "OrderPage": {
+        "title": "Order Details",
+        "orderNumber": "Order Number",
+        "schemeName": "Scheme",
+        "status": "Status",
+        "appliedOn": "Applied On",
+        "paymentStatus": "Payment Status",
+        "amount": "Amount",
+        "timeline": "Application Timeline",
+        "documents": "Uploaded Documents",
+        "uploadDoc": "Upload Document",
+        "pending": "Pending",
+        "paid": "Paid",
+        "processing": "Processing",
+        "completed": "Completed",
+        "rejected": "Rejected"
+    },
+    "ProfilePage": {
+        "title": "My Profile",
+        "personalInfo": "Personal Information",
+        "name": "Full Name",
+        "phone": "Phone Number",
+        "email": "Email Address",
+        "address": "Address",
+        "updateProfile": "Update Profile",
+        "profileUpdated": "Profile updated successfully!"
+    },
+    "Statuses": {
+        "PENDING_PAYMENT": "Pending Payment",
+        "PAID": "Paid",
+        "PROCESSING": "Processing",
+        "DOCUMENTS_REQUIRED": "Documents Required",
+        "UNDER_REVIEW": "Under Review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "COMPLETED": "Completed"
+    }
+}

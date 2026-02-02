@@ -36,6 +36,11 @@
     color: white;
 }
 
+.utilityRight {
+    display: flex;
+    align-items: center;
+}
+
 /* Navbar */
 .navbar {
     background: white;

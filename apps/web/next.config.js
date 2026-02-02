@@ -1,4 +1,7 @@
 const path = require('path')
+const createNextIntlPlugin = require('next-intl/plugin')
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -9,9 +12,8 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${
-          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-        }/api/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+          }/api/:path*`,
       },
     ]
   },
@@ -22,5 +24,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
-
+module.exports = withNextIntl(nextConfig)

@@ -1,0 +1,36 @@
+.switcher {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.localeBtn {
+    background: transparent;
+    border: none;
+    color: var(--color-gray-600);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.localeBtn:hover:not(:disabled) {
+    background: var(--color-gray-100);
+    color: var(--color-primary);
+}
+
+.localeBtn.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+.localeBtn:disabled {
+    cursor: default;
+}
+
+.divider {
+    color: var(--color-gray-300);
+    font-size: 12px;
+}
