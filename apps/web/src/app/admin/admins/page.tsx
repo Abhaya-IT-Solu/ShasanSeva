@@ -26,12 +26,25 @@ export default function AdminManagementPage() {
     const [admins, setAdmins] = useState<Admin[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
     const [creating, setCreating] = useState(false);
+    const [updating, setUpdating] = useState(false);
     const [toggling, setToggling] = useState<string | null>(null);
 
-    // Form state
+    // Create form state
     const [formData, setFormData] = useState({
+        name: '',
+        phone: '',
+        email: '',
+        password: '',
+        role: 'ADMIN' as 'ADMIN' | 'SUPER_ADMIN',
+    });
+
+    // Edit form state
+    const [editFormData, setEditFormData] = useState({
         name: '',
         phone: '',
         email: '',
@@ -89,7 +102,9 @@ export default function AdminManagementPage() {
             if (data.success) {
                 setShowCreateModal(false);
                 setFormData({ name: '', phone: '', email: '', password: '', role: 'ADMIN' });
+                setSuccess('Admin created successfully!');
                 fetchAdmins();
+                setTimeout(() => setSuccess(''), 3000);
             } else {
                 setError(data.error?.message || 'Failed to create admin');
             }
@@ -97,6 +112,65 @@ export default function AdminManagementPage() {
             setError('Failed to connect to server');
         } finally {
             setCreating(false);
+        }
+    };
+
+    const handleEditClick = (admin: Admin) => {
+        setEditingAdmin(admin);
+        setEditFormData({
+            name: admin.name,
+            phone: admin.phone,
+            email: admin.email || '',
+            password: '',  // Don't pre-fill password
+            role: admin.role,
+        });
+        setShowEditModal(true);
+        setError('');
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingAdmin) return;
+
+        setUpdating(true);
+        setError('');
+
+        try {
+            // Only send fields that changed
+            const updates: Record<string, string> = {};
+            if (editFormData.name !== editingAdmin.name) updates.name = editFormData.name;
+            if (editFormData.phone !== editingAdmin.phone) updates.phone = editFormData.phone;
+            if (editFormData.email !== (editingAdmin.email || '')) updates.email = editFormData.email;
+            if (editFormData.role !== editingAdmin.role) updates.role = editFormData.role;
+            if (editFormData.password) updates.password = editFormData.password;
+
+            if (Object.keys(updates).length === 0) {
+                setShowEditModal(false);
+                return;
+            }
+
+            const res = await fetch(`${API_URL}/api/admin/admins/${editingAdmin.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${api.getToken()}`,
+                },
+                body: JSON.stringify(updates),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setShowEditModal(false);
+                setEditingAdmin(null);
+                setSuccess('Admin updated successfully!');
+                fetchAdmins();
+                setTimeout(() => setSuccess(''), 3000);
+            } else {
+                setError(data.error?.message || 'Failed to update admin');
+            }
+        } catch {
+            setError('Failed to connect to server');
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -163,6 +237,7 @@ export default function AdminManagementPage() {
                 </div>
 
                 {error && <div className={styles.error}>{error}</div>}
+                {success && <div className={styles.success}>{success}</div>}
 
                 {loading ? (
                     <div className={styles.loading}><div className="spinner" /></div>
@@ -195,7 +270,16 @@ export default function AdminManagementPage() {
                                                 {admin.isActive ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td className={styles.actionsCell}>
+                                            {/* Edit Button */}
+                                            <button
+                                                className={styles.editBtn}
+                                                onClick={() => handleEditClick(admin)}
+                                                title="Edit Admin"
+                                            >
+                                                ✏️
+                                            </button>
+                                            {/* Toggle Active Button */}
                                             {admin.id !== user?.userId && (
                                                 <button
                                                     className={`${styles.toggleBtn} ${admin.isActive ? styles.deactivate : styles.activate}`}
@@ -275,6 +359,76 @@ export default function AdminManagementPage() {
                                 </button>
                                 <button type="submit" className={styles.submitBtn} disabled={creating}>
                                     {creating ? 'Creating...' : 'Create Admin'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {showEditModal && editingAdmin && (
+                <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
+                    <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                        <h2>Edit Admin</h2>
+                        <form onSubmit={handleUpdate}>
+                            <div className={styles.formGroup}>
+                                <label>Name *</label>
+                                <input
+                                    type="text"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Phone *</label>
+                                <input
+                                    type="tel"
+                                    value={editFormData.phone}
+                                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                                    required
+                                    pattern="[0-9]{10}"
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Email</label>
+                                <input
+                                    type="email"
+                                    value={editFormData.email}
+                                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>New Password <span className={styles.hint}>(leave blank to keep current)</span></label>
+                                <input
+                                    type="password"
+                                    value={editFormData.password}
+                                    onChange={(e) => setEditFormData({ ...editFormData, password: e.target.value })}
+                                    minLength={8}
+                                    placeholder="Enter new password..."
+                                />
+                            </div>
+                            <div className={styles.formGroup}>
+                                <label>Role *</label>
+                                <select
+                                    value={editFormData.role}
+                                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'ADMIN' | 'SUPER_ADMIN' })}
+                                    disabled={editingAdmin.id === user?.userId}
+                                >
+                                    <option value="ADMIN">Admin</option>
+                                    <option value="SUPER_ADMIN">Super Admin</option>
+                                </select>
+                                {editingAdmin.id === user?.userId && (
+                                    <span className={styles.hint}>Cannot change your own role</span>
+                                )}
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button type="button" className={styles.cancelBtn} onClick={() => setShowEditModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className={styles.submitBtn} disabled={updating}>
+                                    {updating ? 'Updating...' : 'Update Admin'}
                                 </button>
                             </div>
                         </form>

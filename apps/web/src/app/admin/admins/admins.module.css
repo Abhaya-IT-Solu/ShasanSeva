@@ -85,7 +85,6 @@
 /* Main Content */
 .main {
     flex: 1;
-    margin-left: 260px;
     padding: var(--space-6);
 }
 
@@ -333,6 +332,42 @@
     border-radius: var(--radius-md);
     margin-bottom: 16px;
     font-size: var(--text-sm);
+}
+
+.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-success);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    font-size: var(--text-sm);
+}
+
+.actionsCell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.editBtn {
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    background: rgba(59, 130, 246, 0.1);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.editBtn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    transform: scale(1.05);
+}
+
+.hint {
+    font-size: 11px;
+    color: var(--color-gray-500);
+    font-weight: 400;
 }
 
 .empty {

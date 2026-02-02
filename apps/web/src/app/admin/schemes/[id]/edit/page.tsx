@@ -14,23 +14,25 @@ interface RequiredDoc {
     description: string;
 }
 
+interface Translation {
+    name: string;
+    description?: string;
+    eligibility?: string;
+    benefits?: string;
+}
+
 interface SchemeData {
     id: string;
-    name: string;
     slug: string;
-    description: string;
     category: string;
     schemeType: string;
-    eligibility: string;
-    benefits: string;
     serviceFee: string;
     status: string;
     requiredDocs: RequiredDoc[];
-    // Marathi fields
-    nameMr?: string;
-    descriptionMr?: string;
-    eligibilityMr?: string;
-    benefitsMr?: string;
+    translations: {
+        en?: Translation;
+        mr?: Translation;
+    };
 }
 
 type TabType = 'english' | 'marathi';
@@ -46,53 +48,69 @@ export default function EditSchemePage() {
     const [success, setSuccess] = useState('');
     const [activeTab, setActiveTab] = useState<TabType>('english');
 
-    // English fields
+    // Base scheme fields
     const [formData, setFormData] = useState({
-        name: '',
         slug: '',
-        description: '',
         category: 'STUDENT',
         schemeType: 'GOVERNMENT',
-        eligibility: '',
-        benefits: '',
         serviceFee: '',
         status: 'ACTIVE',
     });
 
+    // English translations
+    const [englishData, setEnglishData] = useState({
+        name: '',
+        description: '',
+        eligibility: '',
+        benefits: '',
+    });
+
     // Marathi translations
     const [marathiData, setMarathiData] = useState({
-        nameMr: '',
-        descriptionMr: '',
-        eligibilityMr: '',
-        benefitsMr: '',
+        name: '',
+        description: '',
+        eligibility: '',
+        benefits: '',
     });
 
     const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
 
-    // Fetch existing scheme data
+    // Fetch existing scheme data with translations
     useEffect(() => {
         const fetchScheme = async () => {
             try {
-                const response = await api.request(`/api/schemes/${schemeId}`);
+                // Use the new by-id endpoint
+                const response = await api.request(`/api/schemes/by-id/${schemeId}`);
                 if (response.success) {
                     const scheme = response.data as SchemeData;
                     setFormData({
-                        name: scheme.name || '',
                         slug: scheme.slug || '',
-                        description: scheme.description || '',
                         category: scheme.category || 'STUDENT',
                         schemeType: scheme.schemeType || 'GOVERNMENT',
-                        eligibility: scheme.eligibility || '',
-                        benefits: scheme.benefits || '',
                         serviceFee: scheme.serviceFee || '',
                         status: scheme.status || 'ACTIVE',
                     });
-                    setMarathiData({
-                        nameMr: scheme.nameMr || '',
-                        descriptionMr: scheme.descriptionMr || '',
-                        eligibilityMr: scheme.eligibilityMr || '',
-                        benefitsMr: scheme.benefitsMr || '',
-                    });
+
+                    // Set English translations
+                    if (scheme.translations?.en) {
+                        setEnglishData({
+                            name: scheme.translations.en.name || '',
+                            description: scheme.translations.en.description || '',
+                            eligibility: scheme.translations.en.eligibility || '',
+                            benefits: scheme.translations.en.benefits || '',
+                        });
+                    }
+
+                    // Set Marathi translations
+                    if (scheme.translations?.mr) {
+                        setMarathiData({
+                            name: scheme.translations.mr.name || '',
+                            description: scheme.translations.mr.description || '',
+                            eligibility: scheme.translations.mr.eligibility || '',
+                            benefits: scheme.translations.mr.benefits || '',
+                        });
+                    }
+
                     setRequiredDocs(scheme.requiredDocs || []);
                 } else {
                     setError('Scheme not found');
@@ -112,6 +130,11 @@ export default function EditSchemePage() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleEnglishChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setEnglishData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleMarathiChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -143,12 +166,16 @@ export default function EditSchemePage() {
         setIsSaving(true);
 
         try {
+            // Send data in the new translations format
             const response = await api.request(`/api/schemes/${schemeId}`, {
                 method: 'PATCH',
                 body: {
                     ...formData,
-                    ...marathiData,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
+                    translations: {
+                        en: englishData,
+                        mr: marathiData.name ? marathiData : undefined,
+                    },
                 },
             });
 
@@ -227,8 +254,8 @@ export default function EditSchemePage() {
                                         type="text"
                                         name="name"
                                         className="input"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
+                                        value={englishData.name}
+                                        onChange={handleEnglishChange}
                                         required
                                     />
                                 </div>
@@ -252,8 +279,8 @@ export default function EditSchemePage() {
                                 <textarea
                                     name="description"
                                     className={`input ${formStyles.textarea}`}
-                                    value={formData.description}
-                                    onChange={handleInputChange}
+                                    value={englishData.description}
+                                    onChange={handleEnglishChange}
                                     rows={3}
                                 />
                             </div>
@@ -328,8 +355,8 @@ export default function EditSchemePage() {
                                 <textarea
                                     name="eligibility"
                                     className={`input ${formStyles.textarea}`}
-                                    value={formData.eligibility}
-                                    onChange={handleInputChange}
+                                    value={englishData.eligibility}
+                                    onChange={handleEnglishChange}
                                     rows={4}
                                     placeholder="Enter eligibility criteria..."
                                 />
@@ -340,8 +367,8 @@ export default function EditSchemePage() {
                                 <textarea
                                     name="benefits"
                                     className={`input ${formStyles.textarea}`}
-                                    value={formData.benefits}
-                                    onChange={handleInputChange}
+                                    value={englishData.benefits}
+                                    onChange={handleEnglishChange}
                                     rows={4}
                                     placeholder="Enter scheme benefits..."
                                 />
@@ -359,9 +386,9 @@ export default function EditSchemePage() {
                             <label className="input-label">योजनेचे नाव (Scheme Name)</label>
                             <input
                                 type="text"
-                                name="nameMr"
+                                name="name"
                                 className="input"
-                                value={marathiData.nameMr}
+                                value={marathiData.name}
                                 onChange={handleMarathiChange}
                                 placeholder="योजनेचे नाव मराठीत लिहा..."
                             />
@@ -370,9 +397,9 @@ export default function EditSchemePage() {
                         <div className="input-group">
                             <label className="input-label">वर्णन (Description)</label>
                             <textarea
-                                name="descriptionMr"
+                                name="description"
                                 className={`input ${formStyles.textarea}`}
-                                value={marathiData.descriptionMr}
+                                value={marathiData.description}
                                 onChange={handleMarathiChange}
                                 rows={3}
                                 placeholder="वर्णन मराठीत लिहा..."
@@ -382,9 +409,9 @@ export default function EditSchemePage() {
                         <div className="input-group">
                             <label className="input-label">पात्रता निकष (Eligibility Criteria)</label>
                             <textarea
-                                name="eligibilityMr"
+                                name="eligibility"
                                 className={`input ${formStyles.textarea}`}
-                                value={marathiData.eligibilityMr}
+                                value={marathiData.eligibility}
                                 onChange={handleMarathiChange}
                                 rows={4}
                                 placeholder="पात्रता निकष मराठीत लिहा..."
@@ -394,9 +421,9 @@ export default function EditSchemePage() {
                         <div className="input-group">
                             <label className="input-label">फायदे (Benefits)</label>
                             <textarea
-                                name="benefitsMr"
+                                name="benefits"
                                 className={`input ${formStyles.textarea}`}
-                                value={marathiData.benefitsMr}
+                                value={marathiData.benefits}
                                 onChange={handleMarathiChange}
                                 rows={4}
                                 placeholder="फायदे मराठीत लिहा..."
@@ -417,7 +444,7 @@ export default function EditSchemePage() {
                     <div className={formStyles.documentsList}>
                         {requiredDocs.length === 0 ? (
                             <p style={{ color: 'var(--color-gray-500)', textAlign: 'center', padding: 'var(--space-4)' }}>
-                                No documents added. Click "+ Add Document" to add required documents.
+                                No documents added. Click &quot;+ Add Document&quot; to add required documents.
                             </p>
                         ) : (
                             requiredDocs.map((doc, index) => (

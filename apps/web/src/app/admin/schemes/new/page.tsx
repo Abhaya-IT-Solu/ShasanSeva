@@ -88,12 +88,30 @@ export default function NewSchemePage() {
         setIsLoading(true);
 
         try {
+            // Send data with translations in the new nested format
             const response = await api.request('/api/schemes', {
                 method: 'POST',
                 body: {
-                    ...formData,
-                    ...marathiData,
+                    slug: formData.slug,
+                    category: formData.category,
+                    schemeType: formData.schemeType,
+                    serviceFee: formData.serviceFee,
+                    status: formData.status,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
+                    translations: {
+                        en: {
+                            name: formData.name,
+                            description: formData.description,
+                            eligibility: formData.eligibility,
+                            benefits: formData.benefits,
+                        },
+                        mr: marathiData.nameMr ? {
+                            name: marathiData.nameMr,
+                            description: marathiData.descriptionMr,
+                            eligibility: marathiData.eligibilityMr,
+                            benefits: marathiData.benefitsMr,
+                        } : undefined,
+                    },
                 },
             });
 

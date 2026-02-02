@@ -274,6 +274,107 @@ router.post('/admins', superAdminMiddleware, validateBody(createAdminSchema), as
     }
 });
 
+// Schema for updating admin
+const updateAdminSchema = z.object({
+    name: z.string().min(2).max(100).optional(),
+    phone: z.string().regex(/^[0-9]{10}$/, 'Invalid phone number').optional(),
+    email: z.string().email().optional().or(z.literal('')),
+    role: z.enum(['ADMIN', 'SUPER_ADMIN']).optional(),
+    password: z.string().min(8).optional(),
+});
+
+/**
+ * PATCH /api/admin/admins/:id
+ * Update admin details (super admin only)
+ */
+router.patch('/admins/:id', superAdminMiddleware, validateBody(updateAdminSchema), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentAdminId = req.user!.userId;
+        const updates = req.body;
+
+        // Get existing admin
+        const existing = await db.select()
+            .from(admins)
+            .where(eq(admins.id, id));
+
+        if (existing.length === 0) {
+            return res.status(404).json(
+                errorResponse({
+                    code: ErrorCodes.NOT_FOUND,
+                    message: 'Admin not found',
+                })
+            );
+        }
+
+        // Can't demote yourself from SUPER_ADMIN
+        if (id === currentAdminId && updates.role && updates.role !== 'SUPER_ADMIN') {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'Cannot change your own role',
+                })
+            );
+        }
+
+        // Check if phone is already used by another admin
+        if (updates.phone && updates.phone !== existing[0].phone) {
+            const phoneExists = await db.select({ id: admins.id })
+                .from(admins)
+                .where(eq(admins.phone, updates.phone));
+
+            if (phoneExists.length > 0) {
+                return res.status(400).json(
+                    errorResponse({
+                        code: ErrorCodes.VALIDATION_ERROR,
+                        message: 'Phone number already in use',
+                    })
+                );
+            }
+        }
+
+        // Prepare update object
+        const updateData: Record<string, unknown> = {
+            updatedAt: new Date(),
+        };
+
+        if (updates.name) updateData.name = updates.name;
+        if (updates.phone) updateData.phone = updates.phone;
+        if (updates.email !== undefined) updateData.email = updates.email || null;
+        if (updates.role) updateData.role = updates.role;
+
+        // Hash password if provided
+        if (updates.password) {
+            updateData.passwordHash = await hashPassword(updates.password);
+        }
+
+        const result = await db.update(admins)
+            .set(updateData)
+            .where(eq(admins.id, id))
+            .returning();
+
+        logger.info('Admin updated', { adminId: id, updatedBy: currentAdminId });
+
+        return res.json(successResponse({
+            id: result[0].id,
+            name: result[0].name,
+            phone: result[0].phone,
+            email: result[0].email,
+            role: result[0].role,
+            isActive: result[0].isActive,
+            message: 'Admin updated successfully',
+        }));
+    } catch (error) {
+        logger.error('Update admin error', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Failed to update admin',
+            })
+        );
+    }
+});
+
 /**
  * PATCH /api/admin/admins/:id/toggle-active
  * Toggle admin active status (super admin only)
@@ -332,6 +433,7 @@ router.patch('/admins/:id/toggle-active', superAdminMiddleware, async (req, res)
         );
     }
 });
+
 
 /**
  * GET /api/admin/admins/:id/analytics
