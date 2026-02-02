@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
-import styles from './order.module.css';
+import styles from './orderDetail.module.css';
 
 interface Document {
     id: string;

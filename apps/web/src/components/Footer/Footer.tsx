@@ -1,10 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 import styles from './footer.module.css';
 
 export default function Footer() {
+    const t = useTranslations('Footer');
     const currentYear = new Date().getFullYear();
 
     return (
@@ -24,35 +26,35 @@ export default function Footer() {
                             />
                         </Link>
                         <p className={styles.tagline}>
-                            Your trusted partner for government scheme assistance
+                            {t('tagline')}
                         </p>
                     </div>
 
                     {/* Quick Links */}
                     <div className={styles.linkGroup}>
-                        <h4>Quick Links</h4>
+                        <h4>{t('quickLinks')}</h4>
                         <ul>
-                            <li><Link href="/schemes">All Schemes</Link></li>
-                            <li><Link href="/schemes?category=STUDENT">Student Schemes</Link></li>
-                            <li><Link href="/schemes?category=FARMER">Farmer Schemes</Link></li>
-                            <li><Link href="/schemes?category=LOAN">Loan Schemes</Link></li>
+                            <li><Link href="/schemes">{t('allSchemes')}</Link></li>
+                            <li><Link href="/schemes?category=STUDENT">{t('studentSchemes')}</Link></li>
+                            <li><Link href="/schemes?category=FARMER">{t('farmerSchemes')}</Link></li>
+                            <li><Link href="/schemes?category=LOAN">{t('loanSchemes')}</Link></li>
                         </ul>
                     </div>
 
                     {/* Support */}
                     <div className={styles.linkGroup}>
-                        <h4>Support</h4>
+                        <h4>{t('support')}</h4>
                         <ul>
-                            <li><Link href="/help">Help Center</Link></li>
-                            <li><Link href="/contact">Contact Us</Link></li>
-                            <li><Link href="/faq">FAQs</Link></li>
-                            <li><Link href="/track">Track Application</Link></li>
+                            <li><Link href="/help">{t('helpCenter')}</Link></li>
+                            <li><Link href="/contact">{t('contactUs')}</Link></li>
+                            <li><Link href="/faq">{t('faqs')}</Link></li>
+                            <li><Link href="/track">{t('trackApplication')}</Link></li>
                         </ul>
                     </div>
 
                     {/* Contact */}
                     <div className={styles.linkGroup}>
-                        <h4>Contact Us</h4>
+                        <h4>{t('contactUs')}</h4>
                         <ul className={styles.contactList}>
                             <li>
                                 <span className={styles.icon}>📞</span>
@@ -64,7 +66,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <span className={styles.icon}>📍</span>
-                                <span>Maharashtra, India</span>
+                                <span>{t('location')}</span>
                             </li>
                         </ul>
                     </div>
@@ -76,21 +78,21 @@ export default function Footer() {
                 {/* Bottom Section */}
                 <div className={styles.bottomSection}>
                     <p className={styles.copyright}>
-                        © {currentYear} ShasanSeva. All rights reserved.
+                        © {currentYear} ShasanSeva. {t('allRightsReserved')}
                     </p>
                     <div className={styles.legalLinks}>
-                        <Link href="/privacy">Privacy Policy</Link>
-                        <Link href="/terms">Terms of Service</Link>
-                        <Link href="/disclaimer">Disclaimer</Link>
+                        <Link href="/privacy">{t('privacyPolicy')}</Link>
+                        <Link href="/terms">{t('termsOfService')}</Link>
+                        <Link href="/disclaimer">{t('disclaimerLink')}</Link>
                     </div>
                 </div>
 
                 {/* Disclaimer */}
                 <p className={styles.disclaimer}>
-                    Disclaimer: ShasanSeva is a paid assistance platform. We do not guarantee approval of any scheme.
-                    We provide professional assistance with document handling and application support.
+                    {t('disclaimer')}
                 </p>
             </div>
         </footer>
     );
 }
+
