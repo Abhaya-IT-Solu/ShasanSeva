@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db, schemes, schemeTranslations } from '@shasansetu/db';
-import { eq, and, ilike, or } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
@@ -119,7 +119,7 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
         let filteredResult = result;
         if (search) {
             const searchLower = search.toLowerCase();
-            filteredResult = result.filter(s =>
+            filteredResult = result.filter((s: typeof result[number]) =>
                 s.name?.toLowerCase().includes(searchLower) ||
                 s.description?.toLowerCase().includes(searchLower)
             );
