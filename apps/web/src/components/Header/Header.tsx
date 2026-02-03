@@ -80,6 +80,7 @@ export function Header() {
                                     </button>
                                     {showUserMenu && (
                                         <div className={styles.dropdown}>
+                                            <Link href="/dashboard" className={styles.dropdownItem}>🏠 {t('dashboard')}</Link>
                                             <Link href="/orders" className={styles.dropdownItem}>📦 {t('myOrders')}</Link>
                                             <Link href="/profile" className={styles.dropdownItem}>👤 {t('profile')}</Link>
                                             <button onClick={logout} className={styles.dropdownItem}>🚪 {t('logout')}</button>

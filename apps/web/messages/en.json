@@ -17,6 +17,7 @@
     "Header": {
         "home": "Home",
         "schemes": "Schemes",
+        "dashboard": "Dashboard",
         "myOrders": "My Orders",
         "profile": "Profile",
         "login": "Login",
@@ -321,5 +322,17 @@
         "nextStep3": "Track your application in your dashboard",
         "viewApplications": "View My Applications",
         "backToHome": "Back to Home"
+    },
+    "DashboardPage": {
+        "welcome": "Welcome",
+        "subtitle": "Browse schemes and track your applications",
+        "browseSchemes": "Browse Schemes",
+        "browseDescription": "Explore available schemes",
+        "myApplications": "My Applications",
+        "applicationsDescription": "Track your orders",
+        "myDocuments": "My Documents",
+        "documentsDescription": "Saved documents",
+        "viewAll": "View All",
+        "noApplications": "No applications yet"
     }
 }

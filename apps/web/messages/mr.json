@@ -17,6 +17,7 @@
     "Header": {
         "home": "मुख्यपृष्ठ",
         "schemes": "योजना",
+        "dashboard": "डॅशबोर्ड",
         "myOrders": "माझे अर्ज",
         "profile": "प्रोफाइल",
         "login": "लॉगिन",
@@ -321,5 +322,17 @@
         "nextStep3": "तुमच्या डॅशबोर्डमध्ये तुमचा अर्ज ट्रॅक करा",
         "viewApplications": "माझे अर्ज पहा",
         "backToHome": "मुख्यपृष्ठावर परत"
+    },
+    "DashboardPage": {
+        "welcome": "स्वागत आहे",
+        "subtitle": "योजना ब्राउझ करा आणि तुमचे अर्ज ट्रॅक करा",
+        "browseSchemes": "योजना ब्राउझ करा",
+        "browseDescription": "उपलब्ध योजना शोधा",
+        "myApplications": "माझे अर्ज",
+        "applicationsDescription": "तुमचे ऑर्डर ट्रॅक करा",
+        "myDocuments": "माझी कागदपत्रे",
+        "documentsDescription": "जतन केलेली कागदपत्रे",
+        "viewAll": "सर्व पहा",
+        "noApplications": "अद्याप कोणतेही अर्ज नाहीत"
     }
 }

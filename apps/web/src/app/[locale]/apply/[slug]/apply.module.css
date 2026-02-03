@@ -1,0 +1,323 @@
+.container {
+    min-height: 100vh;
+    background: var(--color-gray-50);
+}
+
+.loading,
+.error {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    text-align: center;
+    padding: var(--space-4);
+}
+
+/* Header */
+.header {
+    background: var(--color-white);
+    border-bottom: 1px solid var(--color-gray-200);
+    padding: var(--space-4);
+    text-align: center;
+}
+
+.backLink {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    display: inline-block;
+    margin-bottom: var(--space-3);
+}
+
+.header h1 {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+/* Progress */
+.progress {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-6) var(--space-4);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    flex: 1;
+    position: relative;
+}
+
+.stepNumber {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--color-gray-200);
+    color: var(--color-gray-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--text-sm);
+}
+
+.step.active .stepNumber {
+    background: var(--color-primary);
+    color: var(--color-white);
+}
+
+.step.completed .stepNumber {
+    background: var(--color-success);
+    color: var(--color-white);
+}
+
+.stepLabel {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+}
+
+.step.active .stepLabel {
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+/* Main */
+.main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 var(--space-4) var(--space-8);
+}
+
+/* Documents Step */
+.documentsStep h2,
+.reviewStep h2,
+.paymentStep h2,
+.successStep h2 {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: var(--space-2);
+}
+
+.subtitle {
+    color: var(--color-gray-500);
+    margin-bottom: var(--space-6);
+}
+
+.docsList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+.docItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+}
+
+.docInfo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.docLabel {
+    font-weight: 500;
+    color: var(--color-gray-900);
+}
+
+.required {
+    color: var(--color-error);
+    margin-left: var(--space-1);
+}
+
+.recommended {
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-warning);
+    background: rgba(245, 158, 11, 0.1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-2);
+}
+
+.skipNote {
+    padding: var(--space-4);
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    color: var(--color-primary);
+    margin-bottom: var(--space-6);
+}
+
+.docDesc {
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+}
+
+.docUpload {
+    flex-shrink: 0;
+}
+
+.uploadBtn {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-gray-100);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-gray-700);
+    cursor: pointer;
+}
+
+.uploadBtn input {
+    display: none;
+}
+
+.uploadBtn:hover {
+    background: var(--color-gray-200);
+}
+
+.uploadSuccess {
+    color: var(--color-success);
+    font-size: var(--text-sm);
+    font-weight: 500;
+}
+
+.uploading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+}
+
+/* Review Step */
+.reviewCard {
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    margin-bottom: var(--space-4);
+}
+
+.reviewCard h3 {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    margin-bottom: var(--space-2);
+}
+
+.reviewCard ul {
+    list-style: none;
+    padding: 0;
+}
+
+.reviewCard li {
+    padding: var(--space-1) 0;
+    font-size: var(--text-sm);
+}
+
+.fee {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.disclaimer {
+    padding: var(--space-4);
+    background: var(--color-gray-100);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-6);
+}
+
+.disclaimer p {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+}
+
+/* Payment Step */
+.paymentStep {
+    text-align: center;
+    padding: var(--space-12) 0;
+}
+
+.paymentStep p {
+    color: var(--color-gray-500);
+    margin: var(--space-4) 0;
+}
+
+/* Success Step */
+.successStep {
+    text-align: center;
+    padding: var(--space-8) 0;
+}
+
+.successIcon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-success);
+    color: var(--color-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto var(--space-6);
+}
+
+.orderId {
+    font-family: monospace;
+    background: var(--color-gray-100);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    display: inline-block;
+    margin: var(--space-4) 0;
+}
+
+.nextSteps {
+    text-align: left;
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    margin: var(--space-6) 0;
+}
+
+.nextSteps h3 {
+    font-size: var(--text-base);
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+}
+
+.nextSteps ul {
+    padding-left: var(--space-5);
+}
+
+.nextSteps li {
+    padding: var(--space-1) 0;
+    color: var(--color-gray-600);
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    flex-wrap: wrap;
+}
