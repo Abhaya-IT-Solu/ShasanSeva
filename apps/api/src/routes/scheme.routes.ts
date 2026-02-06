@@ -24,8 +24,10 @@ const createSchemeSchema = z.object({
     requiredDocs: z.array(z.object({
         type: z.string(),
         label: z.string(),
+        label_mr: z.string().optional(),
         required: z.boolean(),
         description: z.string().optional(),
+        description_mr: z.string().optional(),
     })).default([]),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid fee format'),
     status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
@@ -43,8 +45,10 @@ const updateSchemeSchema = z.object({
     requiredDocs: z.array(z.object({
         type: z.string(),
         label: z.string(),
+        label_mr : z.string().optional(),
         required: z.boolean(),
         description: z.string().optional(),
+        description_mr: z.string().optional(),
     })).optional(),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
@@ -259,7 +263,19 @@ router.get('/:slug', async (req, res) => {
             );
         }
 
-        return res.json(successResponse(scheme));
+        // After line 249, before returning:
+        const transformedDocs = scheme.requiredDocs?.map((doc: any) => ({
+            type: doc.type,
+            label: locale === 'mr' && doc.label_mr ? doc.label_mr : doc.label,
+            description: locale === 'mr' && doc.description_mr ? doc.description_mr : doc.description,
+            required: doc.required,
+        }));
+
+        return res.json(successResponse({
+            ...scheme,
+            requiredDocs: transformedDocs,
+        }));
+
     } catch (error) {
         logger.error('Get scheme error', error);
         return res.status(500).json(

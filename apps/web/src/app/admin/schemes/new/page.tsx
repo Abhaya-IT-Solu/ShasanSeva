@@ -10,8 +10,10 @@ import formStyles from './newScheme.module.css';
 interface RequiredDoc {
     type: string;
     label: string;
+    label_mr: string;
     required: boolean;
     description: string;
+    description_mr: string;
 }
 
 type TabType = 'english' | 'marathi';
@@ -45,7 +47,7 @@ export default function NewSchemePage() {
     });
 
     const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([
-        { type: 'AADHAAR', label: 'Aadhaar Card', required: true, description: '' },
+        { type: 'AADHAAR', label: 'Aadhaar Card', label_mr: 'आधार कार्ड', required: true, description: '', description_mr: '' },
     ]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -67,7 +69,7 @@ export default function NewSchemePage() {
     const addDocument = () => {
         setRequiredDocs([
             ...requiredDocs,
-            { type: '', label: '', required: true, description: '' },
+            { type: '', label: '', label_mr: '', required: true, description: '', description_mr: '' },
         ]);
     };
 
@@ -372,6 +374,13 @@ export default function NewSchemePage() {
                                     placeholder="Label (e.g., Aadhaar Card)"
                                     value={doc.label}
                                     onChange={(e) => updateDocument(index, 'label', e.target.value)}
+                                />
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="Label in Marathi (मराठी)"
+                                    value={doc.label_mr || ''}
+                                    onChange={(e) => updateDocument(index, 'label_mr', e.target.value)}
                                 />
                                 <label className={formStyles.checkboxLabel}>
                                     <input

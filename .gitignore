@@ -2,6 +2,9 @@
 node_modules/
 .pnpm-store/
 
+#Other 
+todo.md 
+
 # Build outputs
 dist/
 .next/
