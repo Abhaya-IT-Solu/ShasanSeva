@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
+import { redis, REDIS_KEYS, REDIS_TTL, invalidateSchemeCache } from '../lib/redis.js';
 
 const router: Router = Router();
 
@@ -45,7 +46,7 @@ const updateSchemeSchema = z.object({
     requiredDocs: z.array(z.object({
         type: z.string(),
         label: z.string(),
-        label_mr : z.string().optional(),
+        label_mr: z.string().optional(),
         required: z.boolean(),
         description: z.string().optional(),
         description_mr: z.string().optional(),
@@ -83,6 +84,22 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
 
         if (authHeader) {
             isAdmin = true;
+        }
+
+        // Only use cache for non-admin public requests without search
+        const useCache = !isAdmin && !search && !status;
+
+        if (useCache) {
+            const cacheKey = REDIS_KEYS.SCHEMES_LIST(locale || 'en', category);
+            try {
+                const cached = await redis.get(cacheKey);
+                if (cached) {
+                    logger.info('Cache hit for schemes list', { locale, category });
+                    return res.json(successResponse(cached));
+                }
+            } catch (cacheError: unknown) {
+                logger.warn('Redis cache read failed', cacheError as Record<string, unknown>);
+            }
         }
 
         if (!isAdmin) {
@@ -127,6 +144,17 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
                 s.name?.toLowerCase().includes(searchLower) ||
                 s.description?.toLowerCase().includes(searchLower)
             );
+        }
+
+        // Cache the result for public requests
+        if (useCache && filteredResult.length > 0) {
+            const cacheKey = REDIS_KEYS.SCHEMES_LIST(locale || 'en', category);
+            try {
+                await redis.set(cacheKey, JSON.stringify(filteredResult), { ex: REDIS_TTL.SCHEMES_LIST });
+                logger.info('Cached schemes list', { locale, category, count: filteredResult.length });
+            } catch (cacheError: unknown) {
+                logger.warn('Redis cache write failed', cacheError as Record<string, unknown>);
+            }
         }
 
         return res.json(successResponse(filteredResult));
@@ -220,6 +248,22 @@ router.get('/:slug', async (req, res) => {
     try {
         const { slug } = req.params;
         const locale = (req.query.locale as string) || 'en';
+        const authHeader = req.headers.authorization;
+        const isAdmin = !!authHeader;
+
+        // Try cache first for public requests
+        if (!isAdmin) {
+            const cacheKey = REDIS_KEYS.SCHEME_DETAIL(slug, locale);
+            try {
+                const cached = await redis.get(cacheKey);
+                if (cached) {
+                    logger.info('Cache hit for scheme detail', { slug, locale });
+                    return res.json(successResponse(cached));
+                }
+            } catch (cacheError: unknown) {
+                logger.warn('Redis cache read failed', cacheError as Record<string, unknown>);
+            }
+        }
 
         const result = await db.select({
             id: schemes.id,
@@ -253,8 +297,7 @@ router.get('/:slug', async (req, res) => {
         const scheme = result[0];
 
         // Don't show inactive schemes to non-admins
-        const authHeader = req.headers.authorization;
-        if (!authHeader && scheme.status === 'INACTIVE') {
+        if (!isAdmin && scheme.status === 'INACTIVE') {
             return res.status(404).json(
                 errorResponse({
                     code: ErrorCodes.NOT_FOUND,
@@ -263,19 +306,31 @@ router.get('/:slug', async (req, res) => {
             );
         }
 
-        // After line 249, before returning:
-        const transformedDocs = scheme.requiredDocs?.map((doc: any) => ({
+        // Transform requiredDocs based on locale
+        const transformedDocs = (scheme.requiredDocs as any[])?.map((doc: any) => ({
             type: doc.type,
             label: locale === 'mr' && doc.label_mr ? doc.label_mr : doc.label,
             description: locale === 'mr' && doc.description_mr ? doc.description_mr : doc.description,
             required: doc.required,
-        }));
+        })) || [];
 
-        return res.json(successResponse({
+        const responseData = {
             ...scheme,
             requiredDocs: transformedDocs,
-        }));
+        };
 
+        // Cache the result for public requests
+        if (!isAdmin && scheme.status === 'ACTIVE') {
+            const cacheKey = REDIS_KEYS.SCHEME_DETAIL(slug, locale);
+            try {
+                await redis.set(cacheKey, JSON.stringify(responseData), { ex: REDIS_TTL.SCHEME_DETAIL });
+                logger.info('Cached scheme detail', { slug, locale });
+            } catch (cacheError: unknown) {
+                logger.warn('Redis cache write failed', cacheError as Record<string, unknown>);
+            }
+        }
+
+        return res.json(successResponse(responseData));
     } catch (error) {
         logger.error('Get scheme error', error);
         return res.status(500).json(
@@ -352,6 +407,9 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
         }
 
         logger.info('Scheme created with translations', { schemeId, adminId });
+
+        // Invalidate cache
+        await invalidateSchemeCache();
 
         return res.status(201).json(successResponse({
             ...schemeResult[0],
@@ -481,6 +539,9 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
 
         logger.info('Scheme updated with translations', { schemeId: id });
 
+        // Invalidate cache
+        await invalidateSchemeCache();
+
         return res.json(successResponse(result[0]));
     } catch (error) {
         logger.error('Update scheme error', error);
@@ -524,6 +585,9 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
             .where(eq(schemes.id, id));
 
         logger.info('Scheme deactivated', { schemeId: id });
+
+        // Invalidate cache
+        await invalidateSchemeCache();
 
         return res.json(successResponse({ message: 'Scheme deactivated successfully' }));
     } catch (error) {

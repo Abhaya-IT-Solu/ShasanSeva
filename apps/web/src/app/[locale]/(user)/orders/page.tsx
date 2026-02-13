@@ -38,7 +38,10 @@ export default function OrdersPage() {
             try {
                 const response = await api.request('/api/orders');
                 if (response.success) {
-                    setOrders(response.data as Order[]);
+                    // Handle paginated response format
+                    const responseData = response.data as { data?: Order[] } | Order[];
+                    const ordersData = Array.isArray(responseData) ? responseData : responseData.data || [];
+                    setOrders(ordersData);
                 }
             } catch (error) {
                 console.error('Failed to fetch orders:', error);

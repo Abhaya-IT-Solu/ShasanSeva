@@ -1,20 +1,35 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
-import { validateBody } from '../middleware/validation.middleware.js';
+import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { db, orders, documents, schemes, users } from '@shasansetu/db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, count } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
 
+// Pagination schema
+const paginationSchema = z.object({
+    page: z.coerce.number().min(1).default(1),
+    limit: z.coerce.number().min(10).max(100).default(20),
+});
+
 /**
  * GET /api/orders
- * Get user's orders with scheme details
+ * Get user's orders with scheme details (paginated)
  */
-router.get('/', authMiddleware, async (req: Request, res: Response) => {
+router.get('/', authMiddleware, validateQuery(paginationSchema), async (req: Request, res: Response) => {
     try {
         const userId = req.user!.userId;
+        const page = Number(req.query.page) || 1;
+        const limit = Math.min(Math.max(Number(req.query.limit) || 20, 10), 100);
+        const offset = (page - 1) * limit;
+
+        // Get total count
+        const countResult = await db.select({ count: count() })
+            .from(orders)
+            .where(eq(orders.userId, userId));
+        const total = countResult[0]?.count || 0;
 
         // Join orders with schemes to get scheme name
         const result = await db.select({
@@ -30,9 +45,19 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
             .from(orders)
             .leftJoin(schemes, eq(orders.schemeId, schemes.id))
             .where(eq(orders.userId, userId))
-            .orderBy(desc(orders.createdAt));
+            .orderBy(desc(orders.createdAt))
+            .limit(limit)
+            .offset(offset);
 
-        return res.json(successResponse(result));
+        return res.json(successResponse({
+            data: result,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        }));
     } catch (error) {
         logger.error('Failed to fetch orders', error);
         return res.status(500).json(
@@ -230,13 +255,28 @@ router.patch('/:id/status', authMiddleware, adminMiddleware, validateBody(update
 
 /**
  * GET /api/orders/admin/queue
- * Get orders for admin processing (admin only)
+ * Get orders for admin processing (admin only) - paginated
  */
-router.get('/admin/queue', authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
+router.get('/admin/queue', authMiddleware, adminMiddleware, validateQuery(
+    paginationSchema.extend({
+        status: z.enum(['PAID', 'IN_PROGRESS', 'PROOF_UPLOADED', 'COMPLETED', 'CANCELLED']).optional(),
+    })
+), async (req: Request, res: Response) => {
     try {
-        const { status } = req.query;
+        const status = req.query.status as string | undefined;
+        const page = Number(req.query.page) || 1;
+        const limit = Math.min(Math.max(Number(req.query.limit) || 20, 10), 100);
+        const offset = (page - 1) * limit;
 
-        // Base query
+        // Get total count with optional status filter
+        let countQuery = db.select({ count: count() }).from(orders);
+        if (status) {
+            countQuery = countQuery.where(eq(orders.status, status)) as typeof countQuery;
+        }
+        const countResult = await countQuery;
+        const total = countResult[0]?.count || 0;
+
+        // Build query with joins
         let query = db.select({
             id: orders.id,
             userId: orders.userId,
@@ -253,21 +293,27 @@ router.get('/admin/queue', authMiddleware, adminMiddleware, async (req: Request,
             .from(orders)
             .leftJoin(users, eq(orders.userId, users.id))
             .leftJoin(schemes, eq(orders.schemeId, schemes.id))
-            .orderBy(desc(orders.createdAt));
+            .orderBy(desc(orders.createdAt))
+            .limit(limit)
+            .offset(offset);
 
         // Filter by status if provided
         if (status) {
             // @ts-ignore - drizzle type complexity
-            query = query.where(eq(orders.status, status as string));
-        } else {
-            // Default limit if no filter
-            // @ts-ignore
-            query = query.limit(100);
+            query = query.where(eq(orders.status, status));
         }
 
         const result = await query;
 
-        return res.json(successResponse(result));
+        return res.json(successResponse({
+            data: result,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit),
+            },
+        }));
     } catch (error) {
         logger.error('Failed to fetch admin queue', error);
         return res.status(500).json(

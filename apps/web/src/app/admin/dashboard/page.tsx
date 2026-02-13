@@ -43,7 +43,9 @@ export default function AdminDashboard() {
             // Fetch orders for stats
             const ordersResponse = await api.request('/api/orders/admin/queue');
             if (ordersResponse.success) {
-                const orders = ordersResponse.data as RecentOrder[];
+                // Handle paginated response format
+                const responseData = ordersResponse.data as { data?: RecentOrder[] } | RecentOrder[];
+                const orders = Array.isArray(responseData) ? responseData : responseData.data || [];
 
                 // Calculate stats from orders
                 const today = new Date().toDateString();

@@ -15,7 +15,7 @@ if (!connectionString) {
 // For query purposes
 const queryClient = postgres(connectionString, {
   ssl: 'require',
-  max: 10,
+  max: 7,
   idle_timeout: 20,
   connect_timeout: 60,
 });

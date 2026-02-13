@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/auth';
+import Pagination from '@/components/Pagination';
 import styles from './orders.module.css';
 
 type OrderStatus = 'PAID' | 'IN_PROGRESS' | 'PROOF_UPLOADED' | 'COMPLETED' | 'CANCELLED';
@@ -20,6 +21,13 @@ interface Order {
     createdAt: string;
     paymentTimestamp: string | null;
     assignedTo: string | null;
+}
+
+interface PaginationData {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
 }
 
 const STATUS_TABS: { label: string; value: OrderStatus | 'ALL' }[] = [
@@ -41,22 +49,42 @@ export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
     const [updating, setUpdating] = useState<string | null>(null);
 
+    // Pagination state
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState<PaginationData>({
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 1,
+    });
+
     const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
     useEffect(() => {
         if (token) {
-            fetchOrders();
+            fetchOrders(activeTab, 1);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
-    const fetchOrders = async () => {
+    // Fetch orders when tab or page changes
+    const fetchOrders = async (status: OrderStatus | 'ALL' = activeTab, pageNum: number = page) => {
+        setLoading(true);
+        setError('');
         try {
-            const res = await fetch(`${API_URL}/api/orders/admin/queue`, {
+            const params = new URLSearchParams();
+            if (status !== 'ALL') params.append('status', status);
+            params.append('page', String(pageNum));
+            params.append('limit', '20');
+
+            const res = await fetch(`${API_URL}/api/orders/admin/queue?${params}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const data = await res.json();
             if (data.success) {
-                setOrders(data.data);
+                setOrders(data.data.data);
+                setPagination(data.data.pagination);
+                setPage(pageNum);
             } else {
                 setError(data.error?.message || 'Failed to load orders');
             }
@@ -65,6 +93,15 @@ export default function OrdersPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleTabChange = (tab: OrderStatus | 'ALL') => {
+        setActiveTab(tab);
+        fetchOrders(tab, 1); // Reset to page 1 when changing tabs
+    };
+
+    const handlePageChange = (newPage: number) => {
+        fetchOrders(activeTab, newPage);
     };
 
     const handleStatusUpdate = async (orderId: string, newStatus: OrderStatus) => {
@@ -80,7 +117,7 @@ export default function OrdersPage() {
             });
             const data = await res.json();
             if (data.success) {
-                fetchOrders();
+                fetchOrders(); // Refresh current page
             } else {
                 setError(data.error?.message || 'Failed to update status');
             }
@@ -100,7 +137,7 @@ export default function OrdersPage() {
             });
             const data = await res.json();
             if (data.success) {
-                fetchOrders();
+                fetchOrders(); // Refresh current page
             } else {
                 setError(data.error?.message || 'Failed to complete order');
             }
@@ -110,10 +147,6 @@ export default function OrdersPage() {
             setUpdating(null);
         }
     };
-
-    const filteredOrders = activeTab === 'ALL'
-        ? orders
-        : orders.filter((o) => o.status === activeTab);
 
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -137,15 +170,6 @@ export default function OrdersPage() {
             default: return '';
         }
     };
-
-    // const getNextStatus = (current: OrderStatus): OrderStatus | null => {
-    //     switch (current) {
-    //         case 'PAID': return 'IN_PROGRESS';
-    //         case 'IN_PROGRESS': return 'PROOF_UPLOADED';
-    //         case 'PROOF_UPLOADED': return 'COMPLETED';
-    //         default: return null;
-    //     }
-    // };
 
     if (authLoading) {
         return (
@@ -194,14 +218,9 @@ export default function OrdersPage() {
                         <button
                             key={tab.value}
                             className={`${styles.tab} ${activeTab === tab.value ? styles.tabActive : ''}`}
-                            onClick={() => setActiveTab(tab.value)}
+                            onClick={() => handleTabChange(tab.value)}
                         >
                             {tab.label}
-                            {tab.value !== 'ALL' && (
-                                <span className={styles.tabCount}>
-                                    {orders.filter((o) => o.status === tab.value).length}
-                                </span>
-                            )}
                         </button>
                     ))}
                 </div>
@@ -211,79 +230,90 @@ export default function OrdersPage() {
                 {loading ? (
                     <div className={styles.loading}><div className="spinner" /></div>
                 ) : (
-                    <div className={styles.tableWrapper}>
-                        <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th>Order ID</th>
-                                    <th>User</th>
-                                    <th>Scheme</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredOrders.map((order) => (
-                                    <tr key={order.id}>
-                                        <td className={styles.orderId}>
-                                            {order.id.slice(0, 8)}...
-                                        </td>
-                                        <td>
-                                            <div className={styles.userCell}>
-                                                <span className={styles.userName}>{order.userName || 'Unknown'}</span>
-                                                <span className={styles.userPhone}>{order.userPhone}</span>
-                                            </div>
-                                        </td>
-                                        <td>{order.schemeName || '-'}</td>
-                                        <td className={styles.amount}>{formatAmount(order.paymentAmount)}</td>
-                                        <td>
-                                            <span className={`${styles.statusBadge} ${getStatusClass(order.status)}`}>
-                                                {order.status.replace('_', ' ')}
-                                            </span>
-                                        </td>
-                                        <td>{formatDate(order.createdAt)}</td>
-                                        <td className={styles.actions}>
-                                            {order.status === 'PAID' && (
-                                                <button
-                                                    className={styles.pickupBtn}
-                                                    onClick={() => handleStatusUpdate(order.id, 'IN_PROGRESS')}
-                                                    disabled={updating === order.id}
-                                                >
-                                                    {updating === order.id ? '...' : 'Pick Up'}
-                                                </button>
-                                            )}
-                                            {order.status === 'PROOF_UPLOADED' && (
-                                                <button
-                                                    className={styles.completeBtn}
-                                                    onClick={() => handleComplete(order.id)}
-                                                    disabled={updating === order.id}
-                                                >
-                                                    {updating === order.id ? '...' : 'Complete'}
-                                                </button>
-                                            )}
-                                            {order.status === 'IN_PROGRESS' && order.assignedTo === user?.userId && (
-                                                <button
-                                                    className={styles.progressBtn}
-                                                    onClick={() => handleStatusUpdate(order.id, 'PROOF_UPLOADED')}
-                                                    disabled={updating === order.id}
-                                                >
-                                                    {updating === order.id ? '...' : 'Upload Proof'}
-                                                </button>
-                                            )}
-                                            {(order.status === 'COMPLETED' || order.status === 'CANCELLED') && (
-                                                <span className={styles.noAction}>-</span>
-                                            )}
-                                        </td>
+                    <>
+                        <div className={styles.tableWrapper}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>Order ID</th>
+                                        <th>User</th>
+                                        <th>Scheme</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {filteredOrders.length === 0 && (
-                            <div className={styles.empty}>No orders found</div>
-                        )}
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {orders.map((order) => (
+                                        <tr key={order.id}>
+                                            <td className={styles.orderId}>
+                                                {order.id.slice(0, 8)}...
+                                            </td>
+                                            <td>
+                                                <div className={styles.userCell}>
+                                                    <span className={styles.userName}>{order.userName || 'Unknown'}</span>
+                                                    <span className={styles.userPhone}>{order.userPhone}</span>
+                                                </div>
+                                            </td>
+                                            <td>{order.schemeName || '-'}</td>
+                                            <td className={styles.amount}>{formatAmount(order.paymentAmount)}</td>
+                                            <td>
+                                                <span className={`${styles.statusBadge} ${getStatusClass(order.status)}`}>
+                                                    {order.status.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                            <td>{formatDate(order.createdAt)}</td>
+                                            <td className={styles.actions}>
+                                                {order.status === 'PAID' && (
+                                                    <button
+                                                        className={styles.pickupBtn}
+                                                        onClick={() => handleStatusUpdate(order.id, 'IN_PROGRESS')}
+                                                        disabled={updating === order.id}
+                                                    >
+                                                        {updating === order.id ? '...' : 'Pick Up'}
+                                                    </button>
+                                                )}
+                                                {order.status === 'PROOF_UPLOADED' && (
+                                                    <button
+                                                        className={styles.completeBtn}
+                                                        onClick={() => handleComplete(order.id)}
+                                                        disabled={updating === order.id}
+                                                    >
+                                                        {updating === order.id ? '...' : 'Complete'}
+                                                    </button>
+                                                )}
+                                                {order.status === 'IN_PROGRESS' && order.assignedTo === user?.userId && (
+                                                    <button
+                                                        className={styles.progressBtn}
+                                                        onClick={() => handleStatusUpdate(order.id, 'PROOF_UPLOADED')}
+                                                        disabled={updating === order.id}
+                                                    >
+                                                        {updating === order.id ? '...' : 'Upload Proof'}
+                                                    </button>
+                                                )}
+                                                {(order.status === 'COMPLETED' || order.status === 'CANCELLED') && (
+                                                    <span className={styles.noAction}>-</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {orders.length === 0 && (
+                                <div className={styles.empty}>No orders found</div>
+                            )}
+                        </div>
+
+                        {/* Pagination */}
+                        <Pagination
+                            page={pagination.page}
+                            totalPages={pagination.totalPages}
+                            total={pagination.total}
+                            onPageChange={handlePageChange}
+                            loading={loading}
+                        />
+                    </>
                 )}
             </main>
         </div>
