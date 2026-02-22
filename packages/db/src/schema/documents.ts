@@ -6,7 +6,7 @@ export const documents = pgTable('documents', {
     id: uuid('id').defaultRandom().primaryKey(),
     orderId: uuid('order_id').references(() => orders.id).notNull(),
     docType: varchar('doc_type', { length: 100 }).notNull(),
-    fileUrl: varchar('file_url', { length: 500 }).notNull(),
+    fileUrl: text('file_url').notNull(),
     fileKey: varchar('file_key', { length: 500 }).notNull(), // R2 object key
 
     status: varchar('status', { length: 30 }).default('UPLOADED').notNull(),

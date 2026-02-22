@@ -248,7 +248,9 @@ export default function OrdersPage() {
                                     {orders.map((order) => (
                                         <tr key={order.id}>
                                             <td className={styles.orderId}>
-                                                {order.id.slice(0, 8)}...
+                                                <Link href={`/admin/orders/${order.id}`} className={styles.orderLink}>
+                                                    {order.id.slice(0, 8)}...
+                                                </Link>
                                             </td>
                                             <td>
                                                 <div className={styles.userCell}>
@@ -265,6 +267,9 @@ export default function OrdersPage() {
                                             </td>
                                             <td>{formatDate(order.createdAt)}</td>
                                             <td className={styles.actions}>
+                                                <Link href={`/admin/orders/${order.id}`} className={styles.viewBtn}>
+                                                    👁️ View
+                                                </Link>
                                                 {order.status === 'PAID' && (
                                                     <button
                                                         className={styles.pickupBtn}

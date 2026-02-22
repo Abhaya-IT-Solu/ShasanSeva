@@ -7,7 +7,7 @@ import {
     verifyPaymentSignature,
     verifyWebhookSignature,
 } from '../services/razorpay.service.js';
-import { db, orders, schemes } from '@shasansetu/db';
+import { db, orders, schemes, documents } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { env } from '../config/env.js';
@@ -25,6 +25,10 @@ const verifyPaymentSchema = z.object({
     razorpayPaymentId: z.string(),
     razorpaySignature: z.string(),
     orderId: z.string().uuid(),
+    documents: z.array(z.object({
+        docType: z.string().min(1),
+        fileKey: z.string().min(1),
+    })).optional(),
 });
 
 /**
@@ -123,7 +127,7 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
 router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async (req: Request, res: Response) => {
     try {
         const userId = req.user!.userId;
-        const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId } = req.body;
+        const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId, documents: uploadedDocuments } = req.body;
 
         // Verify signature
         const isValid = verifyPaymentSignature({
@@ -179,6 +183,20 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             .where(eq(orders.id, orderId));
 
         logger.info('Payment verified and order updated', { orderId, razorpayPaymentId });
+
+        // Link uploaded documents to the order
+        if (uploadedDocuments && uploadedDocuments.length > 0) {
+            for (const doc of uploadedDocuments) {
+                await db.insert(documents).values({
+                    orderId,
+                    docType: doc.docType,
+                    fileKey: doc.fileKey,
+                    fileUrl: '', // Will be generated on demand via download-url
+                    status: 'UPLOADED',
+                });
+            }
+            logger.info('Documents linked to order', { orderId, count: uploadedDocuments.length });
+        }
 
         return res.json(successResponse({
             orderId,

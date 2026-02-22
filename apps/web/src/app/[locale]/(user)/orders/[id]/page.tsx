@@ -10,11 +10,29 @@ import styles from './orderDetail.module.css';
 
 interface Document {
     id: string;
-    documentType: string;
-    fileName: string;
+    docType: string;
     status: string;
     rejectionReason?: string;
 }
+
+interface Proof {
+    id: string;
+    orderId: string;
+    fileKey: string;
+    fileUrl: string;
+    proofType: string;
+    description: string | null;
+    uploadedBy: string;
+    uploadedAt: string;
+}
+
+const PROOF_TYPE_LABELS: Record<string, string> = {
+    'RECEIPT': '🧾 Receipt',
+    'SCREENSHOT': '📸 Screenshot',
+    'REFERENCE_ID': '🔢 Reference ID',
+    'CONFIRMATION': '✅ Confirmation',
+    'OTHER': '📎 Other',
+};
 
 interface Order {
     id: string;
@@ -54,8 +72,10 @@ export default function OrderDetailPage() {
     useAuth(); // Ensure user is authenticated
     const [order, setOrder] = useState<Order | null>(null);
     const [documents, setDocuments] = useState<Document[]>([]);
+    const [proofs, setProofs] = useState<Proof[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [downloadingProof, setDownloadingProof] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchOrder = async () => {
@@ -75,10 +95,37 @@ export default function OrderDetailPage() {
             }
         };
 
+        const fetchProofs = async () => {
+            try {
+                const response = await api.request(`/api/proofs/order/${params.id}`);
+                if (response.success) {
+                    setProofs(response.data as Proof[]);
+                }
+            } catch {
+                // Non-critical, silently fail
+            }
+        };
+
         if (params.id) {
             fetchOrder();
+            fetchProofs();
         }
     }, [params.id, t]);
+
+    const handleDownloadProof = async (proofId: string) => {
+        setDownloadingProof(proofId);
+        try {
+            const response = await api.request(`/api/proofs/${proofId}/download-url`);
+            if (response.success) {
+                const data = response.data as { downloadUrl: string };
+                window.open(data.downloadUrl, '_blank');
+            }
+        } catch {
+            // silently fail
+        } finally {
+            setDownloadingProof(null);
+        }
+    };
 
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString(locale === 'mr' ? 'mr-IN' : 'en-IN', {
@@ -202,8 +249,7 @@ export default function OrderDetailPage() {
                                 <div className={styles.docInfo}>
                                     <span className={styles.docIcon}>📄</span>
                                     <div>
-                                        <span className={styles.docName}>{doc.fileName}</span>
-                                        <span className={styles.docType}>{doc.documentType}</span>
+                                        <span className={styles.docName}>{doc.docType}</span>
                                     </div>
                                 </div>
                                 <span className={`${styles.docStatus} ${styles[doc.status.toLowerCase()]}`}>
@@ -219,6 +265,39 @@ export default function OrderDetailPage() {
                     )}
                 </div>
             </section>
+
+            {/* Proofs */}
+            {proofs.length > 0 && (
+                <section className={styles.documents}>
+                    <h2>📎 {t('proofs') || 'Uploaded Proofs'}</h2>
+                    <div className={styles.docsList}>
+                        {proofs.map((proof) => (
+                            <div key={proof.id} className={styles.docItem}>
+                                <div className={styles.docInfo}>
+                                    <span className={styles.docIcon}>
+                                        {PROOF_TYPE_LABELS[proof.proofType]?.split(' ')[0] || '📎'}
+                                    </span>
+                                    <div>
+                                        <span className={styles.docName}>
+                                            {PROOF_TYPE_LABELS[proof.proofType] || proof.proofType}
+                                        </span>
+                                        {proof.description && (
+                                            <span className={styles.docType}>{proof.description}</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    className={styles.proofDownloadBtn}
+                                    onClick={() => handleDownloadProof(proof.id)}
+                                    disabled={downloadingProof === proof.id}
+                                >
+                                    {downloadingProof === proof.id ? '⏳' : '⬇️'} {t('download') || 'Download'}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* Help */}
             <section className={styles.help}>

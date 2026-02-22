@@ -15,8 +15,8 @@ import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils
 
 const router: Router = Router();
 
-// All routes require admin authentication
-router.use(authMiddleware, adminMiddleware);
+// All routes require authentication (but not all require admin)
+router.use(authMiddleware);
 
 // Schema for requesting proof upload URL
 const uploadProofUrlSchema = z.object({
@@ -28,9 +28,9 @@ const uploadProofUrlSchema = z.object({
 
 /**
  * POST /api/proofs/upload-url
- * Get a pre-signed URL for uploading proof
+ * Get a pre-signed URL for uploading proof (admin only)
  */
-router.post('/upload-url', validateBody(uploadProofUrlSchema), async (req: Request, res: Response) => {
+router.post('/upload-url', adminMiddleware, validateBody(uploadProofUrlSchema), async (req: Request, res: Response) => {
     try {
         const adminId = req.user!.userId;
         const { orderId, proofType, contentType, description } = req.body;
@@ -89,9 +89,9 @@ router.post('/upload-url', validateBody(uploadProofUrlSchema), async (req: Reque
 
 /**
  * POST /api/proofs/:id/confirm
- * Confirm proof upload and update order status
+ * Confirm proof upload and update order status (admin only)
  */
-router.post('/:id/confirm', async (req: Request, res: Response) => {
+router.post('/:id/confirm', adminMiddleware, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const adminId = req.user!.userId;
@@ -166,11 +166,29 @@ router.post('/:id/confirm', async (req: Request, res: Response) => {
 
 /**
  * GET /api/proofs/order/:orderId
- * Get all proofs for an order
+ * Get all proofs for an order (admin OR the order's owner)
  */
 router.get('/order/:orderId', async (req: Request, res: Response) => {
     try {
         const { orderId } = req.params;
+        const userId = req.user!.userId;
+        const userType = req.user!.userType;
+
+        // If not admin, verify user owns this order
+        if (userType !== 'ADMIN') {
+            const orderResult = await db.select()
+                .from(orders)
+                .where(eq(orders.id, orderId));
+
+            if (orderResult.length === 0 || orderResult[0].userId !== userId) {
+                return res.status(403).json(
+                    errorResponse({
+                        code: ErrorCodes.FORBIDDEN,
+                        message: 'Unauthorized',
+                    })
+                );
+            }
+        }
 
         const result = await db.select()
             .from(proofs)
@@ -190,11 +208,13 @@ router.get('/order/:orderId', async (req: Request, res: Response) => {
 
 /**
  * GET /api/proofs/:id/download-url
- * Get download URL for a proof
+ * Get download URL for a proof (admin OR the order's owner)
  */
 router.get('/:id/download-url', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const userId = req.user!.userId;
+        const userType = req.user!.userType;
 
         const result = await db.select()
             .from(proofs)
@@ -210,6 +230,23 @@ router.get('/:id/download-url', async (req: Request, res: Response) => {
         }
 
         const proof = result[0];
+
+        // If not admin, verify user owns the order this proof belongs to
+        if (userType !== 'ADMIN') {
+            const orderResult = await db.select()
+                .from(orders)
+                .where(eq(orders.id, proof.orderId));
+
+            if (orderResult.length === 0 || orderResult[0].userId !== userId) {
+                return res.status(403).json(
+                    errorResponse({
+                        code: ErrorCodes.FORBIDDEN,
+                        message: 'Unauthorized',
+                    })
+                );
+            }
+        }
+
         const { downloadUrl, expiresIn } = await getDownloadUrl(proof.fileKey);
 
         return res.json(successResponse({

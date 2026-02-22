@@ -25,6 +25,7 @@ interface Scheme {
 interface UploadedDoc {
     documentType: string;
     documentId: string;
+    fileKey: string;
     fileName: string;
     status: 'uploading' | 'uploaded' | 'error';
 }
@@ -96,7 +97,7 @@ export default function ApplyPage() {
             // Update state to show uploading
             setUploadedDocs(prev => [
                 ...prev.filter(d => d.documentType !== docType),
-                { documentType: docType, documentId: '', fileName: file.name, status: 'uploading' },
+                { documentType: docType, documentId: '', fileKey: '', fileName: file.name, status: 'uploading' },
             ]);
 
             // Get signed upload URL
@@ -112,7 +113,7 @@ export default function ApplyPage() {
                 throw new Error('Failed to get upload URL');
             }
 
-            const { uploadUrl, documentId } = urlResponse.data as any;
+            const { uploadUrl, documentId, key } = urlResponse.data as any;
 
             // Upload file directly to R2
             const uploadResponse = await fetch(uploadUrl, {
@@ -136,7 +137,7 @@ export default function ApplyPage() {
             setUploadedDocs(prev =>
                 prev.map(d =>
                     d.documentType === docType
-                        ? { ...d, documentId, status: 'uploaded' }
+                        ? { ...d, documentId: documentId || '', fileKey: key, status: 'uploaded' }
                         : d
                 )
             );
@@ -179,7 +180,11 @@ export default function ApplyPage() {
                 description: `Application for ${scheme.name}`,
                 order_id: razorpayOrderId,
                 handler: async (response: any) => {
-                    // Verify payment
+                    // Send uploaded document keys along with payment verification
+                    const docsToLink = uploadedDocs
+                        .filter(d => d.status === 'uploaded' && d.fileKey)
+                        .map(d => ({ docType: d.documentType, fileKey: d.fileKey }));
+
                     const verifyResponse = await api.request('/api/payments/verify', {
                         method: 'POST',
                         body: {
@@ -187,6 +192,7 @@ export default function ApplyPage() {
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpaySignature: response.razorpay_signature,
                             orderId: newOrderId,
+                            documents: docsToLink,
                         },
                     });
 

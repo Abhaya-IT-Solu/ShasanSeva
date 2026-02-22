@@ -109,6 +109,7 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
         const orderDocuments = await db.select({
             id: documents.id,
             docType: documents.docType,
+            fileKey: documents.fileKey,
             status: documents.status,
             rejectionReason: documents.rejectionReason,
             uploadedAt: documents.uploadedAt,
@@ -202,7 +203,7 @@ router.patch('/:id/status', authMiddleware, adminMiddleware, validateBody(update
         // Validate status transitions
         const validTransitions: Record<string, string[]> = {
             'PAID': ['IN_PROGRESS', 'CANCELLED'],
-            'IN_PROGRESS': ['PROOF_UPLOADED', 'CANCELLED'],
+            'IN_PROGRESS': ['PROOF_UPLOADED', 'COMPLETED', 'CANCELLED'],
             'PROOF_UPLOADED': ['COMPLETED', 'CANCELLED'],
             'COMPLETED': [],
             'CANCELLED': [],

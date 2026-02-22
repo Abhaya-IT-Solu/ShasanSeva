@@ -5,7 +5,7 @@ import { admins } from './admins.js';
 export const proofs = pgTable('proofs', {
     id: uuid('id').defaultRandom().primaryKey(),
     orderId: uuid('order_id').references(() => orders.id).notNull(),
-    fileUrl: varchar('file_url', { length: 500 }).notNull(),
+    fileUrl: text('file_url').notNull(),
     fileKey: varchar('file_key', { length: 500 }).notNull(),
     proofType: varchar('proof_type', { length: 100 }), // RECEIPT, SCREENSHOT, REFERENCE_ID, etc.
     description: text('description'),
