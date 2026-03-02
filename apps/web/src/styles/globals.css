@@ -1,16 +1,18 @@
 /* ================================
-   ShasanSetu Design System
-   Government Portal Style with Modern UI
+   ShasanSeva Design System
+   Green & Orange Government Portal
    ================================ */
 
 :root {
-  /* Primary Colors - Government Trust Blue */
-  --color-primary: #1E5EFF;
-  --color-primary-dark: #1A52E0;
-  --color-primary-light: #E8F0FF;
+  /* Primary Colors - Government Green */
+  --color-primary: #1B5E20;
+  --color-primary-dark: #144618;
+  --color-primary-light: #e8f5e9;
 
-  --color-secondary: #64748b;
-  --color-secondary-dark: #475569;
+  /* Secondary Colors - Action Orange */
+  --color-secondary: #FF9800;
+  --color-secondary-dark: #F57C00;
+  --color-secondary-light: #fff7e0;
 
   /* Status Colors */
   --color-success: #10b981;
@@ -27,8 +29,14 @@
   --color-health: #388E3C;
 
   /* Utility Bar */
-  --color-utility-bar-bg: #004D4D;
+  --color-utility-bar-bg: #1B5E20;
   --color-utility-bar-text: #FFFFFF;
+
+  /* Footer */
+  --color-footer-bg: #0a3015;
+
+  /* Background */
+  --color-background: #f8faf9;
 
   /* Neutral Colors */
   --color-white: #ffffff;
@@ -45,7 +53,7 @@
   --color-black: #020617;
 
   /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Font Sizes */

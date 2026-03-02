@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
-import { Link } from '@/i18n/routing';
+// import { Link } from '@/i18n/routing';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import styles from './login.module.css';
@@ -43,7 +42,7 @@ export default function LoginPage() {
     if (authLoading) {
         return (
             <main className={styles.main}>
-                <div className={styles.container}>
+                <div className={styles.card}>
                     <div className="spinner" />
                 </div>
             </main>
@@ -130,36 +129,38 @@ export default function LoginPage() {
 
     return (
         <main className={styles.main}>
-            <div className={styles.container}>
-                {/* Logo */}
-                <Link href="/" className={styles.logo}>
-                    <Image src="/logo/logo_text.png" alt="Logo" width={200} height={50} />
-                </Link>
-
-                {/* Login Card */}
-                <div className={styles.card}>
-                    {/* Tabs */}
-                    <div className={styles.tabs}>
-                        <button
-                            className={`${styles.tab} ${tab === 'login' ? styles.activeTab : ''}`}
-                            onClick={() => { setTab('login'); setError(''); }}
-                        >
-                            {t('loginTab')}
-                        </button>
-                        <button
-                            className={`${styles.tab} ${tab === 'register' ? styles.activeTab : ''}`}
-                            onClick={() => { setTab('register'); setError(''); }}
-                        >
-                            {t('registerTab')}
-                        </button>
+            <div className={styles.card}>
+                {/* Header with Icon */}
+                <div className={styles.cardHeader}>
+                    <div className={styles.headerIcon}>
+                        <span className="material-icons">verified_user</span>
                     </div>
+                    <h1 className={styles.headerTitle}>{tCommon('appName')}</h1>
+                    <p className={styles.headerSubtitle}>{t('loginSubtitle')}</p>
+                </div>
 
-                    <p className={styles.subtitle}>
-                        {tab === 'login' ? t('loginSubtitle') : t('registerSubtitle')}
-                    </p>
+                {/* Tabs with bottom indicator */}
+                <div className={styles.tabs}>
+                    <button
+                        className={`${styles.tab} ${tab === 'login' ? styles.activeTab : ''}`}
+                        onClick={() => { setTab('login'); setError(''); }}
+                    >
+                        {t('loginTab')}
+                        <div className={`${styles.tabIndicator} ${tab === 'login' ? styles.activeIndicator : ''}`}></div>
+                    </button>
+                    <button
+                        className={`${styles.tab} ${tab === 'register' ? styles.activeTab : ''}`}
+                        onClick={() => { setTab('register'); setError(''); }}
+                    >
+                        {t('registerTab')}
+                        <div className={`${styles.tabIndicator} ${tab === 'register' ? styles.activeIndicator : ''}`}></div>
+                    </button>
+                </div>
 
+                <div className={styles.formWrapper}>
                     {error && (
                         <div className={styles.error}>
+                            <span className="material-icons" style={{ fontSize: 16 }}>error_outline</span>
                             {error}
                         </div>
                     )}
@@ -167,33 +168,37 @@ export default function LoginPage() {
                     <form onSubmit={handleSubmit} className={styles.form}>
                         {/* Name Input (Register only) */}
                         {tab === 'register' && (
-                            <div className="input-group">
-                                <label htmlFor="name" className="input-label">
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="name" className={styles.label}>
                                     {t('nameLabel')}
                                 </label>
-                                <input
-                                    id="name"
-                                    type="text"
-                                    className="input"
-                                    placeholder={t('namePlaceholder')}
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    disabled={isLoading}
-                                />
+                                <div className={styles.inputWithIcon}>
+                                    <span className={`material-icons ${styles.inputIcon}`}>person</span>
+                                    <input
+                                        id="name"
+                                        type="text"
+                                        className={styles.input}
+                                        placeholder={t('namePlaceholder')}
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        disabled={isLoading}
+                                    />
+                                </div>
                             </div>
                         )}
 
                         {/* Phone Input */}
-                        <div className="input-group">
-                            <label htmlFor="phone" className="input-label">
+                        <div className={styles.inputGroup}>
+                            <label htmlFor="phone" className={styles.label}>
                                 {t('phoneLabel')}
                             </label>
-                            <div className={styles.phoneInput}>
+                            <div className={styles.inputWithIcon}>
+                                <span className={`material-icons ${styles.inputIcon}`}>phone</span>
                                 <span className={styles.countryCode}>+91</span>
                                 <input
                                     id="phone"
                                     type="tel"
-                                    className="input"
+                                    className={`${styles.input} ${styles.phoneInput}`}
                                     placeholder={t('phonePlaceholder')}
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
@@ -204,15 +209,16 @@ export default function LoginPage() {
                         </div>
 
                         {/* Password Input */}
-                        <div className="input-group">
-                            <label htmlFor="password" className="input-label">
+                        <div className={styles.inputGroup}>
+                            <label htmlFor="password" className={styles.label}>
                                 {t('passwordLabel')}
                             </label>
-                            <div className={styles.passwordInput}>
+                            <div className={styles.inputWithIcon}>
+                                <span className={`material-icons ${styles.inputIcon}`}>lock</span>
                                 <input
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
-                                    className="input"
+                                    className={styles.input}
                                     placeholder={t('passwordPlaceholder')}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -223,7 +229,9 @@ export default function LoginPage() {
                                     className={styles.togglePassword}
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                                    <span className="material-icons" style={{ fontSize: 18 }}>
+                                        {showPassword ? 'visibility' : 'visibility_off'}
+                                    </span>
                                 </button>
                             </div>
                             {tab === 'register' && (
@@ -235,26 +243,29 @@ export default function LoginPage() {
 
                         {/* Confirm Password (Register only) */}
                         {tab === 'register' && (
-                            <div className="input-group">
-                                <label htmlFor="confirmPassword" className="input-label">
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="confirmPassword" className={styles.label}>
                                     {t('confirmPasswordLabel')}
                                 </label>
-                                <input
-                                    id="confirmPassword"
-                                    type={showPassword ? 'text' : 'password'}
-                                    className="input"
-                                    placeholder={t('confirmPasswordPlaceholder')}
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    disabled={isLoading}
-                                />
+                                <div className={styles.inputWithIcon}>
+                                    <span className={`material-icons ${styles.inputIcon}`}>lock_outline</span>
+                                    <input
+                                        id="confirmPassword"
+                                        type={showPassword ? 'text' : 'password'}
+                                        className={styles.input}
+                                        placeholder={t('confirmPasswordPlaceholder')}
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        disabled={isLoading}
+                                    />
+                                </div>
                             </div>
                         )}
 
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            className="btn btn-primary btn-lg btn-full"
+                            className={styles.submitBtn}
                             disabled={isLoading || phone.length !== 10 || password.length < 8}
                         >
                             {isLoading ? (
@@ -263,32 +274,31 @@ export default function LoginPage() {
                                 tab === 'login' ? t('loginButton') : t('registerButton')
                             )}
                         </button>
-
-                        {/* Divider */}
-                        <div className={styles.divider}>
-                            <span>{t('orContinueWith')}</span>
-                        </div>
-
-                        {/* Google Sign-In */}
-                        <a
-                            href="/api/auth/google"
-                            className={styles.googleBtn}
-                        >
-                            <svg viewBox="0 0 24 24" width="20" height="20">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                            </svg>
-                            {t('googleSignIn')}
-                        </a>
                     </form>
-                </div>
 
-                {/* Footer */}
-                <p className={styles.footer}>
-                    {t('termsFooter')}
-                </p>
+                    {/* Divider */}
+                    <div className={styles.divider}>
+                        <div className={styles.dividerLine}></div>
+                        <span className={styles.dividerText}>{t('orContinueWith')}</span>
+                        <div className={styles.dividerLine}></div>
+                    </div>
+
+                    {/* Google Sign-In */}
+                    <a href="/api/auth/google" className={styles.googleBtn}>
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        {t('googleSignIn')}
+                    </a>
+
+                    {/* Footer */}
+                    <p className={styles.cardFooter}>
+                        {t('termsFooter')}
+                    </p>
+                </div>
             </div>
         </main>
     );

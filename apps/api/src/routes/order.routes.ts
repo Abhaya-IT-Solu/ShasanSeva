@@ -255,6 +255,90 @@ router.patch('/:id/status', authMiddleware, adminMiddleware, validateBody(update
 });
 
 /**
+ * POST /api/orders/:id/resubmit
+ * Allow a user to resubmit their cancelled/rejected order
+ * Resets status to PAID so it re-enters the admin queue
+ */
+router.post('/:id/resubmit', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!.userId;
+
+        // Get order
+        const orderResult = await db.select()
+            .from(orders)
+            .where(eq(orders.id, id));
+
+        if (orderResult.length === 0) {
+            return res.status(404).json(
+                errorResponse({
+                    code: ErrorCodes.NOT_FOUND,
+                    message: 'Order not found',
+                })
+            );
+        }
+
+        const order = orderResult[0];
+
+        // Verify ownership
+        if (order.userId !== userId) {
+            return res.status(403).json(
+                errorResponse({
+                    code: ErrorCodes.FORBIDDEN,
+                    message: 'You do not have permission to modify this order',
+                })
+            );
+        }
+
+        // Only cancelled/rejected orders can be resubmitted
+        if (order.status !== 'CANCELLED') {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'Only cancelled/rejected orders can be resubmitted',
+                })
+            );
+        }
+
+        // Reset order status to PAID, clear admin assignment
+        await db.update(orders)
+            .set({
+                status: 'PAID',
+                assignedTo: null,
+                adminNotes: null,
+                updatedAt: new Date(),
+            })
+            .where(eq(orders.id, id));
+
+        // Reset any REJECTED documents back to UPLOADED
+        await db.update(documents)
+            .set({
+                status: 'UPLOADED',
+                rejectionReason: null,
+                verifiedAt: null,
+                verifiedBy: null,
+            })
+            .where(eq(documents.orderId, id));
+
+        logger.info('Order resubmitted', { orderId: id, userId });
+
+        return res.json(successResponse({
+            orderId: id,
+            status: 'PAID',
+            message: 'Order resubmitted successfully. It will be reviewed again.',
+        }));
+    } catch (error) {
+        logger.error('Failed to resubmit order', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Failed to resubmit order',
+            })
+        );
+    }
+});
+
+/**
  * GET /api/orders/admin/queue
  * Get orders for admin processing (admin only) - paginated
  */

@@ -1,7 +1,8 @@
 /* Utility Bar */
 .utilityBar {
-    background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%);
+    background: var(--color-primary);
     padding: 8px 0;
+    border-bottom: 1px solid var(--color-primary-dark);
 }
 
 .container {
@@ -43,17 +44,59 @@
 
 /* Navbar */
 .navbar {
-    background: white;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
     padding: 16px 0;
     top: 0;
     z-index: 100;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-bottom: 2px solid #fed7aa;
 }
 
 .navContent {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+.logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.logoSubtitle {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-secondary);
+    margin-top: -4px;
+}
+
+.navLinks {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .navLinks {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        margin-left: 40px;
+    }
+}
+
+.navLink {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.navLink:hover {
+    color: var(--color-secondary);
 }
 
 .navActions {
@@ -78,7 +121,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary) 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #2e7d32 100%);
     color: white;
     display: flex;
     align-items: center;
@@ -101,7 +144,9 @@
 }
 
 .dropdownItem {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     padding: 10px 16px;
     text-align: left;
@@ -116,30 +161,33 @@
 }
 
 .dropdownItem:hover {
-    background: var(--color-gray-100);
+    background: var(--color-primary-light);
+    color: var(--color-primary);
 }
 
 /* Buttons */
 .primaryBtn {
     padding: 10px 20px;
-    background: var(--color-primary);
+    background: var(--color-secondary);
     color: white;
     border-radius: 8px;
     font-weight: 600;
     font-size: 14px;
     text-decoration: none;
     transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.25);
 }
 
 .primaryBtn:hover {
-    background: var(--color-primary-dark);
+    background: var(--color-secondary-dark);
     transform: translateY(-1px);
 }
 
 .secondaryBtn {
     padding: 10px 20px;
     background: transparent;
-    color: var(--color-gray-700);
+    color: var(--color-primary);
+    border: 2px solid rgba(27, 94, 32, 0.2);
     border-radius: 8px;
     font-weight: 500;
     font-size: 14px;
@@ -148,7 +196,8 @@
 }
 
 .secondaryBtn:hover {
-    background: var(--color-gray-100);
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
 }
 
 /* Mobile */

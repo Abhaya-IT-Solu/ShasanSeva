@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ShasanSeva User Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#14b830",
+                        "primary-dark": "#0f8c24",
+                        "accent-orange": "#ff6b00", // Safety Orange
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#112114",
+                        "neutral-surface": "#ffffff",
+                        "neutral-surface-dark": "#1a3320",
+                    },
+                    fontFamily: {
+                        "display": ["Work Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "2rem", "full": "9999px"},
+                    backgroundImage: {
+                        'geo-pattern': "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2314b830' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Work Sans', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-display min-h-screen flex flex-col relative overflow-x-hidden">
+<!-- Background Pattern Overlay -->
+<div class="fixed inset-0 bg-geo-pattern pointer-events-none z-0"></div>
+<!-- Navigation -->
+<nav class="relative z-10 bg-white dark:bg-neutral-surface-dark border-b border-primary/10 dark:border-primary/20 sticky top-0 backdrop-blur-md bg-opacity-90 dark:bg-opacity-90">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between h-20">
+<div class="flex items-center gap-3">
+<div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-white">
+<span class="material-icons-round text-2xl">account_balance</span>
+</div>
+<span class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">Shasan<span class="text-primary">Seva</span></span>
+</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="border-b-2 border-primary text-slate-900 dark:text-white font-medium px-1 pt-1 text-sm" href="#">Dashboard</a>
+<a class="border-b-2 border-transparent text-slate-500 hover:text-primary dark:text-slate-300 dark:hover:text-primary font-medium px-1 pt-1 text-sm transition-colors" href="#">Services</a>
+<a class="border-b-2 border-transparent text-slate-500 hover:text-primary dark:text-slate-300 dark:hover:text-primary font-medium px-1 pt-1 text-sm transition-colors" href="#">Documents</a>
+<a class="border-b-2 border-transparent text-slate-500 hover:text-primary dark:text-slate-300 dark:hover:text-primary font-medium px-1 pt-1 text-sm transition-colors" href="#">Help</a>
+</div>
+<div class="flex items-center space-x-4">
+<button class="text-slate-400 hover:text-accent-orange transition-colors relative">
+<span class="material-icons-round">notifications</span>
+<span class="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white dark:ring-neutral-surface-dark bg-accent-orange"></span>
+</button>
+<div class="flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Priya Sharma</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Citizen ID: 982201</p>
+</div>
+<img alt="Profile of Priya Sharma" class="h-10 w-10 rounded-full border-2 border-primary object-cover" data-alt="Profile picture of a smiling woman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAY139gdZb7X2D2uCm-ZABkuwECOSl-4YPjZ2fA67FdYSuZh5CUipop5qC4OAISwivAJcnBzHdxgEPKKDV-oJURRX4W_LTJgyBhYe5zlx12Emc3WLOydSseKSawlGgEDUBnBrFPSxNWhAVm-W7ZwE8df_KiZleQbtoay__MWVxjqZ5mgYfi4N5sgyLL5nUygdhq54vlVDLlPa4rWyj6DOfR2aFuRA1hibgB63Ks2cjsRPJZ9YqdxwE1h84ZCj5bHGb5n1D7jg4rbuQ"/>
+</div>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+<!-- Welcome Hero Section -->
+<section class="rounded-2xl bg-primary text-white p-8 sm:p-10 shadow-lg shadow-primary/20 relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+<div class="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
+<div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+<div>
+<h1 class="text-3xl sm:text-4xl font-bold mb-2">Good Morning, Priya! 👋</h1>
+<p class="text-primary-100 text-lg max-w-xl">You have <span class="font-bold text-white bg-white/20 px-2 py-0.5 rounded-md">2 active applications</span> pending review. We've streamlined your dashboard for quicker access.</p>
+</div>
+<button class="bg-white text-primary hover:bg-slate-100 font-semibold py-3 px-6 rounded-xl shadow-sm transition-all transform active:scale-95 flex items-center gap-2">
+<span class="material-icons-round text-accent-orange">add_circle</span>
+                    New Application
+                </button>
+</div>
+</section>
+<!-- Quick Actions Grid -->
+<section>
+<h2 class="text-xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+<span class="w-1.5 h-6 bg-accent-orange rounded-full"></span>
+                Quick Actions
+            </h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1 -->
+<a class="bg-white dark:bg-neutral-surface-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 hover:shadow-md transition-all group flex flex-col items-start h-full" href="#">
+<div class="w-12 h-12 bg-accent-orange/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent-orange group-hover:text-white transition-colors text-accent-orange">
+<span class="material-icons-round text-3xl">search</span>
+</div>
+<h3 class="font-semibold text-lg text-slate-900 dark:text-white mb-1">Browse Services</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Find over 150+ government services available online.</p>
+<div class="mt-auto text-primary font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Explore <span class="material-icons-round text-sm">arrow_forward</span>
+</div>
+</a>
+<!-- Card 2 -->
+<a class="bg-white dark:bg-neutral-surface-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 hover:shadow-md transition-all group flex flex-col items-start h-full" href="#">
+<div class="w-12 h-12 bg-accent-orange/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent-orange group-hover:text-white transition-colors text-accent-orange">
+<span class="material-icons-round text-3xl">description</span>
+</div>
+<h3 class="font-semibold text-lg text-slate-900 dark:text-white mb-1">My Applications</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Track the status of your submitted forms in real-time.</p>
+<div class="mt-auto text-primary font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                        View Status <span class="material-icons-round text-sm">arrow_forward</span>
+</div>
+</a>
+<!-- Card 3 -->
+<a class="bg-white dark:bg-neutral-surface-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 hover:shadow-md transition-all group flex flex-col items-start h-full" href="#">
+<div class="w-12 h-12 bg-accent-orange/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent-orange group-hover:text-white transition-colors text-accent-orange">
+<span class="material-icons-round text-3xl">folder_shared</span>
+</div>
+<h3 class="font-semibold text-lg text-slate-900 dark:text-white mb-1">Digital Locker</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Access your issued certificates and uploaded documents.</p>
+<div class="mt-auto text-primary font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Open Vault <span class="material-icons-round text-sm">arrow_forward</span>
+</div>
+</a>
+<!-- Card 4 -->
+<a class="bg-white dark:bg-neutral-surface-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 hover:border-primary/50 hover:shadow-md transition-all group flex flex-col items-start h-full" href="#">
+<div class="w-12 h-12 bg-accent-orange/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent-orange group-hover:text-white transition-colors text-accent-orange">
+<span class="material-icons-round text-3xl">help_outline</span>
+</div>
+<h3 class="font-semibold text-lg text-slate-900 dark:text-white mb-1">Help &amp; Support</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Need assistance? Check FAQs or contact support.</p>
+<div class="mt-auto text-primary font-medium text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Get Help <span class="material-icons-round text-sm">arrow_forward</span>
+</div>
+</a>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Recent Applications List -->
+<section class="lg:col-span-2">
+<div class="flex justify-between items-end mb-4">
+<h2 class="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                        Recent Applications
+                    </h2>
+<a class="text-sm font-medium text-primary hover:text-primary-dark hover:underline" href="#">View All</a>
+</div>
+<div class="bg-white dark:bg-neutral-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+<!-- Application Item 1 -->
+<div class="p-6 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+<span class="material-icons-round">badge</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Income Certificate</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">App ID: #INC-2023-8821 • Applied on Oct 24, 2023</p>
+</div>
+</div>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800">
+<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                                Processing
+                            </span>
+</div>
+<!-- Progress Bar -->
+<div class="relative pt-2">
+<div class="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+<span class="text-primary">Submitted</span>
+<span class="text-primary">Verification</span>
+<span class="text-slate-400">Approval</span>
+<span class="text-slate-400">Issued</span>
+</div>
+<div class="overflow-hidden h-2 mb-1 text-xs flex rounded bg-slate-100 dark:bg-slate-700">
+<div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-primary to-accent-orange" style="width: 50%"></div>
+</div>
+</div>
+</div>
+<!-- Application Item 2 -->
+<div class="p-6 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+<span class="material-icons-round">drive_eta</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Driving License Renewal</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">App ID: #DL-2023-4410 • Applied on Nov 01, 2023</p>
+</div>
+</div>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800 animate-pulse">
+<span class="material-icons-round text-sm mr-1">warning</span>
+                                Action Required
+                            </span>
+</div>
+<!-- Progress Bar -->
+<div class="relative pt-2">
+<div class="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+<span class="text-primary">Submitted</span>
+<span class="text-accent-orange">Doc Verification</span>
+<span class="text-slate-400">Fee Payment</span>
+<span class="text-slate-400">Dispatched</span>
+</div>
+<div class="overflow-hidden h-2 mb-1 text-xs flex rounded bg-slate-100 dark:bg-slate-700">
+<div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary" style="width: 25%"></div>
+<div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-accent-orange animate-pulse" style="width: 10%"></div>
+</div>
+<p class="text-xs text-accent-orange mt-2 font-medium flex items-center">
+<span class="material-icons-round text-sm mr-1">info</span>
+                                Please re-upload your proof of address. Document was blurry.
+                            </p>
+</div>
+</div>
+<!-- Application Item 3 -->
+<div class="p-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 flex items-center justify-center flex-shrink-0">
+<span class="material-icons-round">water_drop</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white">Water Connection Request</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">App ID: #WAT-2023-1102 • Applied on Sep 15, 2023</p>
+</div>
+</div>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+<span class="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+                                Completed
+                            </span>
+</div>
+<!-- Progress Bar (Full) -->
+<div class="relative pt-2">
+<div class="overflow-hidden h-2 mb-1 text-xs flex rounded bg-slate-100 dark:bg-slate-700">
+<div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary" style="width: 100%"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Sidebar Widgets -->
+<aside class="space-y-6">
+<!-- Notifications Widget -->
+<div class="bg-white dark:bg-neutral-surface-dark p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+<h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">New Updates</h3>
+<ul class="space-y-4">
+<li class="flex gap-3 items-start">
+<div class="mt-1 h-2 w-2 rounded-full bg-accent-orange flex-shrink-0"></div>
+<div>
+<p class="text-sm font-semibold text-slate-800 dark:text-slate-200">New Solar Subsidy Scheme</p>
+<p class="text-xs text-slate-500 mt-1">Apply for 40% subsidy on rooftop solar installations. Valid till Dec 31st.</p>
+</div>
+</li>
+<li class="flex gap-3 items-start">
+<div class="mt-1 h-2 w-2 rounded-full bg-primary flex-shrink-0"></div>
+<div>
+<p class="text-sm font-semibold text-slate-800 dark:text-slate-200">System Maintenance</p>
+<p class="text-xs text-slate-500 mt-1">Portal will be down for maintenance on Sunday 2 AM - 4 AM.</p>
+</div>
+</li>
+</ul>
+<button class="w-full mt-6 py-2 px-4 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        View All Notices
+                    </button>
+</div>
+<!-- Quick Map/Location Widget -->
+<div class="bg-white dark:bg-neutral-surface-dark rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+<div class="h-32 bg-slate-200 relative">
+<img alt="Map of local government office area" class="w-full h-full object-cover opacity-80" data-alt="Minimalist map showing city streets" data-location="City Center" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl5WLI9J-X1P_Cwpen8VWe8_d6DAlBLmO6ZzJRD12OowIuLl-cw-vrIeWERxkwcU4FW19UkBipe8LbHvtRmWmuoKlRpfXhvpH31daxdI9jjfJtkvV8oGDLs6uUIpcUNXDtEIGgM3ZZ99ji16c3aD6yaagW9Qi-lOhT3CNNYHAH_LENW5N6tKandBxXL1DnzTOa3goGakEWwSGcjj92gaRYNjVEf_SnoWSuWBuRdUwIrc_Gh7fLLj-7av3EuzJ-pEEdFctpxMunZxY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+<h3 class="text-white font-bold">Nearest Seva Kendra</h3>
+</div>
+</div>
+<div class="p-4">
+<div class="flex items-start gap-3 mb-3">
+<span class="material-icons-round text-primary mt-0.5">location_on</span>
+<div>
+<p class="text-sm font-medium text-slate-800 dark:text-white">Civic Center, Block B</p>
+<p class="text-xs text-slate-500">1.2 km away • Open until 5:00 PM</p>
+</div>
+</div>
+<button class="w-full py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg text-sm font-medium transition-colors">
+                            Get Directions
+                        </button>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-white dark:bg-neutral-surface-dark border-t border-slate-200 dark:border-slate-800 mt-12 py-8 relative z-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-sm text-slate-500 dark:text-slate-400">© 2023 ShasanSeva Portal. Government of India.</p>
+<div class="flex space-x-6 text-sm text-slate-500 dark:text-slate-400">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Accessibility</a>
+<a class="hover:text-primary transition-colors" href="#">Contact Us</a>
+</div>
+</div>
+</footer>
+</body></html>

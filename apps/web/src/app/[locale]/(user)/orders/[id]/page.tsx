@@ -15,6 +15,13 @@ interface Document {
     rejectionReason?: string;
 }
 
+interface RequiredDoc {
+    type: string;
+    label: string;
+    required: boolean;
+    description?: string;
+}
+
 interface Proof {
     id: string;
     orderId: string;
@@ -43,9 +50,11 @@ interface Order {
     paidAt: string | null;
     completedAt: string | null;
     rejectionReason?: string;
+    adminNotes?: string;
     scheme?: {
         name: string;
         description?: string;
+        requiredDocs?: RequiredDoc[];
     };
 }
 
@@ -75,25 +84,35 @@ export default function OrderDetailPage() {
     const [proofs, setProofs] = useState<Proof[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    // Add document state
+    const [selectedDocType, setSelectedDocType] = useState('');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
+    // Resubmit state
+    const [isResubmitting, setIsResubmitting] = useState(false);
     const [downloadingProof, setDownloadingProof] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchOrder = async () => {
-            try {
-                const response = await api.request(`/api/orders/${params.id}`);
-                if (response.success) {
-                    const data = response.data as { order: Order; documents: Document[] };
-                    setOrder(data.order);
-                    setDocuments(data.documents || []);
-                } else {
-                    setError(t('notFound'));
-                }
-            } catch {
-                setError(t('loadError'));
-            } finally {
-                setIsLoading(false);
+    const fetchOrderDetails = async () => {
+        try {
+            const response = await api.request(`/api/orders/${params.id}`);
+            if (response.success) {
+                const data = response.data as { order: Order; documents: Document[] };
+                setOrder(data.order);
+                setDocuments(data.documents || []);
+            } else {
+                setError(t('notFound'));
             }
-        };
+        } catch {
+            setError(t('loadError'));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
 
         const fetchProofs = async () => {
             try {
@@ -107,10 +126,11 @@ export default function OrderDetailPage() {
         };
 
         if (params.id) {
-            fetchOrder();
+            fetchOrderDetails();
             fetchProofs();
         }
-    }, [params.id, t]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [params.id]);
 
     const handleDownloadProof = async (proofId: string) => {
         setDownloadingProof(proofId);
@@ -124,6 +144,90 @@ export default function OrderDetailPage() {
             // silently fail
         } finally {
             setDownloadingProof(null);
+        }
+    };
+
+    // Add document to order
+    const handleAddDocument = async () => {
+        if (!selectedFile || !selectedDocType || !order) return;
+
+        setIsUploadingDoc(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            // Step 1: Get presigned upload URL
+            const urlResponse = await api.request('/api/documents/upload-url', {
+                method: 'POST',
+                body: {
+                    documentType: selectedDocType,
+                    contentType: selectedFile.type,
+                    orderId: order.id,
+                },
+            });
+
+            if (!urlResponse.success) {
+                throw new Error('Failed to get upload URL');
+            }
+
+            const { uploadUrl, documentId } = urlResponse.data as any;
+
+            // Step 2: Upload file to R2
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                body: selectedFile,
+                headers: { 'Content-Type': selectedFile.type },
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Upload failed');
+            }
+
+            // Step 3: Confirm upload
+            if (documentId) {
+                await api.request(`/api/documents/${documentId}/confirm-upload`, {
+                    method: 'POST',
+                });
+            }
+
+            setSuccess(t('documentUploaded') || 'Document uploaded successfully!');
+            setSelectedFile(null);
+            setSelectedDocType('');
+
+            // Refresh document list
+            fetchOrderDetails();
+        } catch (err) {
+            console.error('Document upload error:', err);
+            setError(t('uploadFailed') || 'Failed to upload document. Please try again.');
+        } finally {
+            setIsUploadingDoc(false);
+        }
+    };
+
+    // Resubmit cancelled/rejected order
+    const handleResubmit = async () => {
+        if (!order) return;
+
+        setIsResubmitting(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            const response = await api.request(`/api/orders/${order.id}/resubmit`, {
+                method: 'POST',
+            });
+
+            if (response.success) {
+                setSuccess(t('resubmitSuccess') || 'Application resubmitted successfully! It will be reviewed again.');
+                fetchOrderDetails();
+            } else {
+                setError(response.error?.message || 'Failed to resubmit');
+            }
+        } catch (err) {
+            console.error('Resubmit error:', err);
+            setError(t('resubmitFailed') || 'Failed to resubmit. Please try again.');
+        } finally {
+            setIsResubmitting(false);
         }
     };
 
@@ -265,6 +369,124 @@ export default function OrderDetailPage() {
                     )}
                 </div>
             </section>
+
+            {/* Add Document Section - visible for PAID/IN_PROGRESS orders */}
+            {(order.status === 'PAID' || order.status === 'IN_PROGRESS') && order.scheme?.requiredDocs && order.scheme.requiredDocs.length > 0 && (
+                <section className={styles.documents}>
+                    <h2>📎 {t('addDocument') || 'Add Document'}</h2>
+                    <div className={styles.uploadForm}>
+                        <select
+                            className={styles.docTypeSelect}
+                            value={selectedDocType}
+                            onChange={(e) => setSelectedDocType(e.target.value)}
+                        >
+                            <option value="">{t('selectDocType') || 'Select document type...'}</option>
+                            {order.scheme.requiredDocs.map((doc) => (
+                                <option key={doc.type} value={doc.type}>
+                                    {doc.label}{doc.required ? ' *' : ''}
+                                </option>
+                            ))}
+                        </select>
+
+                        <input
+                            type="file"
+                            className={styles.fileInput}
+                            accept="image/*,.pdf"
+                            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                        />
+
+                        <button
+                            className={styles.uploadBtn}
+                            onClick={handleAddDocument}
+                            disabled={!selectedFile || !selectedDocType || isUploadingDoc}
+                        >
+                            {isUploadingDoc ? '⏳ Uploading...' : '📤 Upload'}
+                        </button>
+                    </div>
+                </section>
+            )}
+
+            {/* Resubmit Section - visible for CANCELLED orders */}
+            {order.status === 'CANCELLED' && (
+                <section className={styles.resubmitSection}>
+                    <h2>🔄 {t('resubmitApplication') || 'Resubmit Application'}</h2>
+
+                    {order.adminNotes && (
+                        <div className={styles.rejectionNote}>
+                            <strong>{t('rejectionReason') || 'Reason'}:</strong>
+                            <p>{order.adminNotes}</p>
+                        </div>
+                    )}
+
+                    {/* Show rejected documents */}
+                    {documents.filter(d => d.status === 'REJECTED').length > 0 && (
+                        <div className={styles.rejectedDocs}>
+                            <h3>❌ {t('rejectedDocuments') || 'Rejected Documents'}</h3>
+                            {documents.filter(d => d.status === 'REJECTED').map(doc => (
+                                <div key={doc.id} className={styles.docItem}>
+                                    <div className={styles.docInfo}>
+                                        <span className={styles.docIcon}>📄</span>
+                                        <div>
+                                            <span className={styles.docName}>{doc.docType}</span>
+                                            {doc.rejectionReason && (
+                                                <span className={styles.rejectionReason}>{doc.rejectionReason}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Re-upload documents before resubmitting */}
+                    {order.scheme?.requiredDocs && order.scheme.requiredDocs.length > 0 && (
+                        <div className={styles.uploadForm}>
+                            <p className={styles.resubmitHint}>
+                                {t('resubmitHint') || 'You can upload new or corrected documents before resubmitting.'}
+                            </p>
+                            <select
+                                className={styles.docTypeSelect}
+                                value={selectedDocType}
+                                onChange={(e) => setSelectedDocType(e.target.value)}
+                            >
+                                <option value="">{t('selectDocType') || 'Select document type...'}</option>
+                                {order.scheme.requiredDocs.map((doc) => (
+                                    <option key={doc.type} value={doc.type}>
+                                        {doc.label}{doc.required ? ' *' : ''}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <input
+                                type="file"
+                                className={styles.fileInput}
+                                accept="image/*,.pdf"
+                                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                            />
+
+                            <button
+                                className={styles.uploadBtn}
+                                onClick={handleAddDocument}
+                                disabled={!selectedFile || !selectedDocType || isUploadingDoc}
+                            >
+                                {isUploadingDoc ? '⏳ Uploading...' : '📤 Upload Document'}
+                            </button>
+                        </div>
+                    )}
+
+                    <button
+                        className={styles.resubmitBtn}
+                        onClick={handleResubmit}
+                        disabled={isResubmitting}
+                    >
+                        {isResubmitting ? '⏳ Resubmitting...' : '🔄 Resubmit Application'}
+                    </button>
+                </section>
+            )}
+
+            {/* Success/Error Messages */}
+            {success && <div className={styles.successAlert}>{success}</div>}
+            {error && !isLoading && <div className={styles.errorAlert}>{error}</div>}
 
             {/* Proofs */}
             {proofs.length > 0 && (

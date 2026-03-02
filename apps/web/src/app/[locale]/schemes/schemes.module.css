@@ -110,7 +110,7 @@
 .searchInput:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.1);
 }
 
 .searchBtn {
@@ -240,7 +240,7 @@
 
 .card:hover {
     border-color: var(--color-primary);
-    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 4px 20px rgba(27, 94, 32, 0.1);
     transform: translateY(-2px);
 }
 

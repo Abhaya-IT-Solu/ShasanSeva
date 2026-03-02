@@ -123,7 +123,7 @@
 
 .step.current .stepDot {
     background: var(--color-primary);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 0 0 4px rgba(27, 94, 32, 0.2);
 }
 
 .stepLabel {
@@ -308,7 +308,7 @@
 
 .proofDownloadBtn {
     padding: 6px 14px;
-    background: var(--color-primary, #2563eb);
+    background: var(--color-primary, #1B5E20);
     color: white;
     border: none;
     border-radius: var(--radius-md);
@@ -368,4 +368,160 @@
 
 .helpContent a:hover {
     text-decoration: underline;
+}
+
+/* Upload Form */
+.uploadForm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--color-gray-50);
+    border: 1px dashed var(--color-gray-300);
+    border-radius: var(--radius-md);
+}
+
+.docTypeSelect {
+    padding: 10px 14px;
+    border: 1px solid var(--color-gray-300);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: var(--color-white);
+    color: var(--color-gray-900);
+    cursor: pointer;
+}
+
+.docTypeSelect:focus {
+    outline: none;
+    border-color: var(--color-primary, #1B5E20);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.fileInput {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+}
+
+.uploadBtn {
+    padding: 10px 20px;
+    background: var(--color-primary, #1B5E20);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    align-self: flex-start;
+}
+
+.uploadBtn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.uploadBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Resubmit Section */
+.resubmitSection {
+    max-width: 700px;
+    margin: var(--space-4) auto;
+    padding: var(--space-6);
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+}
+
+.resubmitSection h2 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: var(--space-4);
+}
+
+.rejectionNote {
+    padding: var(--space-4);
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+}
+
+.rejectionNote strong {
+    color: #991b1b;
+    font-size: var(--text-sm);
+}
+
+.rejectionNote p {
+    color: #b91c1c;
+    font-size: var(--text-sm);
+    margin-top: var(--space-1);
+}
+
+.rejectedDocs {
+    margin-bottom: var(--space-4);
+}
+
+.rejectedDocs h3 {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: var(--space-2);
+}
+
+.resubmitHint {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    font-style: italic;
+}
+
+.resubmitBtn {
+    display: block;
+    width: 100%;
+    padding: 14px 24px;
+    margin-top: var(--space-4);
+    background: #1B5E20;
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.resubmitBtn:hover:not(:disabled) {
+    background: #1d4ed8;
+}
+
+.resubmitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Alerts */
+.successAlert {
+    max-width: 700px;
+    margin: var(--space-3) auto;
+    padding: var(--space-3) var(--space-4);
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: var(--radius-md);
+    color: #166534;
+    font-size: var(--text-sm);
+    font-weight: 500;
+}
+
+.errorAlert {
+    max-width: 700px;
+    margin: var(--space-3) auto;
+    padding: var(--space-3) var(--space-4);
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    color: #991b1b;
+    font-size: var(--text-sm);
+    font-weight: 500;
 }

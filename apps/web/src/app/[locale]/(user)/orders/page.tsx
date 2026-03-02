@@ -16,6 +16,18 @@ interface Order {
     paymentTimestamp: string | null;
 }
 
+const CATEGORY_ICONS: Record<string, string> = {
+    FARMER: 'agriculture',
+    STUDENT: 'school',
+    HEALTH: 'health_and_safety',
+    LOAN: 'account_balance_wallet',
+    CERTIFICATE: 'badge',
+    WOMEN: 'family_restroom',
+    EMPLOYMENT: 'engineering',
+    SENIOR: 'commute',
+    OTHER: 'bolt',
+};
+
 export default function OrdersPage() {
     const t = useTranslations('OrdersPage');
     const tStatus = useTranslations('Statuses');
@@ -24,13 +36,13 @@ export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const STATUS_COLORS: Record<string, string> = {
-        PENDING_PAYMENT: 'yellow',
-        PAID: 'blue',
-        IN_PROGRESS: 'orange',
-        DOCUMENTS_VERIFIED: 'purple',
-        COMPLETED: 'green',
-        REJECTED: 'red',
+    const STATUS_STYLES: Record<string, string> = {
+        PENDING_PAYMENT: styles.statusYellow,
+        PAID: styles.statusBlue,
+        IN_PROGRESS: styles.statusOrange,
+        DOCUMENTS_VERIFIED: styles.statusPurple,
+        COMPLETED: styles.statusGreen,
+        CANCELLED: styles.statusRed,
     };
 
     useEffect(() => {
@@ -38,7 +50,6 @@ export default function OrdersPage() {
             try {
                 const response = await api.request('/api/orders');
                 if (response.success) {
-                    // Handle paginated response format
                     const responseData = response.data as { data?: Order[] } | Order[];
                     const ordersData = Array.isArray(responseData) ? responseData : responseData.data || [];
                     setOrders(ordersData);
@@ -49,51 +60,79 @@ export default function OrdersPage() {
                 setIsLoading(false);
             }
         };
-
         fetchOrders();
     }, []);
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString(locale === 'mr' ? 'mr-IN' : 'en-IN');
+        return new Date(dateStr).toLocaleDateString(locale === 'mr' ? 'mr-IN' : 'en-IN', {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
     };
 
     return (
         <div className={styles.page}>
-            {/* Main */}
             <main className={styles.main}>
-                <h1>{t('title')}</h1>
+                {/* Page Header */}
+                <div className={styles.pageHeader}>
+                    <div>
+                        <h1 className={styles.pageTitle}>{t('title')}</h1>
+                        <p className={styles.pageSubtitle}>{t('subtitle')}</p>
+                    </div>
+                    <Link href="/schemes" className={styles.newAppBtn}>
+                        <span className="material-icons" style={{ fontSize: 18 }}>add_circle</span>
+                        New Application
+                    </Link>
+                </div>
 
+                {/* Orders List */}
                 {isLoading ? (
-                    <div className={styles.loading}>
+                    <div className={styles.loadingState}>
                         <div className="spinner" />
                     </div>
                 ) : orders.length === 0 ? (
                     <div className={styles.emptyState}>
-                        <span className={styles.emptyIcon}>📋</span>
-                        <p>{t('noOrders')}</p>
-                        <Link href="/" className="btn btn-primary">
+                        <div className={styles.emptyIconWrapper}>
+                            <span className="material-icons" style={{ fontSize: 48, color: 'var(--color-gray-300)' }}>description</span>
+                        </div>
+                        <p className={styles.emptyText}>{t('noOrders')}</p>
+                        <Link href="/schemes" className={styles.browseSchemesBtn}>
                             {t('browseSchemes')}
                         </Link>
                     </div>
                 ) : (
-                    <div className={styles.ordersList}>
-                        {orders.map((order) => {
-                            const statusColor = STATUS_COLORS[order.status] || 'gray';
+                    <div className={styles.ordersCard}>
+                        {orders.map((order, idx) => {
+                            const statusStyle = STATUS_STYLES[order.status] || styles.statusGray;
                             const statusLabel = tStatus(order.status as any) || order.status;
+                            const icon = CATEGORY_ICONS[order.schemeCategory || ''] || 'description';
 
                             return (
-                                <Link key={order.id} href={`/orders/${order.id}`} className={styles.orderCard}>
-                                    <div className={styles.orderInfo}>
-                                        <h3>{order.schemeName || 'Unknown Scheme'}</h3>
-                                        <p className={styles.orderDate}>
-                                            {t('appliedOn')} {formatDate(order.createdAt)}
-                                        </p>
-                                    </div>
-                                    <div className={styles.orderMeta}>
-                                        <span className={styles.amount}>₹{order.paymentAmount}</span>
-                                        <span className={`${styles.status} ${styles[statusColor]}`}>
-                                            {statusLabel}
-                                        </span>
+                                <Link
+                                    key={order.id}
+                                    href={`/orders/${order.id}`}
+                                    className={`${styles.orderItem} ${idx < orders.length - 1 ? styles.orderItemBorder : ''}`}
+                                >
+                                    <div className={styles.orderTop}>
+                                        <div className={styles.orderInfo}>
+                                            <div className={styles.orderIcon}>
+                                                <span className="material-icons">{icon}</span>
+                                            </div>
+                                            <div>
+                                                <h3 className={styles.orderName}>
+                                                    {order.schemeName || 'Unknown Scheme'}
+                                                </h3>
+                                                <p className={styles.orderDate}>
+                                                    {t('appliedOn')} {formatDate(order.createdAt)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className={styles.orderRight}>
+                                            <span className={styles.orderAmount}>₹{order.paymentAmount}</span>
+                                            <span className={`${styles.statusBadge} ${statusStyle}`}>
+                                                <span className={styles.statusDot}></span>
+                                                {statusLabel}
+                                            </span>
+                                        </div>
                                     </div>
                                 </Link>
                             );

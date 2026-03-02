@@ -1,9 +1,10 @@
 /* Footer Styles */
 
 .footer {
-    background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
-    color: #e5e7eb;
+    background: var(--color-footer-bg, #0a3015);
+    color: #cbd5e1;
     padding: var(--space-12) 0 var(--space-6);
+    border-top: 1px solid rgba(27, 94, 32, 0.3);
 }
 
 .container {
@@ -71,7 +72,7 @@
 }
 
 .linkGroup a:hover {
-    color: #fff;
+    color: var(--color-secondary);
 }
 
 /* Contact List */
@@ -98,7 +99,7 @@
 /* Divider */
 .divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent, #374151, transparent);
+    background: rgba(27, 94, 32, 0.3);
     margin: var(--space-8) 0;
 }
 
@@ -138,7 +139,7 @@
 }
 
 .legalLinks a:hover {
-    color: #fff;
+    color: var(--color-secondary);
 }
 
 /* Disclaimer */

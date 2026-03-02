@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ShasanSeva - Premium Government Services Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1B5E20", 
+                        "primary-dark": "#144618",
+                        "secondary": "#FF9800",
+                        "secondary-dark": "#F57C00",
+                        "background-light": "#f8faf9", 
+                        "background-dark": "#052e16",
+                        "footer-bg": "#0a3015",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+        }
+        .dark .glass-nav {
+            background: rgba(10, 48, 21, 0.95);
+        }
+        .phone-mockup {
+            border: 12px solid #0f172a;
+            border-radius: 2rem;
+            overflow: hidden;
+            position: relative;
+            background: white;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            aspect-ratio: 9/19;
+            width: 300px;
+            margin: auto;
+        }
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 24px;
+            background: #0f172a;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            z-index: 10;
+        }
+        .premium-geo-pattern {
+            background-color: #f8faf9;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%231b5e20' fill-opacity='0.04' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+        .soft-gradient {
+            background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 50%, #fff7e0 100%);
+        }
+        .dark .soft-gradient {
+            background: linear-gradient(180deg, #052e16 0%, #0f172a 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-800 dark:text-slate-100 font-display transition-colors duration-200">
+<div class="bg-primary text-white text-sm py-2 px-4 md:px-8 border-b border-primary-dark">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+<div class="flex items-center space-x-6">
+<span class="flex items-center gap-1 opacity-90 hover:opacity-100 cursor-pointer">
+<span class="material-icons text-base">support_agent</span>
+                Helpline: 1800-111-555
+            </span>
+<span class="flex items-center gap-1 opacity-90 hover:opacity-100 cursor-pointer">
+<span class="material-icons text-base">chat</span>
+                WhatsApp Support
+            </span>
+</div>
+<div class="flex items-center space-x-4">
+<div class="flex items-center space-x-2 text-xs font-medium bg-white/10 px-2 py-1 rounded">
+<span class="cursor-pointer hover:underline">English</span>
+<span>|</span>
+<span class="cursor-pointer opacity-70 hover:opacity-100 hover:underline">हिंदी</span>
+</div>
+<span class="text-xs opacity-75">A Govt of India Initiative</span>
+</div>
+</div>
+</div>
+<nav class="sticky top-0 z-50 glass-nav border-b-2 border-orange-200 dark:border-orange-900 transition-all duration-300 shadow-sm">
+<div class="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20">
+<img alt="National Emblem of India" class="w-6 h-6 object-contain" data-alt="Emblem of India" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBx2Mk-GrDWXrq2uJHgF89CdP6nyDNh66buHO2DBKTzevlZP5ZVBhO1aoJ08K1NGFZjEaJSU1W41_IpqmfciT2XE7NPp02H5nsMwhAuaonezPSgblPtCJlU8KgQvDx5wltMHJzN0xmrF5KC33bziA19aAlyIoJWVU_t3-Md6GNLi2nDLeWogkhr44VGGpYMEAY-rydHo-pNKqFghMQtnOwm-Q50WEt18PjZqgohwtvG1B7TkNjzdEcMdX4xSY2hsmE9ZjiYPEIS7zI"/>
+</div>
+<div class="flex flex-col">
+<span class="text-xl font-bold text-primary tracking-tight leading-none">ShasanSeva</span>
+<span class="text-[10px] uppercase font-semibold text-secondary dark:text-orange-400 tracking-widest">Citizen Portal</span>
+</div>
+</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-sm font-medium hover:text-secondary transition-colors" href="#">Home</a>
+<a class="text-sm font-medium hover:text-secondary transition-colors" href="#">Schemes</a>
+<a class="text-sm font-medium hover:text-secondary transition-colors" href="#">Documents</a>
+<a class="text-sm font-medium hover:text-secondary transition-colors" href="#">Support</a>
+</div>
+<div class="flex items-center space-x-3">
+<button class="hidden md:block px-5 py-2 text-sm font-medium text-primary border-2 border-primary/20 rounded-lg hover:border-primary hover:bg-primary/5 transition-all">
+                Login
+            </button>
+<button class="px-5 py-2 text-sm font-medium text-white bg-secondary rounded-lg shadow-lg shadow-orange-200 hover:bg-secondary-dark transition-all transform hover:-translate-y-0.5">
+                Register
+            </button>
+</div>
+</div>
+</nav>
+<header class="relative overflow-hidden pt-16 pb-12 px-4 md:px-8 soft-gradient">
+<div class="absolute inset-0 premium-geo-pattern pointer-events-none"></div>
+<div class="max-w-4xl mx-auto text-center relative z-10">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white shadow-sm text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-bold mb-8 border border-orange-200 dark:border-orange-800">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+            PM Kisan Samman Nidhi Update Available
+        </div>
+<h1 class="text-4xl md:text-6xl font-display font-bold text-primary dark:text-white mb-6 leading-tight">
+            Government Services, <br/>
+<span class="text-slate-800 dark:text-gray-200">Simplified for You.</span>
+</h1>
+<p class="text-lg text-slate-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto font-medium">
+            Access over 500+ government schemes, check application status, and get instant updates in one secure portal.
+        </p>
+<div class="max-w-2xl mx-auto relative group">
+<div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+<span class="material-icons text-primary/60 group-focus-within:text-primary transition-colors">search</span>
+</div>
+<input class="w-full pl-14 pr-32 py-5 rounded-2xl border-2 border-green-100 dark:border-green-900 bg-white dark:bg-slate-800 shadow-xl shadow-green-900/5 dark:shadow-black/30 focus:ring-0 focus:border-primary transition-all outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400 text-lg" placeholder="Search for schemes..." type="text"/>
+<button class="absolute inset-y-2 right-2 px-8 bg-secondary text-white text-base font-bold rounded-xl hover:bg-secondary-dark transition-colors shadow-lg shadow-orange-500/20">
+                Find
+            </button>
+</div>
+<div class="mt-8 flex justify-center gap-6 text-sm font-medium text-slate-500 dark:text-slate-400">
+<span class="text-primary font-bold">Popular:</span>
+<a class="hover:text-secondary hover:underline decoration-secondary underline-offset-4 transition-all" href="#">PM Awas Yojana</a>
+<a class="hover:text-secondary hover:underline decoration-secondary underline-offset-4 transition-all" href="#">Ration Card</a>
+<a class="hover:text-secondary hover:underline decoration-secondary underline-offset-4 transition-all" href="#">Scholarships</a>
+</div>
+</div>
+</header>
+<section class="py-20 px-4 md:px-8 bg-white dark:bg-slate-900/50">
+<div class="max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-10 border-b border-gray-100 pb-4">
+<div>
+<h2 class="text-3xl font-bold text-primary dark:text-white">Our Services</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-2">Browse schemes by category</p>
+</div>
+<a class="text-secondary font-bold hover:text-secondary-dark flex items-center gap-1 group bg-orange-50 px-4 py-2 rounded-lg hover:bg-orange-100 transition-colors" href="#">
+                View All Categories <span class="material-icons text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">agriculture</span>
+</div>
+<span class="px-3 py-1 bg-secondary text-white text-[10px] font-bold tracking-wide rounded-full uppercase shadow-sm">New</span>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Agriculture &amp; Rural</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Crop insurance, organic farming subsidies, and rural development grants.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 12 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">school</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Education &amp; Learning</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Scholarships, research grants, and digital literacy programs for students.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 24 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">health_and_safety</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Health &amp; Wellness</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Insurance coverage, maternity benefits, and wellness centers locator.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 8 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">home_work</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Housing &amp; Urban</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Affordable housing, urban development, and smart city initiatives.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 6 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">account_balance_wallet</span>
+</div>
+<span class="px-3 py-1 bg-secondary text-white text-[10px] font-bold tracking-wide rounded-full uppercase shadow-sm">New</span>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Finance &amp; Pension</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Old age pensions, startup loans, and financial inclusion plans.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 15 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">family_restroom</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Women &amp; Child</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Empowerment programs, nutrition support, and safety initiatives.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 9 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">engineering</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Skills &amp; Employment</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Vocational training, job placements, and apprenticeship programs.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 11 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">commute</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Transport &amp; Travel</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">License renewal, vehicle registration, and travel subsidies.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 5 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 p-7 rounded-xl border border-primary/20 dark:border-slate-700 hover:shadow-xl hover:shadow-primary/5 hover:border-primary transition-all duration-300">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 bg-green-50 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-primary dark:text-green-400 border border-green-100">
+<span class="material-icons text-3xl">bolt</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary dark:text-white mb-3">Utilities &amp; Services</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Electricity, water connections, and broadband initiatives.</p>
+<a class="inline-flex items-center text-sm font-bold text-secondary hover:text-secondary-dark transition-colors group-hover:translate-x-1 duration-300" href="#">
+                    View 7 Schemes <span class="material-icons text-sm ml-1">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 px-4 md:px-8 bg-primary overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-br from-primary to-primary-dark"></div>
+<div class="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2"></div>
+<div class="absolute bottom-0 left-0 w-64 h-64 bg-secondary/20 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2"></div>
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
+<div class="flex-1 text-center md:text-left text-white">
+<span class="inline-block px-4 py-1.5 bg-secondary/90 backdrop-blur-sm rounded-full text-xs font-bold tracking-wider mb-6 text-white shadow-lg shadow-orange-900/20">COMING SOON</span>
+<h2 class="text-3xl md:text-5xl font-bold mb-6 leading-tight">Your Government,<br/>Now in Your Pocket.</h2>
+<p class="text-green-100 text-lg mb-8 max-w-lg mx-auto md:mx-0">
+                Experience the future of citizen services with the ShasanSeva mobile app. Get real-time alerts, track applications, and access digital documents on the go.
+            </p>
+<div class="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
+<div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+<span class="material-icons text-secondary">notifications_active</span>
+<div class="text-left">
+<div class="text-sm font-bold">Instant Alerts</div>
+<div class="text-xs text-green-200">Scheme updates</div>
+</div>
+</div>
+<div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+<span class="material-icons text-secondary">fingerprint</span>
+<div class="text-left">
+<div class="text-sm font-bold">Biometric Login</div>
+<div class="text-xs text-green-200">Secure access</div>
+</div>
+</div>
+</div>
+<div class="mt-8">
+<button class="bg-secondary text-white px-8 py-3.5 rounded-xl font-bold hover:bg-secondary-dark transition-colors shadow-xl shadow-black/20 text-sm tracking-wide uppercase">
+                    Join Waitlist
+                </button>
+</div>
+</div>
+<div class="flex-1 w-full max-w-md flex justify-center">
+<div class="phone-mockup relative">
+<div class="phone-notch"></div>
+<div class="h-full w-full bg-slate-50 flex flex-col">
+<div class="bg-primary h-24 p-6 pt-10 text-white flex justify-between items-center rounded-b-3xl shadow-md z-10">
+<div>
+<div class="text-xs opacity-80">Hello,</div>
+<div class="font-bold text-lg">Rajesh Kumar</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+<span class="material-icons text-sm">person</span>
+</div>
+</div>
+<div class="p-4 flex-1 overflow-hidden relative">
+<div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-4">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-bold text-slate-400 uppercase">Status</span>
+<span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">Active</span>
+</div>
+<div class="font-bold text-slate-800">PM Kisan Samman</div>
+<div class="text-xs text-slate-500 mt-1">Next installment due in 12 days</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mb-4">
+<div class="bg-green-50 p-3 rounded-xl flex flex-col items-center gap-2">
+<span class="material-icons text-primary">description</span>
+<span class="text-xs font-bold text-slate-700">Docs</span>
+</div>
+<div class="bg-orange-50 p-3 rounded-xl flex flex-col items-center gap-2">
+<span class="material-icons text-secondary">qr_code</span>
+<span class="text-xs font-bold text-slate-700">Scan</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="h-2 w-3/4 bg-slate-200 rounded"></div>
+<div class="h-2 w-full bg-slate-100 rounded"></div>
+<div class="h-2 w-5/6 bg-slate-100 rounded"></div>
+</div>
+<div class="absolute bottom-4 right-4 w-12 h-12 bg-secondary rounded-full shadow-lg flex items-center justify-center text-white">
+<span class="material-icons">add</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 px-4 md:px-8 max-w-7xl mx-auto">
+<div class="text-center mb-12">
+<h2 class="text-2xl md:text-3xl font-bold text-primary dark:text-white mb-2">Explore More</h2>
+<p class="text-slate-500">Essential resources for every citizen</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<a class="group block bg-white dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-secondary/50 transition-all duration-300 transform hover:-translate-y-1" href="#">
+<div class="h-32 bg-gradient-to-br from-primary to-green-700 relative p-6 flex items-end">
+<span class="material-icons text-5xl text-white/20 absolute top-4 right-4 group-hover:scale-110 transition-transform">emoji_events</span>
+<h3 class="text-xl font-bold text-white relative z-10">Results</h3>
+</div>
+<div class="p-5">
+<ul class="space-y-2 mb-4">
+<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> UPSC Civil Services
+                    </li>
+<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> SSC CGL 2023
+                    </li>
+</ul>
+<span class="text-xs font-bold text-primary dark:text-green-400 uppercase tracking-wide group-hover:text-secondary transition-colors">View All Results</span>
+</div>
+</a>
+<a class="group block bg-white dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-secondary/50 transition-all duration-300 transform hover:-translate-y-1" href="#">
+<div class="h-32 bg-gradient-to-br from-secondary to-orange-600 relative p-6 flex items-end">
+<span class="material-icons text-5xl text-white/20 absolute top-4 right-4 group-hover:scale-110 transition-transform">work</span>
+<h3 class="text-xl font-bold text-white relative z-10">Govt Jobs</h3>
+</div>
+<div class="p-5">
+<ul class="space-y-2 mb-4">
+<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Railway Recruitment
+                    </li>
+<li class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Bank PO Exams
+                    </li>
+</ul>
+<span class="text-xs font-bold text-secondary dark:text-orange-400 uppercase tracking-wide group-hover:text-primary transition-colors">Find Openings</span>
+</div>
+</a>
+<a class="group block bg-white dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-secondary/50 transition-all duration-300 transform hover:-translate-y-1" href="#">
+<div class="h-32 bg-gradient-to-br from-slate-700 to-slate-900 relative p-6 flex items-end">
+<span class="material-icons text-5xl text-white/20 absolute top-4 right-4 group-hover:scale-110 transition-transform">article</span>
+<h3 class="text-xl font-bold text-white relative z-10">Latest News</h3>
+</div>
+<div class="p-5">
+<p class="text-sm text-slate-600 dark:text-slate-300 mb-4 line-clamp-2">New amendments in digital data protection bill announced today...</p>
+<span class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide group-hover:text-secondary transition-colors">Read Updates</span>
+</div>
+</a>
+<a class="group block bg-white dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-xl hover:border-secondary/50 transition-all duration-300 transform hover:-translate-y-1" href="#">
+<div class="h-32 bg-gradient-to-br from-primary to-green-800 relative p-6 flex items-end">
+<span class="material-icons text-5xl text-white/20 absolute top-4 right-4 group-hover:scale-110 transition-transform">calendar_month</span>
+<h3 class="text-xl font-bold text-white relative z-10">Important Dates</h3>
+</div>
+<div class="p-5">
+<div class="flex items-center gap-3 mb-2">
+<div class="bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 rounded px-2 py-1 text-center min-w-[3rem]">
+<div class="text-[10px] font-bold">OCT</div>
+<div class="text-lg font-bold leading-none">24</div>
+</div>
+<div class="text-sm text-slate-600 dark:text-slate-300 font-medium">Last date for ITR filing</div>
+</div>
+<span class="text-xs font-bold text-primary dark:text-green-400 uppercase tracking-wide group-hover:text-secondary transition-colors">View Calendar</span>
+</div>
+</a>
+</div>
+</section>
+<footer class="bg-footer-bg text-slate-300 py-16 border-t border-green-900/50">
+<div class="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+<div>
+<div class="flex items-center gap-3 mb-6">
+<div class="w-8 h-8 bg-white/10 rounded flex items-center justify-center">
+<img alt="Emblem of India white" class="w-5 h-5 object-contain brightness-0 invert" data-alt="Emblem of India White" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0CvqABirTdYzI1a-Fke_k5soi1uy6wz37U83xMjyZGKSjSdVJCHOX7Z1JKXG566xiWsC05QqsfVEytXXqR_fAmYPJfLQLT3ywf6HBFt766mQR4h-Fm5RjvTLVslWSbvF0SHwBsVar96ZDgmMyyIJv1l_q3MUfPb4uD9GQ36Ox_DRiK1QUWwxUODVrZ5weMsA7QP0KK4avvkrPtijx7okPKeHtPgbEYBEnHIg9sewo-itG-xZsr0gJ7cT_ukTJFzFvZqTboGUgrWM"/>
+</div>
+<span class="text-xl font-bold text-white tracking-tight">ShasanSeva</span>
+</div>
+<p class="text-sm text-slate-400 mb-6 leading-relaxed">
+                Connecting citizens with government services through technology. Simple, transparent, and efficient governance for everyone.
+            </p>
+<div class="flex space-x-4">
+<a class="w-8 h-8 rounded-full bg-green-900 flex items-center justify-center hover:bg-secondary transition-colors text-white" href="#">
+<span class="text-xs">FB</span>
+</a>
+<a class="w-8 h-8 rounded-full bg-green-900 flex items-center justify-center hover:bg-secondary transition-colors text-white" href="#">
+<span class="text-xs">TW</span>
+</a>
+<a class="w-8 h-8 rounded-full bg-green-900 flex items-center justify-center hover:bg-secondary transition-colors text-white" href="#">
+<span class="text-xs">IG</span>
+</a>
+</div>
+</div>
+<div>
+<h4 class="text-white font-bold mb-6">Quick Links</h4>
+<ul class="space-y-3 text-sm">
+<li><a class="hover:text-secondary transition-colors" href="#">About Us</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Digital India</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Data Gov</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">MyGov</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Sitemap</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-bold mb-6">Support</h4>
+<ul class="space-y-3 text-sm">
+<li><a class="hover:text-secondary transition-colors" href="#">Help Center</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Terms of Use</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Grievance Redressal</a></li>
+<li><a class="hover:text-secondary transition-colors" href="#">Contact Us</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-bold mb-6">Stay Updated</h4>
+<p class="text-xs text-slate-400 mb-4">Subscribe to receive updates on new schemes and deadlines.</p>
+<div class="flex flex-col gap-3">
+<input class="bg-green-900/40 border border-green-800 text-white text-sm rounded px-4 py-2 focus:ring-1 focus:ring-secondary focus:border-secondary outline-none" placeholder="Email Address" type="email"/>
+<button class="bg-secondary text-white text-sm font-bold py-2 rounded hover:bg-secondary-dark transition-colors">Subscribe</button>
+</div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-4 md:px-8 mt-12 pt-8 border-t border-green-900/50 text-center text-xs text-slate-500">
+<p>© 2023 ShasanSeva Portal. All rights reserved. Content managed by Government of India.</p>
+</div>
+</footer>
+
+</body></html>

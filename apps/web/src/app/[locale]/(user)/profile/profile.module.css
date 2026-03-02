@@ -1,3 +1,5 @@
+/* Profile Page Styles — Updated for Stitch Design */
+
 .loading {
     min-height: 100vh;
     display: flex;
@@ -7,133 +9,51 @@
 
 .page {
     min-height: 100vh;
-    background: var(--color-gray-50);
-}
-
-/* Header */
-.header {
-    background: var(--color-white);
-    border-bottom: 1px solid var(--color-gray-200);
-    padding: var(--space-4);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-lg);
-    font-weight: 700;
-    color: var(--color-gray-900);
-}
-
-.logoIcon {
-    font-size: var(--text-xl);
-}
-
-/* User Menu */
-.userMenuWrapper {
-    position: relative;
-}
-
-.userMenuBtn {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2);
-    background: var(--color-gray-100);
-    border: 1px solid var(--color-gray-200);
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    color: var(--color-white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: var(--text-sm);
-}
-
-.chevron {
-    display: none;
-}
-
-.dropdown {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    min-width: 160px;
-    background: var(--color-white);
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    overflow: hidden;
-}
-
-.dropdownItem {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    width: 100%;
-    padding: var(--space-3) var(--space-4);
-    font-size: var(--text-sm);
-    color: var(--color-gray-700);
-    background: none;
-    border: none;
-    text-align: left;
-    cursor: pointer;
-}
-
-.dropdownItem:hover {
-    background: var(--color-gray-50);
+    background: #f6f8f6;
 }
 
 /* Main */
 .main {
     max-width: 600px;
     margin: 0 auto;
-    padding: var(--space-6) var(--space-4);
+    padding: 32px 16px;
+}
+
+@media (min-width: 768px) {
+    .main {
+        padding: 32px;
+    }
 }
 
 .pageHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--space-6);
+    margin-bottom: 24px;
 }
 
 .pageHeader h1 {
-    font-size: var(--text-2xl);
+    font-size: 28px;
     font-weight: 700;
-    color: var(--color-gray-900);
+    color: var(--color-primary);
 }
 
-/* Card */
+/* Profile Card */
 .card {
-    background: var(--color-white);
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-lg);
+    background: white;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .profileHeader {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-6);
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    color: var(--color-white);
+    gap: 16px;
+    padding: 24px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: white;
 }
 
 .profileAvatar {
@@ -144,30 +64,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--text-2xl);
+    font-size: 24px;
     font-weight: 600;
+    flex-shrink: 0;
 }
 
 .profileInfo h2 {
-    font-size: var(--text-xl);
+    font-size: 20px;
     font-weight: 600;
-    margin-bottom: var(--space-1);
+    margin-bottom: 4px;
 }
 
 .profileInfo p {
     opacity: 0.9;
-    font-size: var(--text-sm);
+    font-size: 14px;
 }
 
 .email {
-    font-size: var(--text-xs) !important;
+    font-size: 12px !important;
     opacity: 0.8 !important;
 }
 
 /* Sections */
 .section {
-    padding: var(--space-5);
-    border-bottom: 1px solid var(--color-gray-100);
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .section:last-child {
@@ -175,44 +96,45 @@
 }
 
 .section h3 {
-    font-size: var(--text-sm);
+    font-size: 12px;
     font-weight: 600;
     color: var(--color-gray-500);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: var(--space-3);
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
 }
 
 .categoryBadge {
     display: inline-block;
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-gray-100);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    color: var(--color-gray-700);
+    padding: 6px 12px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--color-primary);
+    font-weight: 500;
 }
 
 .address p {
-    font-size: var(--text-sm);
+    font-size: 14px;
     color: var(--color-gray-700);
     line-height: 1.6;
 }
 
 .noData {
     color: var(--color-gray-400);
-    font-size: var(--text-sm);
+    font-size: 14px;
 }
 
 .accountInfo {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 12px;
 }
 
 .infoRow {
     display: flex;
     justify-content: space-between;
-    font-size: var(--text-sm);
+    font-size: 14px;
 }
 
 .infoRow span:first-child {
@@ -225,39 +147,62 @@
 }
 
 .complete {
-    color: var(--color-success) !important;
+    color: #16a34a !important;
 }
 
 .incomplete {
-    color: var(--color-warning) !important;
+    color: var(--color-secondary) !important;
 }
 
-/* Password Form */
+/* Security Section */
 .passwordForm {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
-    margin-top: var(--space-4);
+    gap: 16px;
+    margin-top: 16px;
 }
 
 .passwordActions {
     display: flex;
-    gap: var(--space-3);
+    gap: 12px;
 }
 
 .successMessage {
-    padding: var(--space-3);
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--color-success);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    margin-bottom: var(--space-3);
+    padding: 12px;
+    background: #f0fdf4;
+    color: #16a34a;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #bbf7d0;
 }
 
 .errorMessage {
-    padding: var(--space-3);
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--color-error);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
+    padding: 12px;
+    background: #fef2f2;
+    color: #dc2626;
+    border-radius: 8px;
+    font-size: 14px;
+    border: 1px solid #fecaca;
+}
+
+/* Edit Profile Button */
+.editBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--color-secondary);
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.editBtn:hover {
+    background: var(--color-secondary-dark);
 }

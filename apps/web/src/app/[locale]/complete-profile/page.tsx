@@ -18,10 +18,10 @@ export default function CompleteProfilePage() {
     const [error, setError] = useState('');
 
     const CATEGORIES = [
-        { value: 'STUDENT', icon: '🎓' },
-        { value: 'FARMER', icon: '🌾' },
-        { value: 'LOAN_CANDIDATE', icon: '💰' },
-        { value: 'OTHER', icon: '📋' },
+        { value: 'STUDENT', icon: 'school' },
+        { value: 'FARMER', icon: 'agriculture' },
+        { value: 'LOAN_CANDIDATE', icon: 'account_balance_wallet' },
+        { value: 'OTHER', icon: 'description' },
     ];
 
     const [formData, setFormData] = useState({
@@ -132,7 +132,7 @@ export default function CompleteProfilePage() {
         <div className={styles.container}>
             <div className={styles.card}>
                 <div className={styles.header}>
-                    <span className={styles.icon}>👤</span>
+                    <span className={styles.icon}><span className="material-icons" style={{ fontSize: 48, color: 'var(--color-primary)' }}>person</span></span>
                     <h1>{t('title')}</h1>
                     <p>{t('subtitle')}</p>
                 </div>
@@ -215,7 +215,7 @@ export default function CompleteProfilePage() {
                                     onClick={() => handleCategorySelect(cat.value)}
                                     disabled={isLoading}
                                 >
-                                    <span className={styles.categoryIcon}>{cat.icon}</span>
+                                    <span className={styles.categoryIcon}><span className="material-icons">{cat.icon}</span></span>
                                     <span className={styles.categoryLabel}>{getCategoryLabel(cat.value)}</span>
                                 </button>
                             ))}

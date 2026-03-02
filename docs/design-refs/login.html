@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ShasanSeva - Login &amp; Register</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec6a13",
+                        "primary-dark": "#d55b0f", // Darker shade for hover
+                        "forest-green": "#1a4d2e", // Forest Green for headings/labels
+                        "forest-green-light": "#2f6f46",
+                        "background-light": "#f8f7f6",
+                        "background-dark": "#221710",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom mesh gradient animation */
+        .mesh-gradient {
+            background-color: #f8f7f6;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(145, 49%, 20%, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(24, 85%, 50%, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(145, 49%, 20%, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(24, 85%, 50%, 0.1) 0px, transparent 50%);
+        }
+        
+        .dark .mesh-gradient {
+            background-color: #221710;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(145, 49%, 30%, 0.2) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(24, 85%, 50%, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, hsla(145, 49%, 30%, 0.2) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(24, 85%, 50%, 0.15) 0px, transparent 50%);
+        }
+
+        /* Form switch transition */
+        .form-content {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+        .hidden-form {
+            display: none;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .visible-form {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark mesh-gradient min-h-screen flex items-center justify-center p-4">
+<div class="w-full max-w-md bg-white dark:bg-[#2a1e16] rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] overflow-hidden relative border border-primary/10 dark:border-primary/20">
+<!-- Header Section -->
+<div class="pt-8 px-8 pb-4 text-center">
+<div class="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 mb-4 text-primary">
+<span class="material-icons text-3xl">verified_user</span>
+</div>
+<h1 class="text-2xl font-bold text-forest-green dark:text-white mb-1">ShasanSeva</h1>
+<p class="text-gray-500 dark:text-gray-400 text-sm">Your gateway to government services</p>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-gray-100 dark:border-gray-800" id="authTabs">
+<button class="flex-1 pb-3 pt-2 text-center font-medium text-forest-green dark:text-white relative group transition-colors" id="tab-login" onclick="switchTab('login')">
+                Login
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-lg mx-12 transition-all duration-300" id="indicator-login"></div>
+</button>
+<button class="flex-1 pb-3 pt-2 text-center font-medium text-gray-400 dark:text-gray-500 hover:text-forest-green dark:hover:text-gray-300 relative group transition-colors" id="tab-register" onclick="switchTab('register')">
+                Register
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-lg mx-12 opacity-0 transition-all duration-300" id="indicator-register"></div>
+</button>
+</div>
+<div class="p-8">
+<!-- Login Form -->
+<div class="visible-form form-content" id="login-form">
+<form class="space-y-5" onsubmit="event.preventDefault();">
+<div>
+<label class="block text-sm font-semibold text-forest-green dark:text-gray-200 mb-1.5" for="login-email">Email Address</label>
+<div class="relative">
+<span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">email</span>
+<input class="w-full pl-10 pr-4 py-2.5 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1f1510] text-gray-800 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-gray-400 transition-shadow outline-none text-sm" id="login-email" placeholder="name@example.com" type="email"/>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<label class="block text-sm font-semibold text-forest-green dark:text-gray-200" for="login-password">Password</label>
+<a class="text-xs font-medium text-primary hover:text-primary-dark transition-colors" href="#">Forgot Password?</a>
+</div>
+<div class="relative">
+<span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">lock</span>
+<input class="w-full pl-10 pr-4 py-2.5 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1f1510] text-gray-800 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-gray-400 transition-shadow outline-none text-sm" id="login-password" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2.5 rounded-lg shadow-lg shadow-primary/30 transition-all duration-200 transform hover:-translate-y-0.5" type="submit">
+                        Log In
+                    </button>
+</form>
+</div>
+<!-- Register Form -->
+<div class="hidden-form form-content" id="register-form">
+<form class="space-y-5" onsubmit="event.preventDefault();">
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm font-semibold text-forest-green dark:text-gray-200 mb-1.5" for="reg-first">First Name</label>
+<input class="w-full px-4 py-2.5 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1f1510] text-gray-800 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-gray-400 transition-shadow outline-none text-sm" id="reg-first" placeholder="John" type="text"/>
+</div>
+<div>
+<label class="block text-sm font-semibold text-forest-green dark:text-gray-200 mb-1.5" for="reg-last">Last Name</label>
+<input class="w-full px-4 py-2.5 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1f1510] text-gray-800 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-gray-400 transition-shadow outline-none text-sm" id="reg-last" placeholder="Doe" type="text"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold text-forest-green dark:text-gray-200 mb-1.5" for="reg-email">Email Address</label>
+<div class="relative">
+<span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">email</span>
+<input class="w-full pl-10 pr-4 py-2.5 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1f1510] text-gray-800 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-gray-400 transition-shadow outline-none text-sm" id="reg-email" placeholder="name@example.com" type="email"/>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold text-forest-green dark:text-gray-200 mb-1.5" for="reg-password">Create Password</label>
+<div class="relative">
+<span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">lock_outline</span>
+<input class="w-full pl-10 pr-4 py-2.5 rounded-lg border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1f1510] text-gray-800 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder-gray-400 transition-shadow outline-none text-sm" id="reg-password" placeholder="At least 8 characters" type="password"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<input class="rounded border-gray-300 text-primary focus:ring-primary cursor-pointer" id="terms" type="checkbox"/>
+<label class="text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none" for="terms">I agree to the <a class="text-primary hover:underline" href="#">Terms of Service</a> &amp; <a class="text-primary hover:underline" href="#">Privacy Policy</a></label>
+</div>
+<button class="w-full bg-primary hover:bg-primary-dark text-white font-semibold py-2.5 rounded-lg shadow-lg shadow-primary/30 transition-all duration-200 transform hover:-translate-y-0.5" type="submit">
+                        Create Account
+                    </button>
+</form>
+</div>
+<!-- Divider -->
+<div class="relative my-6">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+</div>
+<div class="relative flex justify-center text-xs">
+<span class="bg-white dark:bg-[#2a1e16] px-2 text-gray-400 font-medium">Or continue with</span>
+</div>
+</div>
+<!-- Social Auth -->
+<button class="w-full flex items-center justify-center gap-3 bg-white dark:bg-[#2a1e16] border border-forest-green/30 hover:border-forest-green dark:hover:border-forest-green-light text-forest-green dark:text-gray-200 font-medium py-2.5 rounded-lg transition-colors group">
+<img alt="Google Logo" class="w-5 h-5 group-hover:scale-110 transition-transform" data-alt="Google colorful G logo icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkSlgt54cLUbWijdGQN1mrgtFQWs4Xgewd7nLYwNYWNe3WKjw4-PRgaX7YAlhVPRKXxFV5vujwAcGP4zBJCpN_4rij15Ngnvsgr9dCeR4zF-ZY9JPtWInfRNk3ARg2iTN7F0KXebGSi4H0e78let-UsuDWw7fOu9dmt8egrwP3cs723cnqFnYcSBDschsp-ztDFmgfHXud-NYbfGDSilEpXjnOQnDXP8-cqTPW2dNI8L1Ad5NV2yPNmuPhDMe5wSKi8woFlydJB00"/>
+                Sign in with Google
+            </button>
+<!-- Footer -->
+<div class="mt-8 text-center">
+<p class="text-xs text-gray-400 dark:text-gray-500">
+                    © 2023 ShasanSeva. Secure Government Portal.
+                </p>
+</div>
+</div>
+</div>
+<!-- Simple Tab Switching Script (No external JS files) -->
+<script>
+        function switchTab(tab) {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const tabLogin = document.getElementById('tab-login');
+            const tabRegister = document.getElementById('tab-register');
+            const indicatorLogin = document.getElementById('indicator-login');
+            const indicatorRegister = document.getElementById('indicator-register');
+
+            if (tab === 'login') {
+                // Show Login Form
+                loginForm.classList.remove('hidden-form');
+                setTimeout(() => loginForm.classList.add('visible-form'), 10);
+                
+                registerForm.classList.remove('visible-form');
+                registerForm.classList.add('hidden-form');
+
+                // Update Tab Styles
+                tabLogin.classList.remove('text-gray-400', 'dark:text-gray-500');
+                tabLogin.classList.add('text-forest-green', 'dark:text-white');
+                indicatorLogin.classList.remove('opacity-0');
+                
+                tabRegister.classList.add('text-gray-400', 'dark:text-gray-500');
+                tabRegister.classList.remove('text-forest-green', 'dark:text-white');
+                indicatorRegister.classList.add('opacity-0');
+
+            } else {
+                // Show Register Form
+                registerForm.classList.remove('hidden-form');
+                setTimeout(() => registerForm.classList.add('visible-form'), 10);
+
+                loginForm.classList.remove('visible-form');
+                loginForm.classList.add('hidden-form');
+
+                // Update Tab Styles
+                tabRegister.classList.remove('text-gray-400', 'dark:text-gray-500');
+                tabRegister.classList.add('text-forest-green', 'dark:text-white');
+                indicatorRegister.classList.remove('opacity-0');
+
+                tabLogin.classList.add('text-gray-400', 'dark:text-gray-500');
+                tabLogin.classList.remove('text-forest-green', 'dark:text-white');
+                indicatorLogin.classList.add('opacity-0');
+            }
+        }
+    </script>
+</body></html>

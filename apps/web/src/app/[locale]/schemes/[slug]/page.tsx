@@ -114,7 +114,8 @@ export default function SchemeDetailPage() {
                                 {getCategoryName(scheme.category)}
                             </span>
                             <span className={styles.type}>
-                                {scheme.schemeType === 'GOVERNMENT' ? `🏛️ ${t('government')}` : `🏢 ${t('private')}`}
+                                <span className="material-icons" style={{ fontSize: 16 }}>{scheme.schemeType === 'GOVERNMENT' ? 'account_balance' : 'business'}</span>
+                                {scheme.schemeType === 'GOVERNMENT' ? t('government') : t('private')}
                             </span>
                         </div>
                         <h1 className={styles.title}>{scheme.name}</h1>

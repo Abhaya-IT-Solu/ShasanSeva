@@ -260,7 +260,7 @@
 
 .orderStatus.paid {
     background: rgba(59, 130, 246, 0.1);
-    color: #2563eb;
+    color: var(--color-primary);
 }
 
 .orderStatus.in_progress {

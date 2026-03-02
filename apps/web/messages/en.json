@@ -44,22 +44,29 @@
         "disclaimer": "Disclaimer: ShasanSeva is a paid assistance platform. We do not guarantee approval of any scheme. We provide professional assistance with document handling and application support."
     },
     "HomePage": {
+        "heroTitle": "Government Services,",
+        "heroSubtitle": "Simplified for You.",
+        "heroDescription": "Access over 500+ government schemes, check application status, and get instant updates in one secure portal.",
+        "searchPlaceholder": "Search for schemes...",
+        "findButton": "Find",
+        "popular": "Popular",
+        "scholarships": "Scholarships",
+        "announcementBadge": "PM Kisan Samman Nidhi Update Available",
         "ourServices": "Our Services",
-        "ourServicesSubtitle": "Browse schemes by category and find the right support for your needs",
+        "ourServicesSubtitle": "Browse schemes by category",
         "viewSchemes": "View Schemes",
+        "viewAllCategories": "View All Categories",
         "newBadge": "NEW",
-        "comingSoon": "Coming Soon",
-        "mobileAppTitle": "Get ShasanSeva on Your Mobile",
-        "mobileAppDescription": "Apply for schemes, track applications, and receive instant updates - all from your smartphone. Download our mobile app for a seamless experience.",
-        "feature1": "Quick scheme applications",
-        "feature2": "Real-time status tracking",
-        "feature3": "Push notifications",
-        "feature4": "Document scanner",
-        "downloadOn": "Download on the",
-        "getItOn": "Get it on",
-        "yourHelper": "Your Government Helper",
+        "comingSoon": "COMING SOON",
+        "mobileAppTitle": "Your Government, Now in Your Pocket.",
+        "mobileAppDescription": "Experience the future of citizen services with the ShasanSeva mobile app. Get real-time alerts, track applications, and access digital documents on the go.",
+        "feature1": "Instant Alerts",
+        "feature2": "Biometric Login",
+        "schemeUpdates": "Scheme updates",
+        "secureAccess": "Secure access",
+        "joinWaitlist": "Join Waitlist",
         "exploreMore": "Explore More",
-        "exploreSubtitle": "Stay updated with the latest information",
+        "exploreSubtitle": "Essential resources for every citizen",
         "learnMore": "Learn more"
     },
     "Categories": {
@@ -90,6 +97,10 @@
         "WOMEN": {
             "name": "Women Welfare",
             "description": "Special schemes and programs designed for women empowerment."
+        },
+        "LOAN_CANDIDATE": {
+            "name": "Loan Applicant",
+            "description": "Business loans, personal loans, and financial assistance programs."
         },
         "SENIOR": {
             "name": "Senior Citizens",
@@ -177,13 +188,39 @@
         "disclaimer": "This is a professional assistance service. Payment is for document handling and application support. Approval is not guaranteed.",
         "applyNote": "You'll need to upload the required documents before payment"
     },
+    "DashboardPage": {
+        "goodMorning": "Good Morning",
+        "goodAfternoon": "Good Afternoon",
+        "goodEvening": "Good Evening",
+        "citizen": "Citizen",
+        "welcome": "Welcome",
+        "subtitle": "Track your applications, browse schemes, and manage documents — all from one place.",
+        "newApplication": "New Application",
+        "quickActions": "Quick Actions",
+        "browseSchemes": "Browse Services",
+        "browseSchemesDesc": "Find over 150+ government services available online.",
+        "explore": "Explore",
+        "myApplications": "My Applications",
+        "myApplicationsDesc": "Track the status of your submitted forms in real-time.",
+        "viewStatus": "View Status",
+        "myDocuments": "Digital Locker",
+        "myDocumentsDesc": "Access your issued certificates and uploaded documents.",
+        "openVault": "Open Vault",
+        "helpSupport": "Help & Support",
+        "helpSupportDesc": "Need assistance? Check FAQs or contact support.",
+        "getHelp": "Get Help",
+        "recentApplications": "Recent Applications",
+        "viewAll": "View All",
+        "noApplications": "No applications yet. Start by browsing available schemes.",
+        "appliedOn": "Applied on"
+    },
     "OrdersPage": {
-        "title": "My Orders",
+        "title": "My Applications",
         "subtitle": "Track your scheme applications",
         "noOrders": "You haven't applied for any schemes yet",
         "browseSchemes": "Browse Schemes",
         "status": "Status",
-        "appliedOn": "Applied On",
+        "appliedOn": "Applied on",
         "viewDetails": "View Details"
     },
     "OrderPage": {
@@ -322,17 +359,5 @@
         "nextStep3": "Track your application in your dashboard",
         "viewApplications": "View My Applications",
         "backToHome": "Back to Home"
-    },
-    "DashboardPage": {
-        "welcome": "Welcome",
-        "subtitle": "Browse schemes and track your applications",
-        "browseSchemes": "Browse Schemes",
-        "browseDescription": "Explore available schemes",
-        "myApplications": "My Applications",
-        "applicationsDescription": "Track your orders",
-        "myDocuments": "My Documents",
-        "documentsDescription": "Saved documents",
-        "viewAll": "View All",
-        "noApplications": "No applications yet"
     }
 }

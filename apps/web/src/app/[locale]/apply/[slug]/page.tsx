@@ -211,7 +211,7 @@ export default function ApplyPage() {
                     email: user?.email || '',
                 },
                 theme: {
-                    color: '#2563eb',
+                    color: '#1B5E20',
                 },
             };
 
@@ -289,7 +289,7 @@ export default function ApplyPage() {
                         <p className={styles.subtitle}>{t('uploadSubtitle')}</p>
 
                         <div className={styles.skipNote}>
-                            💡 {t('skipNote')}
+                            <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>lightbulb</span> {t('skipNote')}
                         </div>
 
                         <div className={styles.docsList}>
@@ -311,7 +311,7 @@ export default function ApplyPage() {
                                         <div className={styles.docUpload}>
                                             {uploaded?.status === 'uploaded' ? (
                                                 <div className={styles.uploadSuccess}>
-                                                    ✓ {uploaded.fileName}
+                                                    <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>check_circle</span> {uploaded.fileName}
                                                 </div>
                                             ) : uploaded?.status === 'uploading' ? (
                                                 <div className={styles.uploading}>
@@ -367,7 +367,7 @@ export default function ApplyPage() {
                             <ul>
                                 {uploadedDocs.filter(d => d.status === 'uploaded').map(doc => (
                                     <li key={doc.documentType}>
-                                        <span>✓</span> {doc.fileName}
+                                        <span className="material-icons" style={{ fontSize: 14, verticalAlign: 'text-bottom', marginRight: 4, color: 'var(--color-primary)' }}>check_circle</span> {doc.fileName}
                                     </li>
                                 ))}
                             </ul>
@@ -420,7 +420,7 @@ export default function ApplyPage() {
 
                 {currentStep === 'success' && (
                     <div className={styles.successStep}>
-                        <div className={styles.successIcon}>✓</div>
+                        <div className={styles.successIcon}><span className="material-icons" style={{ fontSize: 40 }}>check</span></div>
                         <h2>{t('applicationSubmitted')}</h2>
                         <p>{t('successMessage')}</p>
                         <p className={styles.orderId}>{t('orderId')}: {orderId}</p>
