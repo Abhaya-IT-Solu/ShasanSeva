@@ -43,15 +43,16 @@ export default function ProfilePage() {
 
     const getCategoryLabel = (category: string) => {
         const icons: Record<string, string> = {
-            STUDENT: '🎓',
-            FARMER: '🌾',
-            LOAN_CANDIDATE: '💰',
-            OTHER: '📋',
+            STUDENT: 'school',
+            FARMER: 'agriculture',
+            LOAN_CANDIDATE: 'account_balance_wallet',
+            OTHER: 'description',
         };
         try {
-            return `${icons[category] || '📋'} ${tCat(`${category}.name` as any)}`;
+            const iconName = icons[category] || 'description';
+            return { icon: iconName, label: tCat(`${category}.name` as any) };
         } catch {
-            return category;
+            return { icon: 'description', label: category };
         }
     };
 
@@ -137,7 +138,7 @@ export default function ProfilePage() {
                     {/* Profile Header */}
                     <div className={styles.profileHeader}>
                         <div className={styles.profileAvatar}>
-                            {profile?.name?.charAt(0).toUpperCase() || '👤'}
+                            {profile?.name?.charAt(0).toUpperCase() || <span className="material-icons" style={{ fontSize: 32 }}>person</span>}
                         </div>
                         <div className={styles.profileInfo}>
                             <h2>{profile?.name || t('noName')}</h2>
@@ -151,7 +152,8 @@ export default function ProfilePage() {
                         <div className={styles.section}>
                             <h3>{t('category')}</h3>
                             <p className={styles.categoryBadge}>
-                                {getCategoryLabel(profile.category)}
+                                <span className="material-icons" style={{ fontSize: 18, verticalAlign: 'text-bottom', marginRight: 4 }}>{getCategoryLabel(profile.category).icon}</span>
+                                {getCategoryLabel(profile.category).label}
                             </p>
                         </div>
                     )}
@@ -186,7 +188,7 @@ export default function ProfilePage() {
                             <div className={styles.infoRow}>
                                 <span>{t('profileStatus')}</span>
                                 <span className={profile?.profileComplete ? styles.complete : styles.incomplete}>
-                                    {profile?.profileComplete ? `✓ ${t('complete')}` : t('incomplete')}
+                                    {profile?.profileComplete ? <><span className="material-icons" style={{ fontSize: 14, verticalAlign: 'text-bottom', marginRight: 2 }}>check_circle</span> {t('complete')}</> : t('incomplete')}
                                 </span>
                             </div>
                         </div>
@@ -203,7 +205,7 @@ export default function ProfilePage() {
                                 className="btn btn-secondary"
                                 onClick={() => setShowPasswordForm(true)}
                             >
-                                🔐 {t('changePassword')}
+                                <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>lock</span> {t('changePassword')}
                             </button>
                         ) : (
                             <form onSubmit={handlePasswordChange} className={styles.passwordForm}>

@@ -22,7 +22,7 @@
    Hero Section (Stitch: soft-gradient + geo pattern + search)
    ================================ */
 .hero {
-    position: relative;
+    position: static;
     overflow: hidden;
     padding: 64px 16px 48px;
     background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 50%, #fff7e0 100%);

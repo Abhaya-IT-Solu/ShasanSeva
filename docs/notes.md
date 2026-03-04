@@ -7,3 +7,9 @@
 1. After the admin rejects any document in the order. the user is prompted to resubmit the arder with the updated document. but in that process the old rejected document is still attached to the document and the goes with the order again. that is creating a duplicacy of documnets in the order. 
 Also in the order details page of the user. the related translation keys need to be added. 
 There are other minor bugs in this workflow that we will get back to, lated on. 
+
+2. Adding a cancel order or back buttons to the payment page of the apply to scheme page flow. 
+
+3. Adding a reciept feature. when the payment is done and order is completed. the system should generrate a reciept and attach it to the order. the user can downlaod the reciept after the order is successfully created or in the order details page as well. and the reciept should be visible in the admin dashboard as well.
+
+4. handling order duplicacy with failex payments. 

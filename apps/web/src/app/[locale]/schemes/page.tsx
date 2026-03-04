@@ -119,10 +119,7 @@ function SchemesContent() {
                             onClick={() => setShowSearch(!showSearch)}
                             aria-label="Toggle search"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="m21 21-4.35-4.35"></path>
-                            </svg>
+                            <span className="material-icons" style={{ fontSize: 20 }}>search</span>
                             {tCommon('search')}
                         </button>
                     </div>
@@ -148,7 +145,7 @@ function SchemesContent() {
                                 className={styles.closeBtn}
                                 onClick={() => { setShowSearch(false); setSearch(''); fetchSchemes(); }}
                             >
-                                ✕
+                                <span className="material-icons" style={{ fontSize: 18 }}>close</span>
                             </button>
                         </form>
                     </div>
@@ -187,7 +184,7 @@ function SchemesContent() {
                                                 {getCategoryName(scheme.category)}
                                             </span>
                                             <span className={styles.type}>
-                                                {scheme.schemeType === 'GOVERNMENT' ? '🏛️' : '🏢'} {scheme.schemeType}
+                                                <span className="material-icons" style={{ fontSize: 14, verticalAlign: 'text-bottom', marginRight: 2 }}>{scheme.schemeType === 'GOVERNMENT' ? 'account_balance' : 'business'}</span> {scheme.schemeType}
                                             </span>
                                         </div>
 
