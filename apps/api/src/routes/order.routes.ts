@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { db, orders, documents, schemes, users } from '@shasansetu/db';
-import { eq, desc, count } from 'drizzle-orm';
+import { eq, desc, count, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
@@ -310,15 +310,15 @@ router.post('/:id/resubmit', authMiddleware, async (req: Request, res: Response)
             })
             .where(eq(orders.id, id));
 
-        // Reset any REJECTED documents back to UPLOADED
-        await db.update(documents)
-            .set({
-                status: 'UPLOADED',
-                rejectionReason: null,
-                verifiedAt: null,
-                verifiedBy: null,
-            })
-            .where(eq(documents.orderId, id));
+        // Delete REJECTED documents entirely — user will re-upload corrected versions.
+        // (Resetting to UPLOADED would cause duplicates when new upload creates a fresh record.)
+        await db.delete(documents)
+            .where(
+                and(
+                    eq(documents.orderId, id),
+                    eq(documents.status, 'REJECTED')
+                )
+            );
 
         logger.info('Order resubmitted', { orderId: id, userId });
 

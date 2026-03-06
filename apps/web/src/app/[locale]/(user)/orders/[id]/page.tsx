@@ -92,6 +92,7 @@ export default function OrderDetailPage() {
     const [isUploadingDoc, setIsUploadingDoc] = useState(false);
     const [isResubmitting, setIsResubmitting] = useState(false);
     const [downloadingProof, setDownloadingProof] = useState<string | null>(null);
+    const [viewingDoc, setViewingDoc] = useState<string | null>(null);
 
     const fetchOrderDetails = async () => {
         try {
@@ -139,6 +140,21 @@ export default function OrderDetailPage() {
             }
         } catch { /* silent */ } finally {
             setDownloadingProof(null);
+        }
+    };
+
+    const handleViewDocument = async (docId: string) => {
+        setViewingDoc(docId);
+        try {
+            const response = await api.request(`/api/documents/${docId}/download-url`);
+            if (response.success) {
+                const data = response.data as { downloadUrl: string };
+                window.open(data.downloadUrl, '_blank');
+            }
+        } catch {
+            // silently ignore — user can retry
+        } finally {
+            setViewingDoc(null);
         }
     };
 
@@ -347,7 +363,7 @@ export default function OrderDetailPage() {
                             <div className={styles.cardRow}>
                                 <span className={styles.cardRowLabel}>{t('amountPaid') || 'Amount Paid'}</span>
                                 <span className={styles.cardRowValue}>₹{order.paymentAmount
-}</span>
+                                }</span>
                             </div>
                             {order.paidAt && (
                                 <div className={styles.cardRow}>
@@ -472,8 +488,16 @@ export default function OrderDetailPage() {
                                                         {t('reupload') || 'Re-upload'}
                                                     </button>
                                                 ) : (
-                                                    <button className={styles.docActionBtn}>
-                                                        <span className="material-icons" style={{ fontSize: 20 }}>visibility</span>
+                                                    <button
+                                                        className={styles.docActionBtn}
+                                                        onClick={() => handleViewDocument(doc.id)}
+                                                        title="View document"
+                                                        disabled={viewingDoc === doc.id}
+                                                    >
+                                                        {viewingDoc === doc.id
+                                                            ? <span className="spinner" style={{ width: 16, height: 16, display: 'inline-block' }} />
+                                                            : <span className="material-icons" style={{ fontSize: 20 }}>visibility</span>
+                                                        }
                                                     </button>
                                                 )}
                                             </td>

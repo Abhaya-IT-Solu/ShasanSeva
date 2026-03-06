@@ -52,3 +52,36 @@ export const ErrorCodes = {
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+
+// Transient network error codes that are safe to retry
+const RETRYABLE_CODES = ['ENOTFOUND', 'ECONNREFUSED', 'ETIMEDOUT', 'ECONNRESET', 'EAI_AGAIN'];
+
+/**
+ * Wraps a DB operation with automatic retries on transient network errors.
+ * Uses exponential backoff: 1s, 2s, 4s.
+ * Prevents server restarts caused by Supabase DNS/connection drops.
+ */
+export async function withDbRetry<T>(
+    operation: () => Promise<T>,
+    maxRetries = 3,
+    label = 'DB operation'
+): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (err: unknown) {
+            lastError = err;
+            const code = (err as NodeJS.ErrnoException)?.code;
+            if (attempt < maxRetries && code && RETRYABLE_CODES.includes(code)) {
+                const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
+                logger.warn(`${label} failed with ${code}, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                break;
+            }
+        }
+    }
+    throw lastError;
+}
+

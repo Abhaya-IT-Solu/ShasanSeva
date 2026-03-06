@@ -9,8 +9,9 @@ import {
     ALLOWED_CONTENT_TYPES,
     MAX_FILE_SIZE,
 } from '../services/r2.service.js';
+
 import { db, documents } from '@shasansetu/db';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
@@ -50,6 +51,23 @@ router.post('/upload-url', validateBody(uploadUrlSchema), async (req: Request, r
         // Store document record in database (only if orderId is provided)
         let documentId = null;
         if (orderId) {
+            // Upsert: remove existing record for same orderId+docType to prevent duplicates
+            // (e.g. user re-uploading after rejection, or re-uploading on the same order)
+            const existing = await db.select({ id: documents.id })
+                .from(documents)
+                .where(
+                    and(
+                        eq(documents.orderId, orderId),
+                        eq(documents.docType, docTypeValue!)
+                    )
+                )
+                .limit(1);
+
+            if (existing.length > 0) {
+                await db.delete(documents).where(eq(documents.id, existing[0].id));
+                logger.info('Replaced existing document record', { orderId, docType: docTypeValue, replacedId: existing[0].id });
+            }
+
             const result = await db.insert(documents).values({
                 orderId,
                 docType: docTypeValue,
