@@ -5,6 +5,7 @@ import { validateBody, validateQuery } from '../middleware/validation.middleware
 import { db, orders, documents, schemes, users } from '@shasansetu/db';
 import { eq, desc, count, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
+import { getDownloadUrl } from '../services/r2.service.js';
 
 const router: Router = Router();
 
@@ -135,6 +136,68 @@ router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
                 message: 'Failed to fetch order',
+            })
+        );
+    }
+});
+
+/**
+ * GET /api/orders/:id/receipt
+ * Get a signed download URL for the order's receipt PDF.
+ * Accessible by the order owner and admins.
+ */
+router.get('/:id/receipt', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!.userId;
+        const userType = req.user!.userType;
+
+        const orderResult = await db.select({
+            userId: orders.userId,
+            receiptKey: orders.receiptKey,
+        }).from(orders).where(eq(orders.id, id));
+
+        if (orderResult.length === 0) {
+            return res.status(404).json(
+                errorResponse({
+                    code: ErrorCodes.NOT_FOUND,
+                    message: 'Order not found',
+                })
+            );
+        }
+
+        const order = orderResult[0];
+
+        if (userType !== 'ADMIN' && order.userId !== userId) {
+            return res.status(403).json(
+                errorResponse({
+                    code: ErrorCodes.FORBIDDEN,
+                    message: 'Unauthorized',
+                })
+            );
+        }
+
+        if (!order.receiptKey) {
+            return res.status(404).json(
+                errorResponse({
+                    code: ErrorCodes.NOT_FOUND,
+                    message: 'Receipt not available yet',
+                })
+            );
+        }
+
+        const { downloadUrl, expiresIn } = await getDownloadUrl(order.receiptKey);
+
+        return res.json(successResponse({
+            downloadUrl,
+            expiresIn,
+        }));
+    } catch (error) {
+        logger.error('Failed to get receipt download URL', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Failed to get receipt',
             })
         );
     }

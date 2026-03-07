@@ -153,6 +153,30 @@ export async function deleteDocument(key: string): Promise<void> {
     }
 }
 
+/**
+ * Upload a raw Buffer to R2 (used for generated files like PDF receipts)
+ */
+export async function uploadBuffer(params: {
+    key: string;
+    buffer: Buffer;
+    contentType: string;
+}): Promise<void> {
+    const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: params.key,
+        Body: params.buffer,
+        ContentType: params.contentType,
+    });
+
+    try {
+        await r2Client.send(command);
+        logger.info('Buffer uploaded to R2', { key: params.key, size: params.buffer.length });
+    } catch (error) {
+        logger.error('Failed to upload buffer to R2', error);
+        throw new Error('Failed to upload buffer to R2');
+    }
+}
+
 // Allowed content types for documents
 export const ALLOWED_CONTENT_TYPES = [
     'image/jpeg',

@@ -233,6 +233,7 @@
         "amountPaid": "Amount Paid",
         "paidOn": "Paid on",
         "paymentSuccessful": "Payment Successful",
+        "downloadReceipt": "Download Receipt",
         "timeline": "Key Dates",
         "applied": "Applied",
         "completed": "Completed",
@@ -377,6 +378,7 @@
         "processingPayment": "Processing Payment",
         "paymentInstructions": "Please complete the payment in the Razorpay window...",
         "retryPayment": "Retry Payment",
+        "cancelAndGoBack": "Cancel & Go Back",
         "applicationFor": "Application for",
         "paymentVerifyFailed": "Payment verification failed",
         "paymentFailed": "Payment failed. Please try again.",
@@ -388,6 +390,7 @@
         "nextStep2": "You'll receive updates on your application status",
         "nextStep3": "Track your application in your dashboard",
         "viewApplications": "View My Applications",
-        "backToHome": "Back to Home"
+        "backToHome": "Back to Home",
+        "downloadReceipt": "Download Receipt"
     }
 }

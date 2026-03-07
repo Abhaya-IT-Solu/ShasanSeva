@@ -52,6 +52,7 @@ export default function ApplyPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [orderId, setOrderId] = useState<string | null>(null);
+    const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -179,12 +180,11 @@ export default function ApplyPage() {
                 key: razorpayKeyId,
                 amount,
                 currency: 'INR',
-                name: 'ShasanSetu',
+                name: 'ShasanSeva',
                 description: `${t('applicationFor')} ${scheme.name}`,
                 order_id: razorpayOrderId,
                 handler: async (response: any) => {
                     // Verify payment
-                    // Send uploaded document keys along with payment verification
                     const docsToLink = uploadedDocs
                         .filter(d => d.status === 'uploaded' && d.fileKey)
                         .map(d => ({ docType: d.documentType, fileKey: d.fileKey }));
@@ -206,6 +206,12 @@ export default function ApplyPage() {
                         setError(t('paymentVerifyFailed'));
                     }
                 },
+                modal: {
+                    ondismiss: async () => {
+                        // BUG 3: When user closes Razorpay modal, cancel the pending order
+                        await handleCancelPayment(newOrderId);
+                    },
+                },
                 prefill: {
                     contact: user?.phone || '',
                     email: user?.email || '',
@@ -221,6 +227,26 @@ export default function ApplyPage() {
             console.error('Payment error:', error);
             setError(t('paymentFailed'));
         }
+    };
+
+    // Cancel a PENDING_PAYMENT order (BUG 3 FIX)
+    const handleCancelPayment = async (cancelOrderId?: string) => {
+        const idToCancel = cancelOrderId || orderId;
+        if (!idToCancel) {
+            setCurrentStep('review');
+            return;
+        }
+
+        try {
+            await api.request(`/api/payments/cancel-order/${idToCancel}`, {
+                method: 'DELETE',
+            });
+        } catch {
+            // Ignore errors — the order may already have been paid/processed
+        }
+
+        setOrderId(null);
+        setCurrentStep('review');
     };
 
     const getStepLabel = (step: string) => {
@@ -409,12 +435,21 @@ export default function ApplyPage() {
                         <h2>{t('processingPayment')}</h2>
                         <div className="spinner" />
                         <p>{t('paymentInstructions')}</p>
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => handlePayment()}
-                        >
-                            {t('retryPayment')}
-                        </button>
+                        <div className={styles.actions}>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => handleCancelPayment()}
+                            >
+                                <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>arrow_back</span>
+                                {t('cancelAndGoBack') || 'Cancel & Go Back'}
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => handlePayment()}
+                            >
+                                {t('retryPayment')}
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -435,7 +470,29 @@ export default function ApplyPage() {
                         </div>
 
                         <div className={styles.actions}>
-                            <Link href="/orders" className="btn btn-primary">
+                            <button
+                                className="btn btn-primary"
+                                onClick={async () => {
+                                    if (!orderId) return;
+                                    setDownloadingReceipt(true);
+                                    try {
+                                        const res = await api.request(`/api/orders/${orderId}/receipt`);
+                                        if (res.success) {
+                                            const data = res.data as { downloadUrl: string };
+                                            window.open(data.downloadUrl, '_blank');
+                                        }
+                                    } catch { /* ignore */ } finally {
+                                        setDownloadingReceipt(false);
+                                    }
+                                }}
+                                disabled={downloadingReceipt}
+                            >
+                                <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>
+                                    {downloadingReceipt ? 'hourglass_empty' : 'receipt_long'}
+                                </span>
+                                {t('downloadReceipt') || 'Download Receipt'}
+                            </button>
+                            <Link href="/orders" className="btn btn-secondary">
                                 {t('viewApplications')}
                             </Link>
                             <Link href="/" className="btn btn-secondary">

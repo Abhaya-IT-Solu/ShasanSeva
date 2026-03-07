@@ -1032,3 +1032,47 @@
         font-size: 12px;
     }
 }
+
+/* Card footer with receipt button */
+.cardFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 0 0 12px 12px;
+}
+
+.paymentStatus {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #16a34a;
+}
+
+.receiptBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1B5E20;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.receiptBtn:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+}
+
+.receiptBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

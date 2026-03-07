@@ -25,6 +25,9 @@ export const orders = pgTable('orders', {
     assignedTo: uuid('assigned_to').references(() => admins.id),
     adminNotes: text('admin_notes'),
 
+    // Receipt (generated on PAID, stored in R2)
+    receiptKey: varchar('receipt_key', { length: 500 }),
+
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

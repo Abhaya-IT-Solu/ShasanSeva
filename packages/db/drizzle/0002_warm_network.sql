@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "receipt_key" varchar(500);

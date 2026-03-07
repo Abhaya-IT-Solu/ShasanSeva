@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ShasanSeva - Upload Documents</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f96706", // Safety Orange
+                        "secondary": "#1b4332", // Forest Green
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23170f",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>.geometric-bg {
+    background-color: #f8f7f5;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuA3uACCQjzd-kPSSTwp4RD3lRuA4sU58zHpZZvX2sqi3VrMEh5Vg9TsGIJdqdcftvi6zeNyjOgLS-YbamMYG2EUrfMZibLrl9yTm6LaIa3ImxnA5TzTHFu0uU4049CkWWcKA3bZ3aSMzxI-tQlrkHP6xqxGIsaWrfl4BX-iWMyzoKj4j6b4JZdJbYWhwfoDLJ0Ni9n3lZ50Rhf034dYlk1AmV3EYUvA8JdpcJHuFuW1Y-Xo4Ee-HKf-EktDs8OBFXsiyfN3ORjTocI)
+    }</style>
+</head>
+<body class="font-display bg-background-light text-slate-900">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 bg-white px-6 md:px-20 py-4">
+<div class="flex items-center gap-4 text-secondary">
+<div class="size-8 flex items-center justify-center bg-secondary text-white rounded-lg">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<h2 class="text-secondary text-xl font-bold leading-tight tracking-tight">ShasanSeva</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<main class="flex-1 geometric-bg py-8">
+<div class="max-w-4xl mx-auto px-4">
+<!-- Progress Section -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-secondary font-bold text-lg">Application Flow</h3>
+<span class="text-primary font-bold">Step 1 of 4: 25%</span>
+</div>
+<!-- Horizontal Stepper -->
+<div class="flex items-center w-full mb-6">
+<div class="flex flex-col items-center flex-1 relative">
+<div class="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center z-10">
+<span class="material-symbols-outlined">description</span>
+</div>
+<span class="text-xs mt-2 font-bold text-secondary">Documents</span>
+<div class="absolute left-1/2 top-5 w-full h-1 bg-slate-200 -z-0"></div>
+</div>
+<div class="flex flex-col items-center flex-1 relative">
+<div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center z-10">
+<span class="material-symbols-outlined">person</span>
+</div>
+<span class="text-xs mt-2 font-medium text-slate-500">Details</span>
+<div class="absolute left-1/2 top-5 w-full h-1 bg-slate-200 -z-0"></div>
+</div>
+<div class="flex flex-col items-center flex-1 relative">
+<div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center z-10">
+<span class="material-symbols-outlined">verified_user</span>
+</div>
+<span class="text-xs mt-2 font-medium text-slate-500">Verification</span>
+<div class="absolute left-1/2 top-5 w-full h-1 bg-slate-200 -z-0"></div>
+</div>
+<div class="flex flex-col items-center flex-1 relative">
+<div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center z-10">
+<span class="material-symbols-outlined">rate_review</span>
+</div>
+<span class="text-xs mt-2 font-medium text-slate-500">Review</span>
+</div>
+</div>
+<div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 25%;"></div>
+</div>
+</div>
+<!-- Upload Documents Section -->
+<div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+<div class="p-8 border-b border-slate-100 bg-secondary/5">
+<h1 class="text-2xl font-bold text-secondary mb-2">Upload Required Documents</h1>
+<p class="text-slate-600">Please provide the following documents to process your application. Supported formats: PDF, JPG, PNG (Max 5MB each).</p>
+</div>
+<div class="p-8 space-y-6">
+<!-- Document: Aadhaar Card (Uploaded State) -->
+<div class="flex flex-col md:flex-row md:items-center justify-between p-5 border border-secondary/20 rounded-xl bg-secondary/[0.02]">
+<div class="flex items-center gap-4 mb-4 md:mb-0">
+<div class="p-3 bg-secondary/10 text-secondary rounded-lg">
+<span class="material-symbols-outlined">badge</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900">Aadhaar Card</h4>
+<p class="text-sm text-slate-500">Identity and Address Proof</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center text-green-600 font-medium text-sm gap-1 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                                        aadhaar_front.pdf
+                                    </div>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Document: Income Certificate (Uploading State) -->
+<div class="flex flex-col md:flex-row md:items-center justify-between p-5 border border-primary/20 rounded-xl bg-primary/[0.02]">
+<div class="flex items-center gap-4 mb-4 md:mb-0">
+<div class="p-3 bg-primary/10 text-primary rounded-lg">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900">Income Certificate</h4>
+<p class="text-sm text-slate-500">Latest financial year certificate</p>
+</div>
+</div>
+<div class="w-full md:w-48">
+<div class="flex justify-between text-xs text-slate-500 mb-1">
+<span>Uploading...</span>
+<span>65%</span>
+</div>
+<div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 65%;"></div>
+</div>
+</div>
+</div>
+<!-- Document: Residence Proof (Default State) -->
+<div class="flex flex-col md:flex-row md:items-center justify-between p-5 border border-slate-200 rounded-xl hover:border-secondary transition-colors group">
+<div class="flex items-center gap-4 mb-4 md:mb-0">
+<div class="p-3 bg-slate-100 text-slate-600 rounded-lg group-hover:bg-secondary/10 group-hover:text-secondary transition-colors">
+<span class="material-symbols-outlined">home</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900">Residence Proof</h4>
+<p class="text-sm text-slate-500">Electricity Bill or Rent Agreement</p>
+</div>
+</div>
+<button class="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-secondary transition-all">
+<span class="material-symbols-outlined text-sm">upload</span>
+                                    Upload File
+                                </button>
+</div>
+<!-- Document: Passport Photo (Default State) -->
+<div class="flex flex-col md:flex-row md:items-center justify-between p-5 border border-slate-200 rounded-xl hover:border-secondary transition-colors group">
+<div class="flex items-center gap-4 mb-4 md:mb-0">
+<div class="p-3 bg-slate-100 text-slate-600 rounded-lg group-hover:bg-secondary/10 group-hover:text-secondary transition-colors">
+<span class="material-symbols-outlined">photo_camera</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900">Passport Size Photograph</h4>
+<p class="text-sm text-slate-500">Recent color photo with white background</p>
+</div>
+</div>
+<button class="flex items-center gap-2 bg-slate-900 text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-secondary transition-all">
+<span class="material-symbols-outlined text-sm">upload</span>
+                                    Upload File
+                                </button>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="p-8 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-200">
+<button class="w-full sm:w-auto text-slate-600 font-bold px-6 py-3 rounded-lg hover:bg-slate-200 transition-colors">
+                                Skip for Now
+                            </button>
+<div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+<button class="w-full sm:w-auto text-secondary border-2 border-secondary font-bold px-8 py-3 rounded-lg hover:bg-secondary hover:text-white transition-all">
+                                    Save Draft
+                                </button>
+<button class="w-full sm:w-auto bg-primary text-white font-bold px-8 py-3 rounded-lg shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                                    Continue to Review
+                                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<p class="text-center text-slate-400 text-sm mt-8 pb-12">
+                        Need help? Contact our support at <span class="text-secondary font-medium">support@shasanseva.gov.in</span>
+</p>
+</div>
+</main>
+</div>
+</div>
+</body></html>

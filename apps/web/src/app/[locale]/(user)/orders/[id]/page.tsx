@@ -47,10 +47,11 @@ interface Order {
     paymentAmount: string;
     status: string;
     createdAt: string;
-    paidAt: string | null;
+    paymentTimestamp: string | null;
     completedAt: string | null;
     rejectionReason?: string;
     adminNotes?: string;
+    receiptKey?: string | null;
     scheme?: {
         name: string;
         slug?: string;
@@ -93,6 +94,7 @@ export default function OrderDetailPage() {
     const [isResubmitting, setIsResubmitting] = useState(false);
     const [downloadingProof, setDownloadingProof] = useState<string | null>(null);
     const [viewingDoc, setViewingDoc] = useState<string | null>(null);
+    const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
     const fetchOrderDetails = async () => {
         try {
@@ -155,6 +157,22 @@ export default function OrderDetailPage() {
             // silently ignore — user can retry
         } finally {
             setViewingDoc(null);
+        }
+    };
+
+    const handleDownloadReceipt = async () => {
+        if (!order) return;
+        setDownloadingReceipt(true);
+        try {
+            const response = await api.request(`/api/orders/${order.id}/receipt`);
+            if (response.success) {
+                const data = response.data as { downloadUrl: string };
+                window.open(data.downloadUrl, '_blank');
+            }
+        } catch {
+            // silently ignore
+        } finally {
+            setDownloadingReceipt(false);
         }
     };
 
@@ -317,8 +335,8 @@ export default function OrderDetailPage() {
                                     <span className={styles.stepLabel}>
                                         {tStatus(step as any) || step.replace('_', ' ')}
                                     </span>
-                                    {isCompleted && order.paidAt && index === 0 && (
-                                        <span className={styles.stepDate}>{formatDateTime(order.paidAt)}</span>
+                                    {isCompleted && order.paymentTimestamp && index === 0 && (
+                                        <span className={styles.stepDate}>{formatDateTime(order.paymentTimestamp)}</span>
                                     )}
                                     {isCompleted && order.createdAt && index === 1 && (
                                         <span className={styles.stepDate}>{formatDateTime(order.createdAt)}</span>
@@ -365,10 +383,10 @@ export default function OrderDetailPage() {
                                 <span className={styles.cardRowValue}>₹{order.paymentAmount
                                 }</span>
                             </div>
-                            {order.paidAt && (
+                            {order.paymentTimestamp && (
                                 <div className={styles.cardRow}>
                                     <span className={styles.cardRowLabel}>{t('paidOn')}</span>
-                                    <span className={styles.cardRowValue}>{formatDate(order.paidAt)}</span>
+                                    <span className={styles.cardRowValue}>{formatDate(order.paymentTimestamp)}</span>
                                 </div>
                             )}
                         </div>
@@ -378,6 +396,19 @@ export default function OrderDetailPage() {
                             <span className="material-icons" style={{ fontSize: 14, marginRight: 4 }}>check_circle</span>
                             {t('paymentSuccessful') || 'Payment Successful'}
                         </span>
+                        {['PAID', 'IN_PROGRESS', 'PROOF_UPLOADED', 'COMPLETED'].includes(order.status) && (
+                            <button
+                                className={styles.receiptBtn}
+                                onClick={handleDownloadReceipt}
+                                disabled={downloadingReceipt}
+                            >
+                                {downloadingReceipt
+                                    ? <span className="spinner" style={{ width: 14, height: 14, display: 'inline-block' }} />
+                                    : <span className="material-icons" style={{ fontSize: 14, marginRight: 4 }}>receipt_long</span>
+                                }
+                                {t('downloadReceipt') || 'Download Receipt'}
+                            </button>
+                        )}
                     </div>
                 </div>
 

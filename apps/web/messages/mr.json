@@ -207,6 +207,7 @@
         "amountPaid": "भरलेली रक्कम",
         "paidOn": "भरले",
         "paymentSuccessful": "पेमेंट यशस्वी",
+        "downloadReceipt": "पावती डाउनलोड करा",
         "timeline": "महत्त्वाच्या तारखा",
         "applied": "अर्ज केला",
         "completed": "पूर्ण",
@@ -351,6 +352,7 @@
         "processingPayment": "पेमेंट प्रक्रिया सुरू",
         "paymentInstructions": "कृपया Razorpay विंडोमध्ये पेमेंट पूर्ण करा...",
         "retryPayment": "पेमेंट पुन्हा प्रयत्न करा",
+        "cancelAndGoBack": "रद्द करा आणि मागे जा",
         "applicationFor": "अर्ज",
         "paymentVerifyFailed": "पेमेंट पडताळणी अयशस्वी",
         "paymentFailed": "पेमेंट अयशस्वी. कृपया पुन्हा प्रयत्न करा.",
@@ -362,7 +364,8 @@
         "nextStep2": "तुम्हाला तुमच्या अर्जाच्या स्थितीबद्दल अपडेट्स मिळतील",
         "nextStep3": "तुमच्या डॅशबोर्डमध्ये तुमचा अर्ज ट्रॅक करा",
         "viewApplications": "माझे अर्ज पहा",
-        "backToHome": "मुख्यपृष्ठावर परत"
+        "backToHome": "मुख्यपृष्ठावर परत",
+        "downloadReceipt": "पावती डाउनलोड करा"
     },
     "DashboardPage": {
         "goodMorning": "सुप्रभात",

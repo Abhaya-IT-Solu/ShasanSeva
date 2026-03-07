@@ -15,6 +15,13 @@
       "when": 1771752467729,
       "tag": "0001_worried_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772907293330,
+      "tag": "0002_warm_network",
+      "breakpoints": true
     }
   ]
 }

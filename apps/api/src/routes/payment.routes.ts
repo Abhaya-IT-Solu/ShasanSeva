@@ -7,10 +7,11 @@ import {
     verifyPaymentSignature,
     verifyWebhookSignature,
 } from '../services/razorpay.service.js';
-import { db, orders, schemes, documents } from '@shasansetu/db';
-import { eq } from 'drizzle-orm';
+import { db, orders, schemes, documents, users } from '@shasansetu/db';
+import { eq, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { env } from '../config/env.js';
+import { generateReceipt } from '../services/receipt.service.js';
 
 const router: Router = Router();
 
@@ -33,7 +34,9 @@ const verifyPaymentSchema = z.object({
 
 /**
  * POST /api/payments/create-order
- * Create a Razorpay order for scheme payment
+ * Create a Razorpay order for scheme payment.
+ * BUG 4 FIX: If a PENDING_PAYMENT order already exists for this user+scheme, reuse it
+ * instead of creating a duplicate.
  */
 router.post('/create-order', authMiddleware, validateBody(createOrderSchema), async (req: Request, res: Response) => {
     try {
@@ -65,20 +68,38 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
             );
         }
 
-        // Create order record in database (status: PENDING_PAYMENT)
-        const orderResult = await db.insert(orders).values({
-            userId,
-            schemeId,
-            paymentAmount: scheme.serviceFee,
-            status: 'PENDING_PAYMENT',
-        }).returning();
+        // BUG 4 FIX: Check for existing PENDING_PAYMENT order for this user+scheme
+        const existingOrders = await db.select()
+            .from(orders)
+            .where(
+                and(
+                    eq(orders.userId, userId),
+                    eq(orders.schemeId, schemeId),
+                    eq(orders.status, 'PENDING_PAYMENT')
+                )
+            );
 
-        const order = orderResult[0];
+        let order: typeof existingOrders[0];
+
+        if (existingOrders.length > 0) {
+            // Reuse the existing PENDING_PAYMENT order
+            order = existingOrders[0];
+            logger.info('Reusing existing PENDING_PAYMENT order', { orderId: order.id, userId, schemeId });
+        } else {
+            // Create new order record (status: PENDING_PAYMENT)
+            const orderResult = await db.insert(orders).values({
+                userId,
+                schemeId,
+                paymentAmount: scheme.serviceFee,
+                status: 'PENDING_PAYMENT',
+            }).returning();
+            order = orderResult[0];
+        }
 
         // Convert to paise (Razorpay uses smallest currency unit)
         const amountInPaise = Math.round(parseFloat(scheme.serviceFee) * 100);
 
-        // Create Razorpay order
+        // Create a fresh Razorpay order (old razorpayOrderId may have expired)
         const razorpayOrder = await createRazorpayOrder({
             amount: amountInPaise,
             currency: 'INR',
@@ -91,7 +112,7 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
             },
         });
 
-        // Update order with Razorpay order ID
+        // Update order with new Razorpay order ID
         await db.update(orders)
             .set({
                 razorpayOrderId: razorpayOrder.id,
@@ -122,7 +143,7 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
 
 /**
  * POST /api/payments/verify
- * Verify payment signature and complete order
+ * Verify payment signature, complete order, and generate receipt PDF.
  */
 router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async (req: Request, res: Response) => {
     try {
@@ -172,12 +193,14 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             );
         }
 
+        const paymentTimestamp = new Date();
+
         // Update order status to PAID
         await db.update(orders)
             .set({
                 status: 'PAID',
                 paymentId: razorpayPaymentId,
-                paymentTimestamp: new Date(),
+                paymentTimestamp,
                 updatedAt: new Date(),
             })
             .where(eq(orders.id, orderId));
@@ -198,9 +221,47 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             logger.info('Documents linked to order', { orderId, count: uploadedDocuments.length });
         }
 
+        // Generate receipt PDF asynchronously (don't block the response)
+        // Fetch user data for receipt
+        let receiptKey: string | null = null;
+        try {
+            const userResult = await db.select({
+                name: users.name,
+                phone: users.phone,
+            }).from(users).where(eq(users.id, userId));
+
+            const schemeResult = await db.select({
+                name: schemes.name,
+            }).from(schemes).where(eq(schemes.id, order.schemeId));
+
+            const userData = userResult[0];
+            const schemeData = schemeResult[0];
+
+            receiptKey = await generateReceipt({
+                orderId,
+                userName: userData?.name || 'N/A',
+                userPhone: userData?.phone || 'N/A',
+                schemeName: schemeData?.name || 'N/A',
+                paymentAmount: order.paymentAmount,
+                paymentId: razorpayPaymentId,
+                paymentDate: paymentTimestamp,
+            });
+
+            // Save receipt key on the order
+            await db.update(orders)
+                .set({ receiptKey })
+                .where(eq(orders.id, orderId));
+
+            logger.info('Receipt generated', { orderId, receiptKey });
+        } catch (receiptError) {
+            // Receipt generation failure should not fail the payment verification
+            logger.error('Failed to generate receipt (non-blocking)', receiptError);
+        }
+
         return res.json(successResponse({
             orderId,
             status: 'PAID',
+            receiptKey,
             message: 'Payment successful! Your application is now being processed.',
         }));
     } catch (error) {
@@ -209,6 +270,75 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
                 message: 'Payment verification failed',
+            })
+        );
+    }
+});
+
+/**
+ * DELETE /api/payments/cancel-order/:orderId
+ * BUG 3 FIX: Cancel a PENDING_PAYMENT order and delete it from the database.
+ * This is called when the user dismisses the Razorpay modal or clicks Cancel.
+ */
+router.delete('/cancel-order/:orderId', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const userId = req.user!.userId;
+        const { orderId } = req.params;
+
+        // Get the order
+        const orderResult = await db.select()
+            .from(orders)
+            .where(eq(orders.id, orderId));
+
+        if (orderResult.length === 0) {
+            return res.status(404).json(
+                errorResponse({
+                    code: ErrorCodes.NOT_FOUND,
+                    message: 'Order not found',
+                })
+            );
+        }
+
+        const order = orderResult[0];
+
+        // Only the order owner can cancel
+        if (order.userId !== userId) {
+            return res.status(403).json(
+                errorResponse({
+                    code: ErrorCodes.FORBIDDEN,
+                    message: 'Unauthorized',
+                })
+            );
+        }
+
+        // Only PENDING_PAYMENT orders can be cancelled this way
+        if (order.status !== 'PENDING_PAYMENT') {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'Only pending payment orders can be cancelled',
+                })
+            );
+        }
+
+        // Delete any documents linked to this order
+        await db.delete(documents).where(eq(documents.orderId, orderId));
+
+        // Delete the order
+        await db.delete(orders).where(eq(orders.id, orderId));
+
+        logger.info('PENDING_PAYMENT order cancelled and deleted', { orderId, userId });
+
+        return res.json(successResponse({
+            orderId,
+            message: 'Order cancelled successfully',
+        }));
+    } catch (error) {
+        logger.error('Failed to cancel order', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Failed to cancel order',
             })
         );
     }
