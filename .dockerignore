@@ -1,0 +1,15 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+dist
+.next
+.turbo
+*.log
+coverage
+.vscode
+.idea
+docs
+DRD-Doc.pdf
+apps/web

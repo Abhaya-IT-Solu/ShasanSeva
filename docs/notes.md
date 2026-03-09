@@ -8,3 +8,6 @@
 3. Adding a reciept feature. when the payment is done and order is completed. the system should generrate a reciept and attach it to the order. the user can downlaod the reciept after the order is successfully created or in the order details page as well. and the reciept should be visible in the admin dashboard as well. [DONE - user/order detail side. Admin dashboard pending.]
 
 4. handling order duplicacy with failex payments. [DONE]
+
+
+5. Apply for scheme flow pages revamp. 
