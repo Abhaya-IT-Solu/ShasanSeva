@@ -8,7 +8,7 @@ name: Deploy API to EC2
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     # Only trigger when API-related files change
     # WHY? No need to redeploy the API if only the web frontend changed.
     paths:
