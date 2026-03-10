@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, decimal, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, decimal, timestamp, index } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { schemes } from './schemes.js';
 import { admins } from './admins.js';
@@ -30,7 +30,12 @@ export const orders = pgTable('orders', {
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+    index('idx_orders_user_id').on(table.userId),
+    index('idx_orders_status').on(table.status),
+    index('idx_orders_created_at').on(table.createdAt),
+    index('idx_orders_assigned_to').on(table.assignedTo),
+]);
 
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;

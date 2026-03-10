@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, index } from 'drizzle-orm/pg-core';
 import { orders } from './orders.js';
 import { admins } from './admins.js';
 
@@ -16,7 +16,10 @@ export const documents = pgTable('documents', {
     uploadedAt: timestamp('uploaded_at').defaultNow().notNull(),
     verifiedAt: timestamp('verified_at'),
     verifiedBy: uuid('verified_by').references(() => admins.id),
-});
+}, (table) => [
+    index('idx_documents_order_id').on(table.orderId),
+    index('idx_documents_status').on(table.status),
+]);
 
 export type Document = typeof documents.$inferSelect;
 export type NewDocument = typeof documents.$inferInsert;

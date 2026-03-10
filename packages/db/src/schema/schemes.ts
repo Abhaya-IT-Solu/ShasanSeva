@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, decimal, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, decimal, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
 import { admins } from './admins.js';
 
 // Required Document definition
@@ -25,7 +25,11 @@ export const schemes = pgTable('schemes', {
     createdBy: uuid('created_by').references(() => admins.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+    index('idx_schemes_category').on(table.category),
+    index('idx_schemes_status').on(table.status),
+    index('idx_schemes_type').on(table.schemeType),
+]);
 
 export type Scheme = typeof schemes.$inferSelect;
 export type NewScheme = typeof schemes.$inferInsert;
