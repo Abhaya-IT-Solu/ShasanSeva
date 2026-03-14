@@ -17,6 +17,14 @@
    - [User Profile](#user-profile-endpoints)
    - [Schemes](#scheme-endpoints)
    - [Orders](#order-endpoints)
+     - [1. List User Orders](#1-list-user-orders)
+     - [2. Get Order Details](#2-get-order-details)
+     - [3. Get Order Receipt](#3-get-order-receipt)
+     - [4. Update Order Status (Admin)](#4-update-order-status-admin)
+     - [5. Resubmit Order (User)](#5-resubmit-order-user)
+     - [6. Admin Orders Queue](#6-admin-orders-queue)
+     - [7. Complete Order (Admin)](#7-complete-order-admin)
+     - [Frontend Apply Flow Integration Guide](#frontend-apply-flow-integration-guide)
    - [Documents](#document-endpoints)
    - [Payments](#payment-endpoints)
 6. [Important Notes for Mobile Developers](#important-notes-for-mobile-developers)
@@ -1097,72 +1105,641 @@ await api.patch('/schemes/a1b2c3d4-...', { status: 'ACTIVE' });
 
 ### Order Endpoints
 
-#### `GET /api/orders`
-Get current user's orders (applications).
+> **Authentication:** All order endpoints require a valid JWT token via `Authorization: Bearer <token>`.
 
-**Headers:** `Authorization: Bearer <token>`
+---
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "order-uuid",
-      "schemeId": "scheme-uuid",
-      "schemeName": "Scholarship Program",
-      "status": "IN_PROGRESS",
-      "amount": "199.00",
-      "createdAt": "2026-01-20T14:30:00Z"
-    }
-  ]
-}
+#### Order Status Lifecycle
+
+Orders follow a strict status machine. Valid transitions are:
+
+| From | Can Move To |
+|------|------------|
+| `PAID` | `IN_PROGRESS`, `CANCELLED` |
+| `IN_PROGRESS` | `PROOF_UPLOADED`, `COMPLETED`, `CANCELLED` |
+| `PROOF_UPLOADED` | `COMPLETED`, `CANCELLED` |
+| `COMPLETED` | *(terminal)* |
+| `CANCELLED` | *(terminal — user can resubmit)* |
+
+```
+PAID → IN_PROGRESS → PROOF_UPLOADED → COMPLETED
+  ↓          ↓              ↓
+CANCELLED  CANCELLED    CANCELLED
+             ↑
+    (resubmit resets to PAID)
 ```
 
 ---
 
+### Order Endpoints Quick Reference
+
+| # | Method | Endpoint | Auth | Role | Description |
+|---|--------|----------|------|------|-------------|
+| 1 | `GET` | `/api/orders` | ✅ | User | List own orders (paginated) |
+| 2 | `GET` | `/api/orders/:id` | ✅ | User/Admin | Get order + documents + scheme |
+| 3 | `GET` | `/api/orders/:id/receipt` | ✅ | User/Admin | Get signed PDF receipt download URL |
+| 4 | `PATCH` | `/api/orders/:id/status` | ✅ | **Admin** | Update order status |
+| 5 | `POST` | `/api/orders/:id/resubmit` | ✅ | User | Resubmit a cancelled order |
+| 6 | `GET` | `/api/orders/admin/queue` | ✅ | **Admin** | View all orders queue (paginated) |
+| 7 | `POST` | `/api/orders/:id/complete` | ✅ | **Admin** | Mark order as completed |
+
+---
+
+### 1. List User Orders
+
+#### `GET /api/orders`
+
+Returns the authenticated user's orders with scheme details. Supports pagination.
+
+**Authentication:** Required (User)
+
+**Query Parameters:**
+
+| Param | Type | Required | Default | Constraints | Description |
+|-------|------|----------|---------|-------------|-------------|
+| `page` | `number` | No | `1` | Min: 1 | Page number |
+| `limit` | `number` | No | `20` | Min: 10, Max: 100 | Results per page |
+
+**Example Request:**
+```
+GET /api/orders?page=1&limit=20
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+        "schemeId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "schemeName": "Scholarship Program",
+        "schemeCategory": "STUDENT",
+        "paymentAmount": "199.00",
+        "status": "IN_PROGRESS",
+        "createdAt": "2026-01-20T14:30:00.000Z",
+        "paymentTimestamp": "2026-01-20T14:35:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 5,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+**Response Fields (per order):**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string (uuid)` | Order ID |
+| `schemeId` | `string (uuid)` | Scheme the order is for |
+| `schemeName` | `string \| null` | Scheme name (joined from `schemes` table) |
+| `schemeCategory` | `string \| null` | Scheme category (e.g., `STUDENT`, `FARMER`) |
+| `paymentAmount` | `string` | Amount paid in INR |
+| `status` | `string` | Current order status |
+| `createdAt` | `timestamp` | When the order was created |
+| `paymentTimestamp` | `timestamp \| null` | When payment was completed |
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 500 | `INTERNAL_ERROR` | Database query failure |
+
+---
+
+### 2. Get Order Details
+
 #### `GET /api/orders/:id`
-Get order details with documents.
 
-**Headers:** `Authorization: Bearer <token>`
+Returns detailed information about a specific order, including full scheme details and all associated documents.
 
-**Response:**
+**Authentication:** Required (User owns the order, or Admin)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string (uuid)` | Yes | Order UUID |
+
+**Authorization Rules:**
+- A regular `USER` can only view their **own** orders
+- An `ADMIN` can view any order
+
+**Success Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
     "order": {
-      "id": "order-uuid",
-      "schemeId": "scheme-uuid",
+      "id": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
       "userId": "user-uuid",
+      "schemeId": "scheme-uuid",
+      "paymentAmount": "199.00",
       "status": "IN_PROGRESS",
-      "amount": "199.00",
-      "paymentId": "pay_xxx",
-      "paymentTimestamp": "2026-01-20T14:35:00Z",
+      "assignedTo": "admin-uuid",
+      "adminNotes": null,
+      "receiptKey": "receipts/e5f6.../receipt.pdf",
+      "paymentId": "pay_XXXXXXXXXXXXX",
+      "razorpayOrderId": "order_XXXXXXXXXXX",
+      "paymentTimestamp": "2026-01-20T14:35:00.000Z",
+      "createdAt": "2026-01-20T14:30:00.000Z",
+      "updatedAt": "2026-01-21T10:00:00.000Z",
       "scheme": {
         "id": "scheme-uuid",
         "name": "Scholarship Program",
-        "slug": "scholarship-program"
+        "slug": "scholarship-program",
+        "category": "STUDENT",
+        "serviceFee": "199.00"
       }
     },
     "documents": [
       {
         "id": "doc-uuid",
-        "documentType": "AADHAAR",
+        "docType": "AADHAAR",
+        "fileKey": "users/.../orders/.../AADHAAR_1234567890.pdf",
         "status": "VERIFIED",
-        "fileUrl": "https://...",
-        "uploadedAt": "2026-01-20T14:32:00Z"
+        "rejectionReason": null,
+        "uploadedAt": "2026-01-20T14:32:00.000Z"
+      },
+      {
+        "id": "doc-uuid-2",
+        "docType": "INCOME_CERT",
+        "fileKey": "users/.../orders/.../INCOME_CERT_1234567891.pdf",
+        "status": "REJECTED",
+        "rejectionReason": "Document is blurry, please re-upload",
+        "uploadedAt": "2026-01-20T14:33:00.000Z"
       }
     ]
   }
 }
 ```
 
-**Order Status Flow:**
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not the order owner and is not an admin |
+| 404 | `NOT_FOUND` | No order with this UUID exists |
+| 500 | `INTERNAL_ERROR` | Database error |
+
+---
+
+### 3. Get Order Receipt
+
+#### `GET /api/orders/:id/receipt`
+
+Returns a **pre-signed download URL** for the order's receipt PDF. The receipt is a system-generated PDF stored in Cloudflare R2 and is created automatically when the payment is verified.
+
+**Authentication:** Required (User owns the order, or Admin)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string (uuid)` | Yes | Order UUID |
+
+**Authorization Rules:**
+- A regular `USER` can only download the receipt for their **own** orders
+- An `ADMIN` can download receipts for any order
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "downloadUrl": "https://<account>.r2.cloudflarestorage.com/shasansetu-documents/receipts/e5f6.../receipt.pdf?X-Amz-Signature=...&X-Amz-Expires=900",
+    "expiresIn": 900
+  }
+}
 ```
-PENDING → PAID → IN_PROGRESS → PROOF_UPLOADED → COMPLETED
-                     ↓
-                  CANCELLED
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `downloadUrl` | `string` | Pre-signed URL to `GET` the PDF. **Expires in 15 minutes (900 seconds)**. |
+| `expiresIn` | `number` | URL expiry in seconds (always `900`). |
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not the order owner and is not an admin |
+| 404 | `NOT_FOUND` | Order does not exist |
+| 404 | `NOT_FOUND` | Receipt has not been generated yet (receipt not available yet) |
+| 500 | `INTERNAL_ERROR` | Failed to generate signed URL from R2 |
+
+> **When is the receipt generated?** The receipt PDF is automatically generated during the `/api/payments/verify` call after a successful Razorpay payment. It is uploaded to R2 at key `receipts/{orderId}/receipt.pdf`. The `receiptKey` is stored on the order record. If payment just completed, the receipt should be available immediately.
+
+**Receipt PDF Contents:**
+- Receipt number (e.g., `RCP-E5F6A7B8`)
+- Date & time of payment
+- Applicant name & phone number
+- Scheme name
+- Application ID (first 8 chars of order UUID)
+- Razorpay Payment ID
+- Amount paid
+- Status: PAYMENT RECEIVED
+
+---
+
+### 4. Update Order Status (Admin)
+
+#### `PATCH /api/orders/:id/status`
+
+Allows an admin to update the status of an order. Enforces strict assignment and transition rules.
+
+**Authentication:** Required (**Admin only**)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string (uuid)` | Yes | Order UUID |
+
+**Request Body:**
+
+| Field | Type | Required | Values | Description |
+|-------|------|----------|--------|-------------|
+| `status` | `string` | **Yes** | `PAID`, `IN_PROGRESS`, `PROOF_UPLOADED`, `COMPLETED`, `CANCELLED` | New target status |
+| `adminNotes` | `string` | No | Any string | Internal notes (e.g. rejection reason) |
+
+**Example Request Body:**
+```json
+{
+  "status": "IN_PROGRESS",
+  "adminNotes": "Documents verified, processing started"
+}
+```
+
+**Assignment Rules:**
+- Any admin can **pick up** a `PAID` order by transitioning it to `IN_PROGRESS` — this auto-assigns the order to that admin
+- Only the **assigned admin** can then transition the order further
+- A **Super Admin** (`role: SUPER_ADMIN`) can override and update any order regardless of assignment
+
+**Valid Transitions:**
+
+| Current Status | Allowed Next Statuses |
+|---------------|----------------------|
+| `PAID` | `IN_PROGRESS`, `CANCELLED` |
+| `IN_PROGRESS` | `PROOF_UPLOADED`, `COMPLETED`, `CANCELLED` |
+| `PROOF_UPLOADED` | `COMPLETED`, `CANCELLED` |
+| `COMPLETED` | *(none — terminal)* |
+| `CANCELLED` | *(none — terminal)* |
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+    "status": "IN_PROGRESS",
+    "assignedTo": "admin-uuid",
+    "message": "Order status updated to IN_PROGRESS"
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 400 | `VALIDATION_ERROR` | Invalid transition (e.g., `COMPLETED` → `IN_PROGRESS`) |
+| 400 | `VALIDATION_ERROR` | Non-super-admin trying to pick up order that is not in `PAID` status |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not an admin |
+| 403 | `FORBIDDEN` | Order is assigned to a different admin and caller is not Super Admin |
+| 404 | `NOT_FOUND` | Order does not exist |
+| 500 | `INTERNAL_ERROR` | Database update failed |
+
+---
+
+### 5. Resubmit Order (User)
+
+#### `POST /api/orders/:id/resubmit`
+
+Allows a user to resubmit their **cancelled** order. Resets the order back to `PAID` status so it re-enters the admin queue. All `REJECTED` documents are deleted so the user can upload fresh, corrected versions.
+
+**Authentication:** Required (User — must own the order)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string (uuid)` | Yes | Order UUID |
+
+**Request Body:** None
+
+**Side Effects:**
+- Sets `status` → `PAID`
+- Clears `assignedTo` → `null`
+- Clears `adminNotes` → `null`
+- **Deletes all documents** with `status = REJECTED` for this order
+- Documents with `UPLOADED` or `VERIFIED` status are retained
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+    "status": "PAID",
+    "message": "Order resubmitted successfully. It will be reviewed again."
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 400 | `VALIDATION_ERROR` | Order is not in `CANCELLED` status |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not the order owner |
+| 404 | `NOT_FOUND` | Order does not exist |
+| 500 | `INTERNAL_ERROR` | Database update failed |
+
+---
+
+### 6. Admin Orders Queue
+
+#### `GET /api/orders/admin/queue`
+
+Returns a paginated list of all orders for admin processing, with optional status filtering. Includes joined user and scheme info.
+
+**Authentication:** Required (**Admin only**)
+
+**Query Parameters:**
+
+| Param | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `page` | `number` | No | `1` | Page number |
+| `limit` | `number` | No | `20` | Results per page (min: 10, max: 100) |
+| `status` | `string` | No | — | Filter by status: `PAID`, `IN_PROGRESS`, `PROOF_UPLOADED`, `COMPLETED`, `CANCELLED` |
+
+**Example Requests:**
+```
+GET /api/orders/admin/queue
+GET /api/orders/admin/queue?status=PAID
+GET /api/orders/admin/queue?status=IN_PROGRESS&page=2&limit=10
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+        "userId": "user-uuid",
+        "userName": "Rahul Sharma",
+        "userPhone": "9876543210",
+        "schemeId": "scheme-uuid",
+        "schemeName": "Scholarship Program",
+        "paymentAmount": "199.00",
+        "status": "PAID",
+        "createdAt": "2026-01-20T14:30:00.000Z",
+        "paymentTimestamp": "2026-01-20T14:35:00.000Z",
+        "assignedTo": null
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 42,
+      "totalPages": 3
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not an admin |
+| 500 | `INTERNAL_ERROR` | Database error |
+
+> ⚠️ **Route Order Matters:** The `/admin/queue` route is registered **before** `/:id` in the router, so `admin` is matched as a literal path segment and does not conflict with UUID-based routes.
+
+---
+
+### 7. Complete Order (Admin)
+
+#### `POST /api/orders/:id/complete`
+
+Marks an order as **COMPLETED** and sends a push notification to the user.
+
+**Authentication:** Required (**Admin only**)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string (uuid)` | Yes | Order UUID |
+
+**Request Body:** None
+
+**Side Effects:**
+- Sets `status` → `COMPLETED`
+- Sets `assignedTo` → calling admin's UUID
+- Sends an `ORDER_COMPLETED` notification to the order's user
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+    "status": "COMPLETED",
+    "message": "Order completed successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 400 | `VALIDATION_ERROR` | Order is already in `COMPLETED` status |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not an admin |
+| 404 | `NOT_FOUND` | Order does not exist |
+| 500 | `INTERNAL_ERROR` | Database update or notification failure |
+
+---
+
+### Frontend Apply Flow Integration Guide
+
+This section documents exactly how the **`/[locale]/apply/[slug]/page.tsx`** client component uses the order and related APIs. The flow has four steps:
+
+```
+Documents → Review → Payment → Success
+```
+
+#### Step 1: Load the Scheme
+Before the stepper renders, the apply page fetches the scheme using the **public** scheme endpoint:
+
+```typescript
+// In useEffect, on mount
+const response = await fetch(`/api/schemes/${params.slug}?locale=${locale}`);
+const data = await response.json();
+// data.data contains: { id, name, slug, requiredDocs, serviceFee, ... }
+```
+
+The `requiredDocs` array drives the document upload UI. The scheme's `serviceFee` is used for the payment summary.
+
+---
+
+#### Step 2: Document Upload (Step — `documents`)
+
+Each document is uploaded using a **3-call flow**:
+
+**Call 1 — Get a pre-signed upload URL:**
+```typescript
+const urlResponse = await api.request('/api/documents/upload-url', {
+  method: 'POST',
+  body: { documentType: docType, contentType: file.type },
+});
+// Returns: { uploadUrl, documentId, key }
+```
+
+**Call 2 — Upload directly to R2 (not via the API server):**
+```typescript
+await fetch(uploadUrl, {
+  method: 'PUT',
+  body: file,
+  headers: { 'Content-Type': file.type },
+});
+```
+
+**Call 3 — Confirm the upload:**
+```typescript
+await api.request(`/api/documents/${documentId}/confirm-upload`, {
+  method: 'POST',
+});
+```
+
+The component stores `{ documentType, documentId, fileKey, fileName, status }` for each uploaded doc. The `fileKey` (R2 storage key) is later sent to the payment verification endpoint.
+
+> **No orderId at this stage.** Documents are uploaded before payment, so no `orderId` is passed to `upload-url`. The `documentId` is `null` from the response, so `confirm-upload` returns gracefully without a DB record. The actual order-document linking happens during payment verification.
+
+---
+
+#### Step 3: Review & Payment (Step — `review` → `payment`)
+
+When the user clicks "Proceed To Payment":
+
+**Call 1 — Create a Razorpay order:**
+```typescript
+const orderResponse = await api.request('/api/payments/create-order', {
+  method: 'POST',
+  body: { schemeId: scheme.id },
+});
+// Returns: { orderId, razorpayOrderId, razorpayKeyId, amount }
+// `orderId` is the ShasanSeva DB order UUID (in PENDING status)
+```
+
+**Razorpay modal opens.** On success, Razorpay calls the `handler` callback with `{ razorpay_order_id, razorpay_payment_id, razorpay_signature }`.
+
+**Call 2 — Verify payment & link documents:**
+```typescript
+const verifyResponse = await api.request('/api/payments/verify', {
+  method: 'POST',
+  body: {
+    razorpayOrderId: response.razorpay_order_id,
+    razorpayPaymentId: response.razorpay_payment_id,
+    razorpaySignature: response.razorpay_signature,
+    orderId: newOrderId,
+    documents: uploadedDocs
+      .filter(d => d.status === 'uploaded' && d.fileKey)
+      .map(d => ({ docType: d.documentType, fileKey: d.fileKey })),
+  },
+});
+```
+
+This single call:
+1. Verifies the Razorpay signature
+2. Updates the order status to `PAID`
+3. Saves the Razorpay payment ID and timestamp
+4. Creates document records in the DB and links them to the order
+5. **Generates the receipt PDF** via `receipt.service.ts` and stores the `receiptKey` on the order
+
+If the user dismisses the Razorpay modal before completing payment, a cancel call is made:
+
+```typescript
+await api.request(`/api/payments/cancel-order/${orderId}`, { method: 'DELETE' });
+```
+
+---
+
+#### Step 4: Success Screen + Receipt Download (Step — `success`)
+
+Once `verifyResponse.success` is `true`, the page transitions to `success`. At this point the `orderId` (ShasanSeva UUID) is stored in state.
+
+**The receipt download button calls:**
+```typescript
+const res = await api.request(`/api/orders/${orderId}/receipt`);
+if (res.success) {
+  const { downloadUrl } = res.data;
+  window.open(downloadUrl, '_blank'); // Opens the PDF in a new tab
+}
+```
+
+This calls **`GET /api/orders/:id/receipt`**, which:
+1. Looks up the order and verifies ownership
+2. Checks that `receiptKey` is not null
+3. Calls `getDownloadUrl(order.receiptKey)` from `r2.service.ts`
+4. Returns a **15-minute pre-signed URL** pointing to `receipts/{orderId}/receipt.pdf` in R2
+
+**Receipt availability:** The receipt is generated synchronously during payment verification, so it should always be available by the time the user sees the success screen. If for some reason it is not (e.g., async generation delay), the API returns `404 NOT_FOUND` with message `"Receipt not available yet"`.
+
+**Frontend handling:**
+```typescript
+// State to prevent double-tap
+const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+
+// Button is disabled while downloading
+<button disabled={downloadingReceipt} onClick={async () => {
+  if (!orderId) return;
+  setDownloadingReceipt(true);
+  try {
+    const res = await api.request(`/api/orders/${orderId}/receipt`);
+    if (res.success) {
+      window.open((res.data as { downloadUrl: string }).downloadUrl, '_blank');
+    }
+  } finally {
+    setDownloadingReceipt(false);
+  }
+}}>
+  Download Receipt
+</button>
+```
+
+---
+
+#### Fee Breakdown Displayed on Success Screen
+
+The apply page calculates the fee breakdown from the scheme's `serviceFee` (which is already inclusive of 18% GST):
+
+```typescript
+const fee = Number(scheme.serviceFee);        // e.g., 199
+const baseAmount = fee * (100 / 118);          // Pre-GST amount
+const appFee = (baseAmount * 0.8).toFixed(2);  // 80% of base = Application Fee
+const processingFee = (baseAmount * 0.2).toFixed(2); // 20% of base = Processing Charge
+const gst = (fee - baseAmount).toFixed(2);    // GST (18%)
+// appFee + processingFee + gst = serviceFee (total shown to user)
 ```
 
 ---
