@@ -27,6 +27,15 @@
      - [Frontend Apply Flow Integration Guide](#frontend-apply-flow-integration-guide)
    - [Documents](#document-endpoints)
    - [Payments](#payment-endpoints)
+     - [1. Create Payment Order](#1-create-payment-order)
+     - [2. Verify Payment](#2-verify-payment)
+     - [3. Cancel Payment Order](#3-cancel-payment-order)
+     - [4. Razorpay Webhook](#4-razorpay-webhook)
+   - [Proofs](#proof-endpoints)
+     - [1. Get Proof Upload URL](#1-get-proof-upload-url-admin)
+     - [2. Confirm Proof Upload](#2-confirm-proof-upload-admin)
+     - [3. List Proofs for Order](#3-list-proofs-for-order)
+     - [4. Get Proof Download URL](#4-get-proof-download-url)
 6. [Important Notes for Mobile Developers](#important-notes-for-mobile-developers)
 7. [Localization](#localization)
 
@@ -2439,26 +2448,50 @@ await api.patch(`/documents/${docId}/reject`, {
 
 ### Payment Endpoints
 
+> **Authentication:** All payment endpoints (except `/webhook`) require a valid JWT token via `Authorization: Bearer <token>`.
+
+---
+
+### Payment Endpoints Quick Reference
+
+| # | Method | Endpoint | Auth | Description |
+|---|--------|----------|------|-------------|
+| 1 | `POST` | `/api/payments/create-order` | ✅ User | Create a Razorpay order for a scheme |
+| 2 | `POST` | `/api/payments/verify` | ✅ User | Verify payment + link docs + generate receipt |
+| 3 | `DELETE` | `/api/payments/cancel-order/:orderId` | ✅ User | Cancel a pending payment order |
+| 4 | `POST` | `/api/payments/webhook` | ❌ (Razorpay HMAC) | Handle Razorpay webhook events |
+
+---
+
+### 1. Create Payment Order
+
 #### `POST /api/payments/create-order`
-Create a Razorpay payment order.
 
-**Headers:** `Authorization: Bearer <token>`
+Creates a Razorpay order to initiate the payment flow for a scheme. If the user already has a `PENDING_PAYMENT` order for the same scheme, it is **reused** instead of creating a duplicate (idempotent retry support).
 
-**Body:**
+**Authentication:** Required (User)
+
+**Request Body:**
+
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| `schemeId` | `string (uuid)` | **Yes** | Valid UUID | The scheme the user wants to apply for |
+
+**Request Body Example:**
 ```json
 {
-  "schemeId": "scheme-uuid"
+  "schemeId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
 
-**Response:**
+**Success Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
-    "orderId": "order-uuid",
-    "razorpayOrderId": "order_xxx",
-    "razorpayKeyId": "rzp_test_xxx",
+    "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+    "razorpayOrderId": "order_PQRSTUVWXYZabc",
+    "razorpayKeyId": "rzp_live_XXXXXXXXXXXXXXX",
     "amount": 19900,
     "currency": "INR",
     "schemeName": "Scholarship Program"
@@ -2466,36 +2499,435 @@ Create a Razorpay payment order.
 }
 ```
 
-> **Note:** `amount` is in **paise** (smallest currency unit). Divide by 100 for rupees.
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `orderId` | `string (uuid)` | ShasanSeva internal order UUID — store this, you'll need it for verify |
+| `razorpayOrderId` | `string` | Razorpay order ID — pass to the Razorpay SDK as `order_id` |
+| `razorpayKeyId` | `string` | Razorpay publishable key — pass to the Razorpay SDK as `key` |
+| `amount` | `number` | Amount in **paise** (e.g., `19900` = ₹199.00) |
+| `currency` | `string` | Always `"INR"` |
+| `schemeName` | `string` | Scheme name for display in the Razorpay modal |
+
+> ⚠️ **Amount is in paise.** Divide by 100 to get rupees. Pass the raw paise value directly to the Razorpay SDK.
+
+**Idempotency — PENDING_PAYMENT Reuse:**
+If the user already has an order for this scheme in `PENDING_PAYMENT` status (e.g., they navigated back and tried again), the existing DB order record is reused. A **fresh** Razorpay order is always created (old Razorpay orders expire), and the `razorpayOrderId` on the DB record is updated.
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 400 | `VALIDATION_ERROR` | Scheme is `INACTIVE` or not available |
+| 400 | `VALIDATION_ERROR` | `schemeId` is not a valid UUID |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 404 | `NOT_FOUND` | Scheme with given UUID does not exist |
+| 500 | `INTERNAL_ERROR` | Failed to create Razorpay order or DB insert |
 
 ---
 
+### 2. Verify Payment
+
 #### `POST /api/payments/verify`
-Verify payment after Razorpay checkout completes.
 
-**Headers:** `Authorization: Bearer <token>`
+Called after the Razorpay modal completes successfully. Verifies the HMAC signature, marks the order as `PAID`, links uploaded documents to the order, and **generates a PDF receipt**.
 
-**Body:**
+**Authentication:** Required (User — must own the order)
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `razorpayOrderId` | `string` | **Yes** | Razorpay order ID from the payment response |
+| `razorpayPaymentId` | `string` | **Yes** | Razorpay payment ID from the payment response |
+| `razorpaySignature` | `string` | **Yes** | HMAC signature from Razorpay for verification |
+| `orderId` | `string (uuid)` | **Yes** | ShasanSeva order UUID (from `create-order` response) |
+| `documents` | `array` | No | Documents to link to the order (uploaded before payment) |
+| `documents[].docType` | `string` | Yes (per item) | Document type identifier (e.g., `AADHAAR`) |
+| `documents[].fileKey` | `string` | Yes (per item) | R2 storage key from `upload-url` response |
+
+**Request Body Example:**
 ```json
 {
-  "razorpayOrderId": "order_xxx",
-  "razorpayPaymentId": "pay_xxx",
-  "razorpaySignature": "signature_hash",
-  "orderId": "order-uuid"
+  "razorpayOrderId": "order_PQRSTUVWXYZabc",
+  "razorpayPaymentId": "pay_ABCDEFGHIJKabc",
+  "razorpaySignature": "3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e",
+  "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+  "documents": [
+    { "docType": "AADHAAR", "fileKey": "users/abc/documents/AADHAAR_1709020800000.pdf" },
+    { "docType": "INCOME_CERT", "fileKey": "users/abc/documents/INCOME_CERT_1709020800001.pdf" }
+  ]
 }
 ```
 
-**Response:**
+**Success Response (200 OK):**
 ```json
 {
   "success": true,
   "data": {
-    "orderId": "order-uuid",
+    "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
     "status": "PAID",
+    "receiptKey": "receipts/e5f6a7b8-c9d0-1234-abcd-ef5678901234/receipt.pdf",
     "message": "Payment successful! Your application is now being processed."
   }
 }
 ```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `orderId` | `string` | The ShasanSeva order UUID |
+| `status` | `string` | Always `"PAID"` on success |
+| `receiptKey` | `string \| null` | R2 key of the generated receipt PDF. `null` if receipt generation failed (non-blocking). |
+| `message` | `string` | User-friendly success message |
+
+**What This Endpoint Does (in order):**
+1. **Verifies Razorpay HMAC signature** — if invalid, returns `400`
+2. **Fetches and validates the order** — must exist and belong to the calling user
+3. **Updates order status** → `PAID`, saves `paymentId` and `paymentTimestamp`
+4. **Creates document records** in the DB and links them to the order (one record per `documents[]` item with status `UPLOADED`)
+5. **Generates a PDF receipt** via `receipt.service.ts`, uploads to R2 at `receipts/{orderId}/receipt.pdf`, saves `receiptKey` on the order
+   - ⚠️ Receipt failure is **non-blocking** — payment is still confirmed even if PDF generation fails
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 400 | `VALIDATION_ERROR` | Razorpay signature is invalid |
+| 400 | `VALIDATION_ERROR` | Missing required fields in request body |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | Order does not belong to the calling user |
+| 404 | `NOT_FOUND` | Order with given UUID does not exist |
+| 500 | `INTERNAL_ERROR` | DB update or Razorpay service failure |
+
+---
+
+### 3. Cancel Payment Order
+
+#### `DELETE /api/payments/cancel-order/:orderId`
+
+Cancels and **permanently deletes** a `PENDING_PAYMENT` order and its associated documents. Called when the user dismisses the Razorpay modal without completing payment.
+
+**Authentication:** Required (User — must own the order)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `orderId` | `string (uuid)` | Yes | ShasanSeva order UUID to cancel |
+
+**Request Body:** None
+
+**Conditions:**
+- Only orders in `PENDING_PAYMENT` status can be deleted this way
+- Any documents already linked to the order are also deleted
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+    "message": "Order cancelled successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 400 | `VALIDATION_ERROR` | Order is not in `PENDING_PAYMENT` status |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | Order does not belong to the calling user |
+| 404 | `NOT_FOUND` | Order does not exist |
+| 500 | `INTERNAL_ERROR` | DB delete failure |
+
+> **Frontend usage:** This is called automatically when the user clicks the ✕ button on the Razorpay modal (`modal.ondismiss` callback) or the "Cancel & Go Back" button on the payment step. After cancellation, the `orderId` state is cleared and the user returns to the `review` step.
+
+---
+
+### 4. Razorpay Webhook
+
+#### `POST /api/payments/webhook`
+
+Receives and processes Razorpay webhook events. **No JWT auth** — uses HMAC signature verification via `x-razorpay-signature` header with the webhook secret.
+
+**Authentication:** None (webhook HMAC verification via `x-razorpay-signature` header)
+
+**Headers Required:**
+```
+x-razorpay-signature: <HMAC-SHA256 signature>
+Content-Type: application/json
+```
+
+**Handled Events:**
+
+| Event | Action |
+|-------|--------|
+| `payment.captured` | Sets order `status` → `PAID`, saves `paymentId` and `paymentTimestamp` |
+| `payment.failed` | Sets order `status` → `PAYMENT_FAILED` |
+| *(anything else)* | Logged and ignored |
+
+> **Note:** `payment.captured` is a **fallback** for cases where the client-side `POST /verify` call fails (e.g., network drop after payment). In normal flow, `/verify` runs first and the webhook becomes a no-op since the order is already `PAID`.
+
+**Event Payload Schema (Razorpay standard):**
+```json
+{
+  "event": "payment.captured",
+  "payload": {
+    "payment": {
+      "entity": {
+        "id": "pay_ABCDEFGHIJKabc",
+        "notes": {
+          "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+          "userId": "user-uuid",
+          "schemeId": "scheme-uuid",
+          "schemeName": "Scholarship Program"
+        }
+      }
+    }
+  }
+}
+```
+
+The `orderId` is read from `payload.payment.entity.notes.orderId` — this is set automatically in the `create-order` endpoint via Razorpay's `notes` field.
+
+**Success Response (200 OK):**
+```json
+{ "received": true }
+```
+
+**Error Responses:**
+
+| Status | Scenario |
+|--------|----------|
+| 401 | Invalid or missing `x-razorpay-signature` header |
+| 500 | Internal processing error |
+
+---
+
+### Proof Endpoints
+
+> **Authentication:** All proof endpoints require a valid JWT token via `Authorization: Bearer <token>`.  
+> **What are proofs?** Proofs are files uploaded by **admins** to attach evidence for completed work on an order (e.g., a screenshot of the government portal confirmation, a reference ID document). They are different from user-uploaded documents.
+
+---
+
+### Proof Endpoints Quick Reference
+
+| # | Method | Endpoint | Auth | Role | Description |
+|---|--------|----------|------|------|-------------|
+| 1 | `POST` | `/api/proofs/upload-url` | ✅ | **Admin** | Get pre-signed URL to upload a proof file |
+| 2 | `POST` | `/api/proofs/:id/confirm` | ✅ | **Admin** | Confirm proof upload, set order to PROOF_UPLOADED |
+| 3 | `GET` | `/api/proofs/order/:orderId` | ✅ | User/Admin | List all proofs for an order |
+| 4 | `GET` | `/api/proofs/:id/download-url` | ✅ | User/Admin | Get signed download URL for a proof |
+
+---
+
+### 1. Get Proof Upload URL (Admin)
+
+#### `POST /api/proofs/upload-url`
+
+Generates a pre-signed R2 upload URL for an admin to attach evidence to an order. Creating the upload URL also creates a `proofs` DB record in a pending state.
+
+**Authentication:** Required (**Admin only**)
+
+**Request Body:**
+
+| Field | Type | Required | Values | Description |
+|-------|------|----------|--------|-------------|
+| `orderId` | `string (uuid)` | **Yes** | — | The order to attach the proof to |
+| `proofType` | `string` | **Yes** | `RECEIPT`, `SCREENSHOT`, `REFERENCE_ID`, `CONFIRMATION`, `OTHER` | Type of proof |
+| `contentType` | `string` | **Yes** | `image/jpeg`, `image/png`, `image/webp`, `application/pdf` | MIME type of the file |
+| `description` | `string` | No | — | Optional description for this proof |
+
+**Request Body Example:**
+```json
+{
+  "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+  "proofType": "SCREENSHOT",
+  "contentType": "image/png",
+  "description": "Screenshot of government portal confirmation"
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "uploadUrl": "https://<account>.r2.cloudflarestorage.com/shasansetu-documents/users/admin/orders/e5f6.../proof_SCREENSHOT_1709020800000.png?X-Amz-Signature=...",
+    "proofId": "p1q2r3s4-t5u6-v7w8-x9y0-z1a2b3c4d5e6",
+    "key": "users/admin/orders/e5f6a7b8-c9d0.../proof_SCREENSHOT_1709020800000.png",
+    "expiresIn": 300
+  }
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `uploadUrl` | `string` | Pre-signed URL to `PUT` the file to. Expires in 5 minutes. |
+| `proofId` | `string (uuid)` | UUID of the created proof record — use in `/confirm` |
+| `key` | `string` | R2 storage key |
+| `expiresIn` | `number` | URL expiry in seconds (always `300`) |
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 400 | `VALIDATION_ERROR` | Invalid `proofType`, `contentType`, or `orderId` |
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not an admin |
+| 404 | `NOT_FOUND` | Order does not exist |
+| 500 | `INTERNAL_ERROR` | Failed to generate upload URL from R2 |
+
+---
+
+### 2. Confirm Proof Upload (Admin)
+
+#### `POST /api/proofs/:id/confirm`
+
+Confirms that the proof file was successfully uploaded to R2. Updates the proof record with the file URL, sets the order status to `PROOF_UPLOADED`, and **notifies the user** via the notification system.
+
+**Authentication:** Required (**Admin only**)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string (uuid)` | Yes | Proof ID from the `upload-url` response |
+
+**Request Body:** None
+
+**Side Effects:**
+- Generates a download URL and saves it as `fileUrl` on the proof record
+- Updates the parent order: `status` → `PROOF_UPLOADED`
+- Sends a `PROOF_UPLOADED` notification to the order owner
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "proofId": "p1q2r3s4-t5u6-v7w8-x9y0-z1a2b3c4d5e6",
+    "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+    "status": "PROOF_UPLOADED",
+    "message": "Proof uploaded and order updated"
+  }
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User is not an admin |
+| 404 | `NOT_FOUND` | Proof with given ID does not exist |
+| 500 | `INTERNAL_ERROR` | R2 URL generation or DB update failed |
+
+---
+
+### 3. List Proofs for Order
+
+#### `GET /api/proofs/order/:orderId`
+
+Returns all proof files attached to a given order. Accessible by the order's owner and admins.
+
+**Authentication:** Required (User — must own the order — or Admin)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `orderId` | `string (uuid)` | Yes | Order UUID to fetch proofs for |
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "p1q2r3s4-t5u6-v7w8-x9y0-z1a2b3c4d5e6",
+      "orderId": "e5f6a7b8-c9d0-1234-abcd-ef5678901234",
+      "fileKey": "users/admin/orders/e5f6.../proof_SCREENSHOT_1709020800000.png",
+      "fileUrl": "https://...",
+      "proofType": "SCREENSHOT",
+      "description": "Screenshot of government portal confirmation",
+      "uploadedBy": "admin-uuid",
+      "uploadedAt": "2026-01-22T09:15:00.000Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User does not own this order and is not an admin |
+| 500 | `INTERNAL_ERROR` | Database query failed |
+
+> Returns an empty array `[]` if no proofs have been uploaded yet.
+
+---
+
+### 4. Get Proof Download URL
+
+#### `GET /api/proofs/:id/download-url`
+
+Returns a pre-signed 15-minute download URL for a specific proof file. Accessible by the order's owner and admins.
+
+**Authentication:** Required (User — must own the proof's parent order — or Admin)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | `string (uuid)` | Yes | Proof UUID |
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "downloadUrl": "https://<account>.r2.cloudflarestorage.com/shasansetu-documents/users/admin/orders/.../proof_SCREENSHOT_1709020800000.png?X-Amz-Signature=...",
+    "expiresIn": 900,
+    "proof": {
+      "id": "p1q2r3s4-t5u6-v7w8-x9y0-z1a2b3c4d5e6",
+      "proofType": "SCREENSHOT",
+      "description": "Screenshot of government portal confirmation",
+      "uploadedAt": "2026-01-22T09:15:00.000Z"
+    }
+  }
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `downloadUrl` | `string` | Pre-signed URL to `GET` the file. Expires in 15 minutes. |
+| `expiresIn` | `number` | URL expiry in seconds (always `900`) |
+| `proof.id` | `string` | Proof UUID |
+| `proof.proofType` | `string` | Type of proof |
+| `proof.description` | `string \| null` | Optional description |
+| `proof.uploadedAt` | `timestamp` | When the proof was uploaded |
+
+**Error Responses:**
+
+| Status | Code | Scenario |
+|--------|------|----------|
+| 401 | `UNAUTHORIZED` | Missing or invalid JWT token |
+| 403 | `FORBIDDEN` | User does not own the parent order and is not an admin |
+| 404 | `NOT_FOUND` | Proof with given ID does not exist |
+| 500 | `INTERNAL_ERROR` | Failed to generate download URL from R2 |
 
 ---
 
