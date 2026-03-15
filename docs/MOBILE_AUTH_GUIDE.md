@@ -17,9 +17,10 @@
 5. [Session Management (JWT)](#5-session-management-jwt)
 6. [Role-Based Access Control (RBAC)](#6-role-based-access-control-rbac)
 7. [Flutter Implementation Guide](#7-flutter-implementation-guide)
-8. [Admin Setup (First-Time Only)](#8-admin-setup-first-time-only)
-9. [API Quick Reference](#9-api-quick-reference)
-10. [Troubleshooting](#10-troubleshooting)
+8. [Forgot Password (Firebase Phone OTP)](#8-forgot-password-firebase-phone-otp)
+9. [Admin Setup (First-Time Only)](#9-admin-setup-first-time-only)
+10. [API Quick Reference](#10-api-quick-reference)
+11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
@@ -798,7 +799,413 @@ GoRoute(
 
 ---
 
-## 8. Admin Setup (First-Time Only)
+## 8. Forgot Password (Firebase Phone OTP)
+
+> **Applicable to:** Regular users (`userType: "USER"`) only.  
+> Admins do not use this flow — if an admin forgets their password, a Super Admin must reset it via the admin panel.
+
+### Overview
+
+The forgot-password flow uses **Firebase Phone Authentication** on the client side to prove ownership of the phone number, then sends the resulting verified token to the backend to set a new password — without ever needing the old one.
+
+The backend **never** sends SMS directly. All OTP delivery, rate-limiting and retry enforcement is handled by Firebase.
+
+### Complete Flow Diagram
+
+```
+Mobile App (Flutter)                Firebase              Backend API
+       │                               │                      │
+  1.  │── sendOtp(+91XXXXXXXXXX) ──►  │                      │
+       │                               │ sends SMS OTP        │
+       │                               │                      │
+  2.  │◄── confirmation result ───────│                      │
+       │                               │                      │
+  3.  │── confirmOtp(code) ─────────► │                      │
+       │                               │ verifies OTP         │
+       │◄── Firebase ID Token ─────── │                      │
+       │                               │                      │
+  4.  │─────────────── POST /api/auth/reset-password ──────► │
+       │                { firebaseIdToken, newPassword }       │
+       │                                                       │ verify token
+       │                                                       │ look up user by phone
+       │                                                       │ update passwordHash
+       │                                                       │ create new JWT session
+       │◄──────────────────────────────────────────────────── │
+       │                { token, user, userType: "USER" }      │
+       │                                                       │
+  5.  │  Store token → navigate to Home                       │
+```
+
+### Step 1 — Firebase Setup (pubspec.yaml)
+
+Add the required Firebase packages:
+
+```yaml
+# pubspec.yaml
+dependencies:
+  firebase_core: ^2.x.x
+  firebase_auth: ^4.x.x
+```
+
+Initialise Firebase in `main.dart` before `runApp()`:
+
+```dart
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, // from google-services.json
+  );
+  runApp(MyApp());
+}
+```
+
+> Download `google-services.json` from **Firebase Console → Project Settings → Your apps → Android app** and place it in `android/app/`.
+
+### Step 2 — Backend API Reference
+
+#### `POST /api/auth/reset-password`
+
+- **Authentication required:** ❌ No — this is a public endpoint
+- **Who can use it:** Regular users only (not admins)
+
+**Request body:**
+
+```json
+{
+  "firebaseIdToken": "eyJhbGci...(long Firebase ID token string)",
+  "newPassword": "NewPass123"
+}
+```
+
+| Field | Type | Rules |
+|---|---|---|
+| `firebaseIdToken` | `string` | Required. ID token from `user.getIdToken()` after successful OTP confirmation. |
+| `newPassword` | `string` | Required. Min 8 chars, must include at least 1 digit. |
+
+**Success Response (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "user": {
+      "id": "550e8400-...",
+      "phone": "9876543210",
+      "name": "Rahul Sharma",
+      "profileComplete": true
+    },
+    "userType": "USER",
+    "message": "Password reset successfully"
+  }
+}
+```
+
+> **Auto-login included:** The backend creates a new JWT session and returns it in the response — treat this exactly like a login response. Store the token and navigate to home directly, no separate login call needed.
+
+**Error Responses:**
+
+| HTTP | `error.code` | Meaning |
+|---|---|---|
+| `400` | `VALIDATION_ERROR` | Invalid Firebase token, wrong OTP, or new password doesn't meet rules |
+| `400` | `VALIDATION_ERROR` | `"No account found for this phone number"` — phone is not registered |
+| `500` | `INTERNAL_ERROR` | Server-side failure |
+
+---
+
+### Step 3 — Flutter Implementation
+
+#### 3a. Phone Auth Service (Firebase OTP)
+
+```dart
+// lib/services/phone_auth_service.dart
+
+import 'package:firebase_auth/firebase_auth.dart';
+
+class PhoneAuthService {
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
+  ConfirmationResult? _confirmationResult;
+
+  /// Step 1: Send OTP to the given phone number.
+  /// [phone] must be the 10-digit number WITHOUT country code.
+  Future<void> sendOtp({
+    required String phone,
+    required void Function(String message) onError,
+    required void Function() onCodeSent,
+  }) async {
+    try {
+      _confirmationResult = await _auth.signInWithPhoneNumber('+91$phone');
+      onCodeSent();
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'invalid-phone-number':
+          onError('Please enter a valid 10-digit mobile number.');
+          break;
+        case 'too-many-requests':
+          onError('Too many attempts. Please wait a few minutes and try again.');
+          break;
+        default:
+          onError(e.message ?? 'Failed to send OTP. Please try again.');
+      }
+    }
+  }
+
+  /// Step 2: Verify OTP entered by the user.
+  /// Returns a Firebase ID token on success.
+  Future<String?> verifyOtp({
+    required String otp,
+    required void Function(String message) onError,
+  }) async {
+    if (_confirmationResult == null) {
+      onError('Session expired. Please request a new OTP.');
+      return null;
+    }
+    try {
+      final credential = await _confirmationResult!.confirm(otp);
+      // Get the short-lived ID token — backend uses this to verify ownership
+      return await credential.user?.getIdToken();
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'invalid-verification-code':
+          onError('Incorrect OTP. Please check and try again.');
+          break;
+        case 'session-expired':
+          onError('OTP has expired. Please request a new one.');
+          break;
+        default:
+          onError(e.message ?? 'OTP verification failed.');
+      }
+      return null;
+    }
+  }
+}
+```
+
+#### 3b. Forgot Password Service (Backend call)
+
+```dart
+// lib/services/forgot_password_service.dart
+
+class ForgotPasswordService {
+  final ApiService _api;
+  ForgotPasswordService(this._api);
+
+  /// Step 3: Reset password using Firebase ID token.
+  /// Returns AuthResponse (same shape as login) or throws.
+  Future<AuthResponse> resetPassword({
+    required String firebaseIdToken,
+    required String newPassword,
+  }) async {
+    final response = await _api.post('/auth/reset-password', {
+      'firebaseIdToken': firebaseIdToken,
+      'newPassword': newPassword,
+    });
+
+    if (response['success'] != true) {
+      throw Exception(
+        response['error']?['message'] ?? 'Password reset failed',
+      );
+    }
+
+    final authResponse = AuthResponse.fromJson(response);
+
+    // Treat as a login response — store token and user data
+    _api.setToken(authResponse.token);
+    await StorageService.saveAuth(
+      token: authResponse.token,
+      userType: authResponse.userType,
+      userData: authResponse.user,
+    );
+
+    return authResponse;
+  }
+}
+```
+
+#### 3c. Example Screen — Forgot Password (3 steps)
+
+```dart
+// lib/screens/forgot_password_screen.dart
+
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+  @override
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  final _phoneAuthService = PhoneAuthService();
+  final _forgotService = ForgotPasswordService(apiService); // inject your ApiService
+
+  int _step = 1;          // 1 = phone, 2 = OTP, 3 = new password
+  bool _loading = false;
+  String? _error;
+  String? _firebaseIdToken;
+  int _resendTimer = 0;
+  Timer? _timer;
+
+  void _startResendTimer() {
+    setState(() => _resendTimer = 60);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_resendTimer == 0) { t.cancel(); }
+      else { setState(() => _resendTimer--); }
+    });
+  }
+
+  // ── Step 1: Send OTP ──────────────────────────────────────────────────
+  Future<void> _sendOtp() async {
+    final phone = _phoneController.text.trim();
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
+      setState(() => _error = 'Enter a valid 10-digit mobile number');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    await _phoneAuthService.sendOtp(
+      phone: phone,
+      onError: (msg) => setState(() { _error = msg; _loading = false; }),
+      onCodeSent: () {
+        setState(() { _step = 2; _loading = false; });
+        _startResendTimer();
+      },
+    );
+  }
+
+  // ── Step 2: Verify OTP ────────────────────────────────────────────────
+  Future<void> _verifyOtp() async {
+    setState(() { _loading = true; _error = null; });
+    final token = await _phoneAuthService.verifyOtp(
+      otp: _otpController.text.trim(),
+      onError: (msg) => setState(() { _error = msg; _loading = false; }),
+    );
+    if (token != null) {
+      setState(() { _firebaseIdToken = token; _step = 3; _loading = false; });
+    }
+  }
+
+  // ── Step 3: Reset password ────────────────────────────────────────────
+  Future<void> _resetPassword() async {
+    final newPw = _newPasswordController.text;
+    final confirmPw = _confirmPasswordController.text;
+
+    if (newPw.length < 8 || !RegExp(r'\d').hasMatch(newPw)) {
+      setState(() => _error = 'Min 8 chars, must include a number');
+      return;
+    }
+    if (newPw != confirmPw) {
+      setState(() => _error = 'Passwords do not match');
+      return;
+    }
+
+    setState(() { _loading = true; _error = null; });
+    try {
+      final authResponse = await _forgotService.resetPassword(
+        firebaseIdToken: _firebaseIdToken!,
+        newPassword: newPw,
+      );
+      // Navigate to home — same as after login
+      if (!mounted) return;
+      if (!authResponse.isProfileComplete) {
+        Navigator.pushReplacementNamed(context, '/complete-profile');
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Reset Password')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Step indicator (optional — use a Stepper widget or custom)
+            Text('Step $_step of 3', style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 24),
+
+            if (_error != null)
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+
+            // Step 1
+            if (_step == 1) ...[
+              TextField(controller: _phoneController, keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(labelText: 'Registered Mobile Number', prefixText: '+91 ')),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loading ? null : _sendOtp,
+                child: _loading ? const CircularProgressIndicator() : const Text('Send OTP'),
+              ),
+            ],
+
+            // Step 2
+            if (_step == 2) ...[
+              TextField(controller: _otpController, keyboardType: TextInputType.number,
+                  maxLength: 6, decoration: const InputDecoration(labelText: 'Enter 6-digit OTP')),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loading ? null : _verifyOtp,
+                child: _loading ? const CircularProgressIndicator() : const Text('Verify OTP'),
+              ),
+              TextButton(
+                onPressed: _resendTimer == 0 ? _sendOtp : null,
+                child: Text(_resendTimer > 0 ? 'Resend in ${_resendTimer}s' : 'Resend OTP'),
+              ),
+            ],
+
+            // Step 3
+            if (_step == 3) ...[
+              TextField(controller: _newPasswordController, obscureText: true,
+                  decoration: const InputDecoration(labelText: 'New Password')),
+              const SizedBox(height: 12),
+              TextField(controller: _confirmPasswordController, obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Confirm New Password')),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loading ? null : _resetPassword,
+                child: _loading ? const CircularProgressIndicator() : const Text('Reset Password'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _phoneController.dispose();
+    _otpController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+}
+```
+
+### Key Notes for the Mobile Team
+
+| Point | Detail |
+|---|---|  
+| Phone format | Send **10-digit number only** — Firebase prepends `+91`. Do NOT include country code. |
+| Token lifetime | Firebase ID tokens expire after **1 hour** — always call `getIdToken()` immediately after `confirm()` and send it directly to the backend |
+| Auto-login | The `/reset-password` response is identical to a login response — store the token and navigate to home |
+| Admin accounts | Admins **cannot** use this flow. `POST /api/auth/reset-password` only resets passwords for users in the `users` table |
+| Resend OTP | Call `sendOtp()` again to resend — Firebase handles rate-limiting. Show a 60-second cooldown timer to prevent spam taps |
+| Error: phone not found | The backend returns `"No account found for this phone number"` — show this clearly so the user knows to register instead |
+
+---
+
+## 9. Admin Setup (First-Time Only)
 
 ### The Bootstrap Problem
 
@@ -854,9 +1261,10 @@ Authorization: Bearer <super_admin_token>
 |---|---|---|---|---|
 | `POST` | `/auth/register` | ❌ | Anyone | Register new user |
 | `POST` | `/auth/login` | ❌ | Anyone | Login (users + admins) |
+| `POST` | `/auth/reset-password` | ❌ | Users only | Forgot password via Firebase OTP |
 | `GET` | `/auth/me` | ✅ | All authenticated | Validate session & get profile |
 | `POST` | `/auth/logout` | ✅ | All authenticated | Invalidate session |
-| `POST` | `/auth/change-password` | ✅ | All authenticated | Change password |
+| `POST` | `/auth/change-password` | ✅ | All authenticated | Change password (needs old password) |
 
 ### User-Only Endpoints
 

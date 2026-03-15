@@ -10,4 +10,6 @@
 4. handling order duplicacy with failex payments. [DONE]
 
 
-5. Apply for scheme flow pages revamp. 
+5. Apply for scheme flow pages revamp.
+
+6. what if the payment verification fails after applying to a scheme. the payment status is "pending payment", since the verification failed. there should a way to verify the payment status again, like on the order details page a button using which we can reverify the payment status of the scheme. 
