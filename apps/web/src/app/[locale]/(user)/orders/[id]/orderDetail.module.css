@@ -1076,3 +1076,126 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* Admin Notes (Read-Only) */
+.adminNotesContent {
+    padding: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.adminNotesContent p {
+    font-size: var(--text-sm);
+    color: #334155;
+    line-height: 1.6;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+/* Feedback Section */
+.feedbackDisplay,
+.feedbackForm {
+    padding: 4px 0;
+}
+
+.feedbackStars {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.starIcon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.starButton {
+    background: none;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    padding: 2px;
+    line-height: 1;
+    transition: transform 0.15s;
+}
+
+.starButton:hover {
+    transform: scale(1.2);
+}
+
+.ratingText {
+    margin-left: 8px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: #64748b;
+}
+
+.feedbackPrompt {
+    font-size: var(--text-sm);
+    color: #64748b;
+    margin-bottom: 16px;
+}
+
+.feedbackCommentText {
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: var(--text-sm);
+    color: #334155;
+    line-height: 1.6;
+    margin: 0 0 8px;
+    font-style: italic;
+}
+
+.feedbackMeta {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.feedbackTextarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    color: #0f172a;
+    resize: vertical;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.feedbackTextarea:focus {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.1);
+}
+
+.feedbackSubmitBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.feedbackSubmitBtn:hover:not(:disabled) {
+    background: #15803d;
+}
+
+.feedbackSubmitBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

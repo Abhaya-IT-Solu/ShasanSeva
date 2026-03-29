@@ -6,6 +6,63 @@
     flex-direction: column;
 }
 
+/* ================================
+   Marquee Notification Slider
+   ================================ */
+.marqueeWrapper {
+    background: linear-gradient(90deg, var(--color-primary) 0%, #2e7d32 100%);
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+
+.marqueeTrack {
+    display: inline-flex;
+    animation: marqueeScroll 30s linear infinite;
+    padding: 10px 0;
+}
+
+.marqueeItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 32px;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.marqueeDot {
+    font-size: 6px;
+    color: var(--color-secondary);
+}
+
+.marqueeLink {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.marqueeLink:hover {
+    color: var(--color-secondary);
+    text-decoration: underline;
+}
+
+@keyframes marqueeScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* Pills Row */
+.pillsRow {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 32px;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -49,14 +106,14 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 16px;
+    padding: 6px 12px;
     border-radius: 9999px;
     background: white;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     color: #9a3412;
     font-size: 12px;
     font-weight: 700;
-    margin-bottom: 32px;
+    margin-bottom: 12px;
     border: 1px solid #fed7aa;
 }
 

@@ -52,6 +52,7 @@ export default function AdminSidebar({ activePage }: AdminSidebarProps) {
         { href: '/admin/dashboard', label: '📊 Dashboard', key: 'dashboard' },
         { href: '/admin/orders', label: '📦 Orders', key: 'orders' },
         { href: '/admin/schemes', label: '📋 Schemes', key: 'schemes' },
+        { href: '/admin/announcements', label: '📢 Announcements', key: 'announcements' },
         { href: '/admin/users', label: '👥 Users', key: 'users' },
     ];
 

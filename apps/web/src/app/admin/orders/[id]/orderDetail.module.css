@@ -609,3 +609,61 @@
         transform: rotate(360deg);
     }
 }
+
+/* Save Notes Button */
+.btnSaveNotes {
+    margin-top: var(--space-3);
+    background: #059669;
+    color: white;
+}
+
+.btnSaveNotes:hover:not(:disabled) {
+    background: #047857;
+}
+
+.btnSaveNotes:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Feedback Display */
+.feedbackDisplay {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.feedbackRating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.feedbackStar {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.feedbackRatingText {
+    margin-left: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-gray-600);
+}
+
+.feedbackComment {
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-gray-700);
+    margin: 0;
+    font-style: italic;
+}
+
+.feedbackDate {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+    margin: 0;
+}

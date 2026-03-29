@@ -22,6 +22,27 @@
       "when": 1772907293330,
       "tag": "0002_warm_network",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774524424613,
+      "tag": "0003_even_human_torch",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774762533871,
+      "tag": "0004_mixed_skrulls",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774766706946,
+      "tag": "0005_noisy_silvermane",
+      "breakpoints": true
     }
   ]
 }

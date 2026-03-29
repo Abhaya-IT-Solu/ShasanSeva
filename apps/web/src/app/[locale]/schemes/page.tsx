@@ -108,48 +108,39 @@ function SchemesContent() {
                         </p>
                     </div>
                     <div className={styles.titleActions}>
-                        {categoryFromUrl && (
-                            <Link href="/schemes" className={styles.viewAllLink}>
-                                ← {tCommon('viewAll')}
-                            </Link>
-                        )}
-                        {/* Search Icon */}
-                        <button
-                            className={styles.searchToggle}
-                            onClick={() => setShowSearch(!showSearch)}
-                            aria-label="Toggle search"
-                        >
-                            <span className="material-icons" style={{ fontSize: 20 }}>search</span>
-                            {tCommon('search')}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Expandable Search Bar */}
-                {showSearch && (
-                    <div className={styles.searchBarWrapper}>
-                        <form onSubmit={handleSearch} className={styles.searchForm}>
-                            <input
-                                type="text"
-                                className={styles.searchInput}
-                                placeholder={t('searchPlaceholder')}
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                autoFocus
-                            />
-                            <button type="submit" className={styles.searchBtn}>
-                                {tCommon('search')}
-                            </button>
+                        {/* Inline Expanding Search */}
+                        <form onSubmit={handleSearch} className={`${styles.inlineSearch} ${showSearch ? styles.inlineSearchOpen : ''}`}>
+                            {showSearch && (
+                                <>
+                                    <input
+                                        type="text"
+                                        className={styles.inlineSearchInput}
+                                        placeholder={t('searchPlaceholder')}
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        className={styles.inlineSearchClose}
+                                        onClick={() => { setShowSearch(false); setSearch(''); fetchSchemes(); }}
+                                    >
+                                        <span className="material-icons" style={{ fontSize: 18 }}>close</span>
+                                    </button>
+                                </>
+                            )}
                             <button
-                                type="button"
-                                className={styles.closeBtn}
-                                onClick={() => { setShowSearch(false); setSearch(''); fetchSchemes(); }}
+                                type={showSearch ? 'submit' : 'button'}
+                                className={styles.searchToggle}
+                                onClick={() => { if (!showSearch) setShowSearch(true); }}
+                                aria-label="Toggle search"
                             >
-                                <span className="material-icons" style={{ fontSize: 18 }}>close</span>
+                                <span className="material-icons" style={{ fontSize: 20 }}>search</span>
+                                {!showSearch && <span>{tCommon('search')}</span>}
                             </button>
                         </form>
                     </div>
-                )}
+                </div>
 
                 {/* Error State */}
                 {error && (

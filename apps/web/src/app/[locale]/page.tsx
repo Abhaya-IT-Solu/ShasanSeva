@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './page.module.css';
 import Footer from '@/components/Footer/Footer';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Category data with Material Icons (matching Stitch design)
 const CATEGORIES = [
@@ -35,6 +35,29 @@ export default function HomePage() {
     const locale = useLocale();
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Dynamic announcements
+    interface AnnouncementItem {
+        id: string;
+        title: string;
+        link?: string | null;
+    }
+    const [marqueeItems, setMarqueeItems] = useState<AnnouncementItem[]>([]);
+    const [pillItems, setPillItems] = useState<AnnouncementItem[]>([]);
+    const [popularTags, setPopularTags] = useState<AnnouncementItem[]>([]);
+
+    useEffect(() => {
+        fetch('/api/announcements/public')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    setMarqueeItems(data.data.marquee || []);
+                    setPillItems(data.data.pills || []);
+                    setPopularTags(data.data.popularTags || []);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const handleCategoryClick = (categoryId: string) => {
         router.push(`/${locale}/schemes?category=${categoryId}`);
     };
@@ -48,15 +71,48 @@ export default function HomePage() {
 
     return (
         <div className={styles.page}>
+            {/* Marquee Notification Slider */}
+            {marqueeItems.length > 0 && (
+                <div className={styles.marqueeWrapper}>
+                    <div className={styles.marqueeTrack}>
+                        {[...marqueeItems, ...marqueeItems].map((item, i) => (
+                            <span key={`${item.id}-${i}`} className={styles.marqueeItem}>
+                                <span className={styles.marqueeDot}>●</span>
+                                {item.link ? (
+                                    <Link href={item.link} className={styles.marqueeLink}>{item.title}</Link>
+                                ) : (
+                                    item.title
+                                )}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Hero Section with Search */}
             <header className={styles.hero}>
                 <div className={styles.heroPattern}></div>
                 <div className={styles.heroContent}>
-                    {/* Announcement Badge */}
-                    <div className={styles.announcementBadge}>
-                        <span className={styles.pulseDot}></span>
-                        {t('announcementBadge')}
-                    </div>
+                    {/* Dynamic Pills */}
+                    {pillItems.length > 0 ? (
+                        <div className={styles.pillsRow}>
+                            {pillItems.map((pill) => (
+                                <div key={pill.id} className={styles.announcementBadge}>
+                                    <span className={styles.pulseDot}></span>
+                                    {pill.link ? (
+                                        <Link href={pill.link} style={{ color: 'inherit', textDecoration: 'none' }}>{pill.title}</Link>
+                                    ) : (
+                                        pill.title
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className={styles.announcementBadge}>
+                            <span className={styles.pulseDot}></span>
+                            {t('announcementBadge')}
+                        </div>
+                    )}
 
                     <h1 className={styles.heroTitle}>
                         {t('heroTitle')} <br />
@@ -83,12 +139,22 @@ export default function HomePage() {
                         </button>
                     </form>
 
-                    {/* Popular Searches */}
+                    {/* Popular Searches — Dynamic */}
                     <div className={styles.popularSearches}>
                         <span className={styles.popularLabel}>{t('popular')}:</span>
-                        <Link href="/schemes?category=FARMER" className={styles.popularLink}>PM Kisan</Link>
-                        <Link href="/schemes?category=CERTIFICATE" className={styles.popularLink}>Ration Card</Link>
-                        <Link href="/schemes?category=STUDENT" className={styles.popularLink}>{t('scholarships')}</Link>
+                        {popularTags.length > 0 ? (
+                            popularTags.map((tag) => (
+                                <Link key={tag.id} href={tag.link || '/schemes'} className={styles.popularLink}>
+                                    {tag.title}
+                                </Link>
+                            ))
+                        ) : (
+                            <>
+                                <Link href="/schemes?category=FARMER" className={styles.popularLink}>PM Kisan</Link>
+                                <Link href="/schemes?category=CERTIFICATE" className={styles.popularLink}>Ration Card</Link>
+                                <Link href="/schemes?category=STUDENT" className={styles.popularLink}>{t('scholarships')}</Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>

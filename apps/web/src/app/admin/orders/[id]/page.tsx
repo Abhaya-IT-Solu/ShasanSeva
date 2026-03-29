@@ -76,10 +76,14 @@ export default function OrderDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [adminNotes, setAdminNotes] = useState('');
+    const [isSavingNotes, setIsSavingNotes] = useState(false);
     const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
     const [docAction, setDocAction] = useState<string | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [rejectingDocId, setRejectingDocId] = useState<string | null>(null);
+
+    // Feedback state
+    const [feedback, setFeedback] = useState<{ rating: number; comment: string | null; createdAt: string } | null>(null);
 
     // Proof upload state
     const [showProofModal, setShowProofModal] = useState(false);
@@ -96,7 +100,41 @@ export default function OrderDetailPage() {
     useEffect(() => {
         fetchOrderDetails();
         fetchProofs();
+        fetchFeedback();
     }, [orderId]);
+
+    const fetchFeedback = async () => {
+        try {
+            const response = await api.request(`/api/feedbacks/order/${orderId}`);
+            if (response.success && response.data) {
+                setFeedback(response.data as { rating: number; comment: string | null; createdAt: string });
+            }
+        } catch (err) {
+            console.error('Failed to fetch feedback:', err);
+        }
+    };
+
+    const saveAdminNotes = async () => {
+        setIsSavingNotes(true);
+        setError(null);
+        setSuccess(null);
+        try {
+            const response = await api.request(`/api/orders/${orderId}/notes`, {
+                method: 'PATCH',
+                body: { adminNotes },
+            });
+            if (response.success) {
+                setSuccess('Notes saved successfully');
+            } else {
+                setError(response.error?.message || 'Failed to save notes');
+            }
+        } catch (err) {
+            console.error('Failed to save notes:', err);
+            setError('Failed to save notes');
+        } finally {
+            setIsSavingNotes(false);
+        }
+    };
 
     const fetchOrderDetails = async () => {
         try {
@@ -278,7 +316,7 @@ export default function OrderDetailPage() {
             });
 
             if (confirmResponse.success) {
-                setSuccess('Proof uploaded successfully! Order status updated to PROOF_UPLOADED.');
+                setSuccess(order?.status === 'COMPLETED' ? 'Proof uploaded successfully!' : 'Proof uploaded successfully! Order status updated to PROOF_UPLOADED.');
                 setShowProofModal(false);
                 setProofFile(null);
                 setProofType('RECEIPT');
@@ -339,7 +377,7 @@ export default function OrderDetailPage() {
 
     const isAssignedToMe = order?.assignedTo === user?.userId;
     const canPickup = order?.status === 'PAID' && !order?.assignedTo;
-    const canUploadProof = order?.status === 'IN_PROGRESS' && isAssignedToMe;
+    const canUploadProof = (order?.status === 'IN_PROGRESS' || order?.status === 'COMPLETED') && (isAssignedToMe || isSuperAdmin);
     const canComplete = (order?.status === 'PROOF_UPLOADED' || order?.status === 'IN_PROGRESS') && isAssignedToMe;
     const canCancel = (order?.status === 'PAID' || order?.status === 'IN_PROGRESS') && (isAssignedToMe || !order?.assignedTo || isSuperAdmin);
 
@@ -650,8 +688,42 @@ export default function OrderDetailPage() {
                                     placeholder="Add notes about this order..."
                                     className={styles.notesTextarea}
                                 />
+                                <button
+                                    onClick={saveAdminNotes}
+                                    disabled={isSavingNotes}
+                                    className={`${styles.btnAction} ${styles.btnSaveNotes}`}
+                                >
+                                    {isSavingNotes ? 'Saving...' : '💾 Save Notes'}
+                                </button>
                             </div>
                         </div>
+
+                        {/* User Feedback */}
+                        {feedback && (
+                            <div className={styles.detailCard}>
+                                <h2>⭐ User Feedback</h2>
+                                <div className={styles.feedbackDisplay}>
+                                    <div className={styles.feedbackRating}>
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <span
+                                                key={star}
+                                                className={styles.feedbackStar}
+                                                style={{ color: star <= feedback.rating ? '#f59e0b' : '#d1d5db' }}
+                                            >
+                                                ★
+                                            </span>
+                                        ))}
+                                        <span className={styles.feedbackRatingText}>{feedback.rating}/5</span>
+                                    </div>
+                                    {feedback.comment && (
+                                        <p className={styles.feedbackComment}>{feedback.comment}</p>
+                                    )}
+                                    <p className={styles.feedbackDate}>
+                                        Submitted on {new Date(feedback.createdAt).toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Proof Upload Modal */}
                         {showProofModal && (

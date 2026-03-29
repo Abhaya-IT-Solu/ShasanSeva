@@ -9,6 +9,8 @@ import paymentRoutes from './payment.routes.js';
 import orderRoutes from './order.routes.js';
 import notificationRoutes from './notification.routes.js';
 import proofRoutes from './proof.routes.js';
+import feedbackRoutes from './feedback.routes.js';
+import announcementRoutes from './announcement.routes.js';
 
 const router: Router = Router();
 
@@ -28,5 +30,7 @@ router.use('/payments', paymentRoutes);
 router.use('/orders', orderRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/proofs', proofRoutes);
+router.use('/feedbacks', feedbackRoutes);
+router.use('/announcements', announcementRoutes);
 
 export default router;

@@ -548,4 +548,58 @@ router.post('/:id/complete', authMiddleware, adminMiddleware, async (req: Reques
     }
 });
 
+// Schema for saving admin notes
+const saveNotesSchema = z.object({
+    adminNotes: z.string().max(2000),
+});
+
+/**
+ * PATCH /api/orders/:id/notes
+ * Save admin notes for an order (admin only)
+ */
+router.patch('/:id/notes', authMiddleware, adminMiddleware, validateBody(saveNotesSchema), async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { adminNotes } = req.body;
+
+        // Verify order exists
+        const orderResult = await db.select({ id: orders.id })
+            .from(orders)
+            .where(eq(orders.id, id));
+
+        if (orderResult.length === 0) {
+            return res.status(404).json(
+                errorResponse({
+                    code: ErrorCodes.NOT_FOUND,
+                    message: 'Order not found',
+                })
+            );
+        }
+
+        // Update admin notes
+        await db.update(orders)
+            .set({
+                adminNotes,
+                updatedAt: new Date(),
+            })
+            .where(eq(orders.id, id));
+
+        logger.info('Admin notes saved', { orderId: id });
+
+        return res.json(successResponse({
+            orderId: id,
+            adminNotes,
+            message: 'Notes saved successfully',
+        }));
+    } catch (error) {
+        logger.error('Failed to save admin notes', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Failed to save notes',
+            })
+        );
+    }
+});
+
 export default router;

@@ -9,3 +9,5 @@ export * from './documents.js';
 export * from './proofs.js';
 export * from './audit-logs.js';
 export * from './notifications.js';
+export * from './feedbacks.js';
+export * from './announcements.js';

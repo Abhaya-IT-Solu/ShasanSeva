@@ -96,6 +96,13 @@ export default function OrderDetailPage() {
     const [viewingDoc, setViewingDoc] = useState<string | null>(null);
     const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
+    // Feedback state
+    const [feedback, setFeedback] = useState<{ rating: number; comment: string | null; createdAt: string } | null>(null);
+    const [feedbackRating, setFeedbackRating] = useState(0);
+    const [feedbackComment, setFeedbackComment] = useState('');
+    const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+    const [hoverRating, setHoverRating] = useState(0);
+
     const fetchOrderDetails = async () => {
         try {
             const response = await api.request(`/api/orders/${params.id}`);
@@ -128,9 +135,48 @@ export default function OrderDetailPage() {
         if (params.id) {
             fetchOrderDetails();
             fetchProofs();
+            fetchFeedback();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
+
+    const fetchFeedback = async () => {
+        try {
+            const response = await api.request(`/api/feedbacks/order/${params.id}`);
+            if (response.success && response.data) {
+                setFeedback(response.data as { rating: number; comment: string | null; createdAt: string });
+            }
+        } catch {
+            // Non-critical
+        }
+    };
+
+    const submitFeedback = async () => {
+        if (feedbackRating === 0 || !order) return;
+        setIsSubmittingFeedback(true);
+        setError('');
+        setSuccess('');
+        try {
+            const response = await api.request('/api/feedbacks', {
+                method: 'POST',
+                body: {
+                    orderId: order.id,
+                    rating: feedbackRating,
+                    comment: feedbackComment || undefined,
+                },
+            });
+            if (response.success) {
+                setSuccess(t('feedbackSubmitted') || 'Thank you for your feedback!');
+                fetchFeedback();
+            } else {
+                setError(response.error?.message || 'Failed to submit feedback');
+            }
+        } catch {
+            setError('Failed to submit feedback. Please try again.');
+        } finally {
+            setIsSubmittingFeedback(false);
+        }
+    };
 
     const handleDownloadProof = async (proofId: string) => {
         setDownloadingProof(proofId);
@@ -747,6 +793,106 @@ export default function OrderDetailPage() {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Admin Notes (Read-Only) */}
+            {order.adminNotes && (
+                <section className={styles.documents}>
+                    <div className={styles.documentsCard}>
+                        <div className={styles.documentsHeader}>
+                            <h2>
+                                <span className="material-icons" style={{ fontSize: 20, verticalAlign: 'text-bottom', marginRight: 6 }}>note</span>
+                                {t('adminNotes') || 'Notes from Admin'}
+                            </h2>
+                        </div>
+                        <div className={styles.adminNotesContent}>
+                            <p>{order.adminNotes}</p>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Feedback Section (only for COMPLETED orders) */}
+            {order.status === 'COMPLETED' && (
+                <section className={styles.documents}>
+                    <div className={styles.documentsCard}>
+                        <div className={styles.documentsHeader}>
+                            <h2>
+                                <span className="material-icons" style={{ fontSize: 20, verticalAlign: 'text-bottom', marginRight: 6 }}>star</span>
+                                {t('feedback') || 'Your Feedback'}
+                            </h2>
+                        </div>
+
+                        {feedback ? (
+                            /* Show submitted feedback (read-only) */
+                            <div className={styles.feedbackDisplay}>
+                                <div className={styles.feedbackStars}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <span
+                                            key={star}
+                                            className={styles.starIcon}
+                                            style={{ color: star <= feedback.rating ? '#f59e0b' : '#d1d5db' }}
+                                        >
+                                            ★
+                                        </span>
+                                    ))}
+                                    <span className={styles.ratingText}>{feedback.rating}/5</span>
+                                </div>
+                                {feedback.comment && (
+                                    <p className={styles.feedbackCommentText}>{feedback.comment}</p>
+                                )}
+                                <p className={styles.feedbackMeta}>
+                                    {t('feedbackSubmittedOn') || 'Submitted on'} {new Date(feedback.createdAt).toLocaleDateString(locale === 'mr' ? 'mr-IN' : 'en-IN', {
+                                        day: 'numeric', month: 'short', year: 'numeric'
+                                    })}
+                                </p>
+                            </div>
+                        ) : (
+                            /* Show feedback form */
+                            <div className={styles.feedbackForm}>
+                                <p className={styles.feedbackPrompt}>
+                                    {t('feedbackPrompt') || 'How was your experience? Rate and share your feedback.'}
+                                </p>
+                                <div className={styles.feedbackStars}>
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            className={styles.starButton}
+                                            onMouseEnter={() => setHoverRating(star)}
+                                            onMouseLeave={() => setHoverRating(0)}
+                                            onClick={() => setFeedbackRating(star)}
+                                            style={{ color: star <= (hoverRating || feedbackRating) ? '#f59e0b' : '#d1d5db' }}
+                                        >
+                                            ★
+                                        </button>
+                                    ))}
+                                    {feedbackRating > 0 && (
+                                        <span className={styles.ratingText}>{feedbackRating}/5</span>
+                                    )}
+                                </div>
+                                <textarea
+                                    className={styles.feedbackTextarea}
+                                    value={feedbackComment}
+                                    onChange={(e) => setFeedbackComment(e.target.value)}
+                                    placeholder={t('feedbackPlaceholder') || 'Share your experience (optional)...'}
+                                    maxLength={1000}
+                                    rows={3}
+                                />
+                                <button
+                                    className={styles.feedbackSubmitBtn}
+                                    onClick={submitFeedback}
+                                    disabled={feedbackRating === 0 || isSubmittingFeedback}
+                                >
+                                    <span className="material-icons" style={{ fontSize: 16 }}>
+                                        {isSubmittingFeedback ? 'hourglass_empty' : 'send'}
+                                    </span>
+                                    {isSubmittingFeedback ? (t('submitting') || 'Submitting...') : (t('submitFeedback') || 'Submit Feedback')}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </section>
             )}

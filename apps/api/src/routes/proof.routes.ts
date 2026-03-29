@@ -120,13 +120,20 @@ router.post('/:id/confirm', adminMiddleware, async (req: Request, res: Response)
             .set({ fileUrl: downloadUrl })
             .where(eq(proofs.id, id));
 
-        // Update order status to PROOF_UPLOADED
-        await db.update(orders)
-            .set({
-                status: 'PROOF_UPLOADED',
-                updatedAt: new Date(),
-            })
+        // Only update order status if not already COMPLETED
+        // (allows admins to add more proofs after completion)
+        const currentOrder = await db.select({ status: orders.status })
+            .from(orders)
             .where(eq(orders.id, proof.orderId));
+
+        if (currentOrder.length > 0 && currentOrder[0].status !== 'COMPLETED') {
+            await db.update(orders)
+                .set({
+                    status: 'PROOF_UPLOADED',
+                    updatedAt: new Date(),
+                })
+                .where(eq(orders.id, proof.orderId));
+        }
 
         // Get order for notification
         const orderResult = await db.select()
