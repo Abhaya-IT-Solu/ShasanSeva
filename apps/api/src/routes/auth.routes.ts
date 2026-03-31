@@ -4,6 +4,7 @@ import {
     registerUser,
     authenticateUser,
     updateUserPassword,
+    resetPasswordWithFirebaseToken,
     createSession,
     invalidateSession
 } from '../services/auth.service.js';
@@ -167,6 +168,54 @@ router.post('/change-password', authMiddleware, validateBody(changePasswordSchem
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
                 message: 'Password change failed',
+            })
+        );
+    }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password using Firebase phone-auth ID token (forgot password flow).
+ * No authentication required — Firebase token proves phone ownership.
+ */
+const resetPasswordSchema = z.object({
+    firebaseIdToken: z.string().min(1, 'Firebase ID token is required'),
+    newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+router.post('/reset-password', validateBody(resetPasswordSchema), async (req, res) => {
+    try {
+        const { firebaseIdToken, newPassword } = req.body;
+
+        const result = await resetPasswordWithFirebaseToken(firebaseIdToken, newPassword);
+
+        if (!result.success) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: result.error,
+                })
+            );
+        }
+
+        // Auto-login: create a session so the user doesn't have to re-enter their password
+        const token = await createSession(result.user.id, 'USER', result.user);
+
+        return res.json(
+            successResponse({
+                success: true,
+                token,
+                user: result.user,
+                userType: 'USER',
+                message: 'Password reset successfully',
+            })
+        );
+    } catch (error) {
+        logger.error('Reset password error', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Password reset failed',
             })
         );
     }

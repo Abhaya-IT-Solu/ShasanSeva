@@ -107,6 +107,18 @@ class ApiClient {
         });
     }
 
+    async resetPassword(firebaseIdToken: string, newPassword: string) {
+        return this.request<{
+            success: boolean;
+            token: string;
+            user: unknown;
+            userType: 'USER' | 'ADMIN';
+        }>('/api/auth/reset-password', {
+            method: 'POST',
+            body: { firebaseIdToken, newPassword },
+        });
+    }
+
     async logout() {
         const result = await this.request('/api/auth/logout', { method: 'POST' });
         this.setToken(null);

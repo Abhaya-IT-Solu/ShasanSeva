@@ -20,7 +20,7 @@ interface Scheme {
     name: string;
     slug: string;
     requiredDocs: RequiredDoc[];
-    serviceFee: string;
+    serviceFee: number;
 }
 
 interface UploadedDoc {
@@ -54,14 +54,12 @@ export default function ApplyPage() {
     const [orderId, setOrderId] = useState<string | null>(null);
     const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
-    // Redirect to login if not authenticated
     useEffect(() => {
         if (!isAuthenticated) {
             router.push(`/${locale}/login?redirect=/apply/${params.slug}`);
         }
     }, [isAuthenticated, router, params.slug, locale]);
 
-    // Fetch scheme details
     useEffect(() => {
         const fetchScheme = async () => {
             try {
@@ -78,104 +76,60 @@ export default function ApplyPage() {
                 setIsLoading(false);
             }
         };
-
-        if (params.slug) {
-            fetchScheme();
-        }
+        if (params.slug) fetchScheme();
     }, [params.slug, locale, t]);
 
-    // Load Razorpay script
     useEffect(() => {
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.async = true;
         document.body.appendChild(script);
-        return () => {
-            document.body.removeChild(script);
-        };
+        return () => { document.body.removeChild(script); };
     }, []);
 
-    // Handle file upload
     const handleFileUpload = async (docType: string, file: File) => {
         try {
-            // Update state to show uploading
             setUploadedDocs(prev => [
                 ...prev.filter(d => d.documentType !== docType),
                 { documentType: docType, documentId: '', fileKey: '', fileName: file.name, status: 'uploading' },
             ]);
-
-            // Get signed upload URL
             const urlResponse = await api.request('/api/documents/upload-url', {
                 method: 'POST',
-                body: {
-                    documentType: docType,
-                    contentType: file.type,
-                },
+                body: { documentType: docType, contentType: file.type },
             });
-
-            if (!urlResponse.success) {
-                throw new Error('Failed to get upload URL');
-            }
-
+            if (!urlResponse.success) throw new Error('Failed to get upload URL');
             const { uploadUrl, documentId, key } = urlResponse.data as any;
-
-            // Upload file directly to R2
             const uploadResponse = await fetch(uploadUrl, {
                 method: 'PUT',
                 body: file,
-                headers: {
-                    'Content-Type': file.type,
-                },
+                headers: { 'Content-Type': file.type },
             });
-
-            if (!uploadResponse.ok) {
-                throw new Error('Upload failed');
-            }
-
-            // Confirm upload
-            await api.request(`/api/documents/${documentId}/confirm-upload`, {
-                method: 'POST',
-            });
-
-            // Update state
+            if (!uploadResponse.ok) throw new Error('Upload failed');
+            await api.request(`/api/documents/${documentId}/confirm-upload`, { method: 'POST' });
             setUploadedDocs(prev =>
-                prev.map(d =>
-                    d.documentType === docType
-                        ? { ...d, documentId: documentId || '', fileKey: key, status: 'uploaded' }
-                        : d
+                prev.map(d => d.documentType === docType
+                    ? { ...d, documentId: documentId || '', fileKey: key, status: 'uploaded' }
+                    : d
                 )
             );
-        } catch (error) {
-            console.error('Upload error:', error);
+        } catch (err) {
+            console.error('Upload error:', err);
             setUploadedDocs(prev =>
-                prev.map(d =>
-                    d.documentType === docType
-                        ? { ...d, status: 'error' }
-                        : d
-                )
+                prev.map(d => d.documentType === docType ? { ...d, status: 'error' } : d)
             );
         }
     };
 
-    // Handle payment
     const handlePayment = async () => {
         if (!scheme) return;
-
         try {
-            // Create payment order
             const orderResponse = await api.request('/api/payments/create-order', {
                 method: 'POST',
                 body: { schemeId: scheme.id },
             });
-
-            if (!orderResponse.success) {
-                throw new Error('Failed to create payment order');
-            }
-
+            if (!orderResponse.success) throw new Error('Failed to create payment order');
             const { orderId: newOrderId, razorpayOrderId, razorpayKeyId, amount } = orderResponse.data as any;
             setOrderId(newOrderId);
-
-            // Open Razorpay checkout
             const options = {
                 key: razorpayKeyId,
                 amount,
@@ -184,11 +138,9 @@ export default function ApplyPage() {
                 description: `${t('applicationFor')} ${scheme.name}`,
                 order_id: razorpayOrderId,
                 handler: async (response: any) => {
-                    // Verify payment
                     const docsToLink = uploadedDocs
                         .filter(d => d.status === 'uploaded' && d.fileKey)
                         .map(d => ({ docType: d.documentType, fileKey: d.fileKey }));
-
                     const verifyResponse = await api.request('/api/payments/verify', {
                         method: 'POST',
                         body: {
@@ -199,7 +151,6 @@ export default function ApplyPage() {
                             documents: docsToLink,
                         },
                     });
-
                     if (verifyResponse.success) {
                         setCurrentStep('success');
                     } else {
@@ -208,7 +159,6 @@ export default function ApplyPage() {
                 },
                 modal: {
                     ondismiss: async () => {
-                        // BUG 3: When user closes Razorpay modal, cancel the pending order
                         await handleCancelPayment(newOrderId);
                     },
                 },
@@ -216,47 +166,24 @@ export default function ApplyPage() {
                     contact: user?.phone || '',
                     email: user?.email || '',
                 },
-                theme: {
-                    color: '#1B5E20',
-                },
+                theme: { color: '#1B5E20' },
             };
-
             const razorpay = new window.Razorpay(options);
             razorpay.open();
-        } catch (error) {
-            console.error('Payment error:', error);
+        } catch (err) {
+            console.error('Payment error:', err);
             setError(t('paymentFailed'));
         }
     };
 
-    // Cancel a PENDING_PAYMENT order (BUG 3 FIX)
     const handleCancelPayment = async (cancelOrderId?: string) => {
         const idToCancel = cancelOrderId || orderId;
-        if (!idToCancel) {
-            setCurrentStep('review');
-            return;
-        }
-
+        if (!idToCancel) { setCurrentStep('review'); return; }
         try {
-            await api.request(`/api/payments/cancel-order/${idToCancel}`, {
-                method: 'DELETE',
-            });
-        } catch {
-            // Ignore errors — the order may already have been paid/processed
-        }
-
+            await api.request(`/api/payments/cancel-order/${idToCancel}`, { method: 'DELETE' });
+        } catch { /* ignore */ }
         setOrderId(null);
         setCurrentStep('review');
-    };
-
-    const getStepLabel = (step: string) => {
-        switch (step) {
-            case 'documents': return t('stepDocuments');
-            case 'review': return t('stepReview');
-            case 'payment': return t('stepPayment');
-            case 'success': return t('stepDone');
-            default: return step;
-        }
     };
 
     if (isLoading) {
@@ -273,234 +200,396 @@ export default function ApplyPage() {
             <div className={styles.error}>
                 <h1>{t('error')}</h1>
                 <p>{error || t('schemeNotFound')}</p>
-                <Link href="/schemes" className="btn btn-primary">
-                    {t('browseSchemes')}
-                </Link>
+                <Link href="/schemes" className="btn btn-primary">{t('browseSchemes')}</Link>
             </div>
         );
     }
 
+    const STEPS = [
+        { id: 'documents', label: t('stepDocuments') || 'Documents', icon: 'description' },
+        { id: 'review',    label: t('stepReview')    || 'Review',    icon: 'rate_review' },
+        { id: 'payment',   label: t('stepPayment')   || 'Payment',   icon: 'payments' },
+        { id: 'success',   label: t('stepDone')      || 'Done',      icon: 'send' },
+    ];
+    const currentStepIndex = STEPS.findIndex(s => s.id === currentStep);
+    const trackFillWidth = `${(currentStepIndex / (STEPS.length - 1)) * 100}%`;
+
+    const fee = Number(scheme.serviceFee);
+    const baseAmount = fee * (100 / 118);
+    const appFee = (baseAmount * 0.8).toFixed(2);
+    const processingFee = (baseAmount * 0.2).toFixed(2);
+    const gst = (fee - baseAmount).toFixed(2);
+
     return (
-        <div className={styles.container}>
-            {/* Header */}
-            <header className={styles.header}>
-                <Link href={`/schemes/${scheme.slug}`} className={styles.backLink}>
-                    ← {t('backToScheme')}
-                </Link>
-                <h1>{t('applyFor')} {scheme.name}</h1>
-            </header>
-
-            {/* Progress Steps */}
-            <div className={styles.progress}>
-                {['documents', 'review', 'payment', 'success'].map((step, index) => (
-                    <div
-                        key={step}
-                        className={`${styles.step} ${currentStep === step ? styles.active : ''
-                            } ${['documents', 'review', 'payment', 'success'].indexOf(currentStep) > index
-                                ? styles.completed
-                                : ''
-                            }`}
-                    >
-                        <span className={styles.stepNumber}>{index + 1}</span>
-                        <span className={styles.stepLabel}>{getStepLabel(step)}</span>
-                    </div>
-                ))}
-            </div>
-
-            {/* Step Content */}
+        <div className={styles.page}>
             <main className={styles.main}>
+
+                {/* ── Stepper ── */}
+                <div className={styles.stepperWrapper}>
+                    <div className={styles.stepperTrack}>
+                        <div className={styles.stepperTrackBg} />
+                        <div className={styles.stepperTrackFill} style={{ width: trackFillWidth }} />
+
+                        {STEPS.map((step, index) => {
+                            const isCompleted = index < currentStepIndex;
+                            const isActive    = index === currentStepIndex;
+                            return (
+                                <div key={step.id} className={styles.stepItem}>
+                                    <div className={[
+                                        styles.stepBubble,
+                                        isCompleted ? styles.stepBubbleCompleted : '',
+                                        isActive    ? styles.stepBubbleActive    : '',
+                                    ].join(' ')}>
+                                        {isCompleted
+                                            ? <span className="material-icons" style={{ fontSize: 20 }}>check</span>
+                                            : <span className="material-icons" style={{ fontSize: 18 }}>{step.icon}</span>
+                                        }
+                                    </div>
+                                    <span className={[
+                                        styles.stepLabel,
+                                        isCompleted ? styles.stepLabelCompleted : '',
+                                        isActive    ? styles.stepLabelActive    : '',
+                                    ].join(' ')}>{step.label}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* ── Step: Documents ── */}
                 {currentStep === 'documents' && (
-                    <div className={styles.documentsStep}>
-                        <h2>{t('uploadDocuments')}</h2>
-                        <p className={styles.subtitle}>{t('uploadSubtitle')}</p>
-
-                        <div className={styles.skipNote}>
-                            <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>lightbulb</span> {t('skipNote')}
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h1>{t('uploadDocuments')}</h1>
+                            <p>{t('uploadSubtitle')}</p>
                         </div>
-
-                        <div className={styles.docsList}>
-                            {scheme.requiredDocs.map((doc) => {
-                                const uploaded = uploadedDocs.find(d => d.documentType === doc.type);
-
-                                return (
-                                    <div key={doc.type} className={styles.docItem}>
-                                        <div className={styles.docInfo}>
-                                            <span className={styles.docLabel}>
-                                                {doc.label}
-                                                {doc.required && <span className={styles.recommended}>{t('recommended')}</span>}
-                                            </span>
-                                            {doc.description && (
-                                                <span className={styles.docDesc}>{doc.description}</span>
-                                            )}
-                                        </div>
-
-                                        <div className={styles.docUpload}>
-                                            {uploaded?.status === 'uploaded' ? (
-                                                <div className={styles.uploadSuccess}>
-                                                    <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>check_circle</span> {uploaded.fileName}
+                        <div className={styles.cardBody}>
+                            {scheme.requiredDocs && scheme.requiredDocs.length > 0 ? (
+                                <div className={styles.docsList}>
+                                    {scheme.requiredDocs.map(doc => {
+                                        const uploaded = uploadedDocs.find(d => d.documentType === doc.type);
+                                        const isUploaded  = uploaded?.status === 'uploaded';
+                                        const isUploading = uploaded?.status === 'uploading';
+                                        return (
+                                            <div key={doc.type} className={[
+                                                styles.docItem,
+                                                isUploaded  ? styles.uploaded  : '',
+                                                isUploading ? styles.uploading : '',
+                                            ].join(' ')}>
+                                                <div className={[
+                                                    styles.docIconWrap,
+                                                    isUploaded  ? styles.uploadedIcon  : '',
+                                                    isUploading ? styles.uploadingIcon : '',
+                                                ].join(' ')}>
+                                                    <span className="material-icons">
+                                                        {isUploaded ? 'check_circle' : isUploading ? 'hourglass_empty' : 'upload_file'}
+                                                    </span>
                                                 </div>
-                                            ) : uploaded?.status === 'uploading' ? (
-                                                <div className={styles.uploading}>
-                                                    <span className="spinner" /> {t('uploading')}
+                                                <div className={styles.docInfo}>
+                                                    <div className={styles.docLabel}>
+                                                        {doc.label}
+                                                        {doc.required && <span className={styles.badge}>{t('recommended')}</span>}
+                                                    </div>
+                                                    {doc.description && <div className={styles.docDesc}>{doc.description}</div>}
+                                                    {isUploaded  && <div className={`${styles.docStatus} ${styles.statusUploaded}`}>✓ {uploaded?.fileName}</div>}
+                                                    {isUploading && <div className={`${styles.docStatus} ${styles.statusUploading}`}>{t('uploading')}</div>}
                                                 </div>
-                                            ) : (
-                                                <label className={styles.uploadBtn}>
+                                                <label className={[
+                                                    styles.uploadLabel,
+                                                    isUploaded  ? styles.uploadedLabel  : '',
+                                                    isUploading ? styles.uploadingLabel : '',
+                                                ].join(' ')}>
+                                                    <span className="material-icons">
+                                                        {isUploaded ? 'refresh' : 'upload'}
+                                                    </span>
+                                                    {isUploading ? t('uploading') : isUploaded ? 'Replace' : t('chooseFile')}
                                                     <input
                                                         type="file"
-                                                        accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                                        onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) handleFileUpload(doc.type, file);
+                                                        style={{ display: 'none' }}
+                                                        disabled={isUploading}
+                                                        onChange={e => {
+                                                            if (e.target.files?.[0]) handleFileUpload(doc.type, e.target.files[0]);
                                                         }}
                                                     />
-                                                    {t('chooseFile')}
                                                 </label>
-                                            )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className={styles.emptyDocs}>
+                                    <span className="material-icons">folder_open</span>
+                                    <p>No documents required for this scheme.</p>
+                                </div>
+                            )}
+
+                            <div className={styles.skipNote}>
+                                <span className="material-icons">info</span>
+                                <p>{t('skipNote')}</p>
+                            </div>
+
+                            <div className={styles.actions}>
+                                <Link href={`/schemes/${scheme.slug}`} className={styles.btnBack}>
+                                    <span className="material-icons" style={{ fontSize: 16 }}>arrow_back</span>
+                                    {t('backToScheme')}
+                                </Link>
+                                <button className={styles.btnSecondary} onClick={() => setCurrentStep('review')}>
+                                    {t('skipForNow')}
+                                    <span className="material-icons" style={{ fontSize: 16 }}>arrow_forward</span>
+                                </button>
+                                <button className={styles.btnPrimary} onClick={() => setCurrentStep('review')}>
+                                    {t('continueToReview')}
+                                    <span className="material-icons" style={{ fontSize: 16 }}>arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Step: Review ── */}
+                {currentStep === 'review' && (
+                    <div className={styles.reviewGrid}>
+                        <div className={styles.reviewLeft}>
+                            {/* Scheme Info */}
+                            <div className={styles.card}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.cardHeaderRow}>
+                                        <span className="material-icons">info</span>
+                                        <h2>{t('reviewApplication')}</h2>
+                                    </div>
+                                </div>
+                                <div className={styles.cardBody}>
+                                    <div className={styles.infoRow}>
+                                        <span className="material-icons">account_balance</span>
+                                        <div>
+                                            <div className={styles.infoRowLabel}>{t('scheme')}</div>
+                                            <div className={styles.infoRowValue}>{scheme.name}</div>
                                         </div>
                                     </div>
-                                );
-                            })}
+                                    <div className={styles.infoRow}>
+                                        <span className="material-icons">payments</span>
+                                        <div>
+                                            <div className={styles.infoRowLabel}>{t('serviceFee')}</div>
+                                            <div className={styles.feeValue}>₹{scheme.serviceFee}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Documents */}
+                            <div className={styles.card}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.cardHeaderRow}>
+                                        <span className="material-icons">folder</span>
+                                        <h2>{t('uploadedDocuments')}</h2>
+                                    </div>
+                                </div>
+                                <div className={styles.cardBody}>
+                                    {uploadedDocs.filter(d => d.status === 'uploaded').length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                            {uploadedDocs.filter(d => d.status === 'uploaded').map(doc => (
+                                                <div key={doc.documentType} className={styles.docChip}>
+                                                    <span className="material-icons">check_circle</span>
+                                                    <div>
+                                                        <div className={styles.docChipName}>{doc.documentType.replace('_', ' ')}</div>
+                                                        <div className={styles.docChipFile}>{doc.fileName}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className={styles.emptyDocChip}>
+                                            <span className="material-icons">folder_off</span>
+                                            <p style={{ fontWeight: 700, color: '#334155' }}>No documents uploaded.</p>
+                                            <p style={{ fontSize: 13, color: '#94a3b8' }}>Our team will contact you for any missing documents.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
-                        <div className={styles.actions}>
-                            <button
-                                className="btn btn-secondary"
-                                onClick={() => setCurrentStep('review')}
-                            >
-                                {t('skipForNow')}
-                            </button>
-                            <button
-                                className="btn btn-primary btn-lg"
-                                onClick={() => setCurrentStep('review')}
-                            >
-                                {t('continueToReview')}
-                            </button>
+                        {/* Payment Summary */}
+                        <div>
+                            <div className={styles.summaryCard}>
+                                <div className={styles.summaryCardHeader}>
+                                    <p>Payment Summary</p>
+                                </div>
+                                <div className={styles.summaryCardBody}>
+                                    <div className={styles.summaryFeeRow}>
+                                        <span className={styles.summaryFeeLabel}>{t('serviceFee')}</span>
+                                        <span className={styles.summaryFeeAmount}>₹{scheme.serviceFee}</span>
+                                    </div>
+                                    <button className={styles.btnPayNow} onClick={() => { setCurrentStep('payment'); handlePayment(); }}>
+                                        {t('proceedToPayment')}
+                                        <span className="material-icons">arrow_forward</span>
+                                    </button>
+                                    <button className={styles.btnGoBack} onClick={() => setCurrentStep('documents')}>
+                                        <span className="material-icons">arrow_back</span>
+                                        {t('back')}
+                                    </button>
+                                    <div className={styles.securityNote}>
+                                        <span className="material-icons">security</span>
+                                        <p>By proceeding, you agree to governmental standards. Secured via Razorpay. <strong>{t('note')}:</strong> {t('disclaimer')}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {currentStep === 'review' && (
-                    <div className={styles.reviewStep}>
-                        <h2>{t('reviewApplication')}</h2>
-
-                        <div className={styles.reviewCard}>
-                            <h3>{t('scheme')}</h3>
-                            <p>{scheme.name}</p>
-                        </div>
-
-                        <div className={styles.reviewCard}>
-                            <h3>{t('uploadedDocuments')}</h3>
-                            <ul>
-                                {uploadedDocs.filter(d => d.status === 'uploaded').map(doc => (
-                                    <li key={doc.documentType}>
-                                        <span className="material-icons" style={{ fontSize: 14, verticalAlign: 'text-bottom', marginRight: 4, color: 'var(--color-primary)' }}>check_circle</span> {doc.fileName}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div className={styles.reviewCard}>
-                            <h3>{t('serviceFee')}</h3>
-                            <p className={styles.fee}>₹{scheme.serviceFee}</p>
-                        </div>
-
-                        <div className={styles.disclaimer}>
-                            <p>
-                                <strong>{t('note')}:</strong> {t('disclaimer')}
-                            </p>
-                        </div>
-
-                        <div className={styles.actions}>
-                            <button
-                                className="btn btn-secondary"
-                                onClick={() => setCurrentStep('documents')}
-                            >
-                                ← {t('back')}
-                            </button>
-                            <button
-                                className="btn btn-primary btn-lg"
-                                onClick={() => {
-                                    setCurrentStep('payment');
-                                    handlePayment();
-                                }}
-                            >
-                                {t('proceedToPayment')} - ₹{scheme.serviceFee}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
+                {/* ── Step: Payment (processing) ── */}
                 {currentStep === 'payment' && (
-                    <div className={styles.paymentStep}>
-                        <h2>{t('processingPayment')}</h2>
-                        <div className="spinner" />
-                        <p>{t('paymentInstructions')}</p>
-                        <div className={styles.actions}>
-                            <button
-                                className="btn btn-secondary"
-                                onClick={() => handleCancelPayment()}
-                            >
-                                <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>arrow_back</span>
-                                {t('cancelAndGoBack') || 'Cancel & Go Back'}
-                            </button>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => handlePayment()}
-                            >
-                                {t('retryPayment')}
-                            </button>
+                    <div className={styles.paymentCenter}>
+                        <div className={styles.paymentBox}>
+                            <div className={styles.paymentIcon}>
+                                <span className="material-icons">refresh</span>
+                            </div>
+                            <h2>{t('processingPayment')}</h2>
+                            <p>{t('paymentInstructions')}</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+                                <button className={styles.btnPrimary} style={{ width: '100%', justifyContent: 'center' }} onClick={() => handlePayment()}>
+                                    <span className="material-icons">payment</span>
+                                    {t('retryPayment')}
+                                </button>
+                                <button className={styles.btnGoBack} onClick={() => handleCancelPayment()}>
+                                    <span className="material-icons">close</span>
+                                    {t('cancelAndGoBack') || 'Cancel & Go Back'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
 
+                {/* ── Step: Success ── */}
                 {currentStep === 'success' && (
-                    <div className={styles.successStep}>
-                        <div className={styles.successIcon}><span className="material-icons" style={{ fontSize: 40 }}>check</span></div>
-                        <h2>{t('applicationSubmitted')}</h2>
-                        <p>{t('successMessage')}</p>
-                        <p className={styles.orderId}>{t('orderId')}: {orderId}</p>
+                    <div className={styles.successWrapper}>
+                        <div className={styles.successCard}>
+                            {/* Success icon */}
+                            <div className={styles.successIcon}>
+                                <span className="material-icons">task_alt</span>
+                            </div>
 
-                        <div className={styles.nextSteps}>
-                            <h3>{t('whatsNext')}</h3>
-                            <ul>
-                                <li>{t('nextStep1')}</li>
-                                <li>{t('nextStep2')}</li>
-                                <li>{t('nextStep3')}</li>
-                            </ul>
-                        </div>
-
-                        <div className={styles.actions}>
-                            <button
-                                className="btn btn-primary"
-                                onClick={async () => {
-                                    if (!orderId) return;
-                                    setDownloadingReceipt(true);
-                                    try {
-                                        const res = await api.request(`/api/orders/${orderId}/receipt`);
-                                        if (res.success) {
-                                            const data = res.data as { downloadUrl: string };
-                                            window.open(data.downloadUrl, '_blank');
+                            {/* Print / Download buttons */}
+                            <div className={styles.successActions}>
+                                <button className={styles.btnOutline} onClick={() => window.print()}>
+                                    <span className="material-icons">print</span>
+                                    {t('printReceipt') || 'Print Receipt'}
+                                </button>
+                                <button
+                                    className={styles.btnFill}
+                                    disabled={downloadingReceipt}
+                                    onClick={async () => {
+                                        if (!orderId) return;
+                                        setDownloadingReceipt(true);
+                                        try {
+                                            const res = await api.request(`/api/orders/${orderId}/receipt`);
+                                            if (res.success) {
+                                                const data = res.data as { downloadUrl: string };
+                                                window.open(data.downloadUrl, '_blank');
+                                            }
+                                        } catch { /* ignore */ } finally {
+                                            setDownloadingReceipt(false);
                                         }
-                                    } catch { /* ignore */ } finally {
-                                        setDownloadingReceipt(false);
-                                    }
-                                }}
-                                disabled={downloadingReceipt}
-                            >
-                                <span className="material-icons" style={{ fontSize: 16, verticalAlign: 'text-bottom', marginRight: 4 }}>
-                                    {downloadingReceipt ? 'hourglass_empty' : 'receipt_long'}
-                                </span>
-                                {t('downloadReceipt') || 'Download Receipt'}
-                            </button>
-                            <Link href="/orders" className="btn btn-secondary">
-                                {t('viewApplications')}
-                            </Link>
-                            <Link href="/" className="btn btn-secondary">
-                                {t('backToHome')}
-                            </Link>
+                                    }}
+                                >
+                                    <span className="material-icons">{downloadingReceipt ? 'hourglass_empty' : 'download'}</span>
+                                    {t('downloadForm') || 'Download Form'}
+                                </button>
+                            </div>
+
+                            <h1 className={styles.successTitle}>{t('applicationSubmitted')}</h1>
+                            <p className={styles.successSubtitle}>{t('successMessage')}</p>
+
+                            {/* Order ID */}
+                            <div className={styles.orderIdBox}>
+                                <div className={styles.orderIdLabel}>{t('orderId')}</div>
+                                <div className={styles.orderIdValue}>#{orderId?.slice(0, 10) || 'PENDING'}</div>
+                            </div>
+
+                            {/* Payment Receipt */}
+                            <div className={styles.receiptWrap}>
+                                <div className={styles.receiptHeader}>
+                                    <div className={styles.receiptTitle}>
+                                        <span className="material-icons">receipt_long</span>
+                                        {t('paymentReceiptTitle') || 'Payment Receipt'}
+                                    </div>
+                                    <span className={styles.paidBadge}>{t('paidBadge') || 'Paid'}</span>
+                                </div>
+                                <table className={styles.receiptTable}>
+                                    <tbody>
+                                        <tr>
+                                            <td className={styles.receiptKey}>{t('receiptSchemeName') || 'Scheme Name'}</td>
+                                            <td className={styles.receiptVal}>{scheme.name}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.receiptKey}>{t('receiptAppId') || 'Application ID'}</td>
+                                            <td className={styles.receiptVal}>{orderId || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.receiptKey}>{t('receiptDateTime') || 'Date & Time'}</td>
+                                            <td className={styles.receiptVal}>{new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.receiptKey}>{t('receiptTxnId') || 'Transaction ID'}</td>
+                                            <td className={styles.receiptVal} style={{ fontFamily: 'monospace', fontSize: 12 }}>TXN_{orderId?.slice(-8).toUpperCase() || 'XXXXXXXX'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.receiptKey}>{t('receiptAppFee') || 'Application Fee'}</td>
+                                            <td className={styles.receiptVal}>₹ {appFee}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.receiptKey}>{t('receiptProcessingCharge') || 'Processing Charge'}</td>
+                                            <td className={styles.receiptVal}>₹ {processingFee}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className={styles.receiptKey}>{t('receiptGst') || 'GST (18%)'}</td>
+                                            <td className={styles.receiptVal}>₹ {gst}</td>
+                                        </tr>
+                                        <tr className={styles.receiptTotalRow}>
+                                            <td className={styles.receiptKey}>{t('receiptTotal') || 'Total Amount Paid'}</td>
+                                            <td className={styles.receiptVal}>₹ {fee.toFixed(2)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* What's Next */}
+                            <div className={styles.whatsNext}>
+                                <div className={styles.whatsNextTitle}>
+                                    <span className="material-icons">info</span>
+                                    {t('whatsNext')}
+                                </div>
+                                <ul className={styles.whatsNextList}>
+                                    <li className={styles.whatsNextItem}>
+                                        <div className={styles.whatsNextNum}>1</div>
+                                        <p className={styles.whatsNextText}>{t('nextStep1')}</p>
+                                    </li>
+                                    <li className={styles.whatsNextItem}>
+                                        <div className={styles.whatsNextNum}>2</div>
+                                        <p className={styles.whatsNextText}>{t('nextStep2')} <strong>3-5 days</strong>.</p>
+                                    </li>
+                                    <li className={styles.whatsNextItem}>
+                                        <div className={styles.whatsNextNum}>3</div>
+                                        <p className={styles.whatsNextText}>{t('nextStep3')}</p>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {/* CTA */}
+                            <div className={styles.ctaRow}>
+                                <Link href="/orders" className={styles.btnCtaPrimary}>
+                                    <span className="material-icons">visibility</span>
+                                    {t('viewApplications')}
+                                </Link>
+                                <Link href="/" className={styles.btnCtaSecondary}>
+                                    <span className="material-icons">home</span>
+                                    {t('backToHome')}
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 )}
+
             </main>
         </div>
     );

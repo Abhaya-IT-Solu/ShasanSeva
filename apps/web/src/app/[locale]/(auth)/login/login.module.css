@@ -311,3 +311,152 @@
     color: var(--color-gray-400);
     text-align: center;
 }
+
+/* ── Forgot Password ─────────────────────────────────────────────────── */
+
+/* Label row: label on left, "Forgot Password?" link on right */
+.labelRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.forgotBtn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-secondary);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s;
+}
+
+.forgotBtn:hover {
+    color: var(--color-secondary-dark);
+}
+
+/* Step indicator */
+.fpSteps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 32px 0;
+    gap: 0;
+}
+
+.fpStepItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fpStepDot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--color-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-gray-400);
+    background: white;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.fpStepDotActive {
+    border-color: var(--color-secondary);
+    background: rgba(255, 152, 0, 0.1);
+    color: var(--color-secondary);
+}
+
+.fpStepDotDone {
+    background: var(--color-secondary);
+    border-color: var(--color-secondary);
+    color: white;
+}
+
+.fpStepLabel {
+    font-size: 11px;
+    color: var(--color-gray-400);
+    white-space: nowrap;
+    transition: color 0.3s;
+}
+
+.fpStepLabelActive {
+    color: var(--color-primary-dark);
+    font-weight: 600;
+}
+
+.fpStepLine {
+    width: 24px;
+    height: 2px;
+    background: var(--color-gray-200);
+    margin: 0 4px;
+    flex-shrink: 0;
+    transition: background 0.3s;
+}
+
+.fpStepLineDone {
+    background: var(--color-secondary);
+}
+
+/* Success banner */
+.fpSuccess {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(34, 197, 94, 0.1);
+    color: #15803d;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+/* Resend OTP button */
+.fpResendBtn {
+    background: none;
+    border: none;
+    padding: 4px 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-secondary);
+    cursor: pointer;
+    text-align: center;
+    transition: color 0.2s;
+}
+
+.fpResendBtn:disabled {
+    color: var(--color-gray-400);
+    cursor: default;
+}
+
+/* Back to login */
+.fpBackBtn {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-500);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.fpBackBtn:hover {
+    color: var(--color-primary-dark);
+    background: var(--color-gray-50);
+}

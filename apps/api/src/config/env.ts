@@ -29,6 +29,14 @@ const envSchema = z.object({
     R2_SECRET_ACCESS_KEY: z.string().min(1, 'R2_SECRET_ACCESS_KEY is required'),
     R2_BUCKET_NAME: z.string().default('shasansetu-documents'),
 
+    // Firebase Admin (for phone OTP verification in forgot-password flow)
+    // Option A: full service account JSON as a single env var
+    FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
+    // Option B: individual fields (used if JSON var not set)
+    FIREBASE_PROJECT_ID: z.string().optional(),
+    FIREBASE_CLIENT_EMAIL: z.string().optional(),
+    FIREBASE_PRIVATE_KEY: z.string().optional(),
+
     // JWT
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
     JWT_EXPIRES_IN: z.string().default('7d'),

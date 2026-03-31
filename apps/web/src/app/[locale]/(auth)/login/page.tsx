@@ -1,20 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
-// import { Link } from '@/i18n/routing';
+import {
+    RecaptchaVerifier,
+    signInWithPhoneNumber,
+    type ConfirmationResult,
+} from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import styles from './login.module.css';
 
 type Tab = 'login' | 'register';
+type FpStep = 'phone' | 'otp' | 'password';
+
+declare global {
+    interface Window {
+        recaptchaVerifier?: RecaptchaVerifier;
+    }
+}
 
 export default function LoginPage() {
     const t = useTranslations('LoginPage');
     const tCommon = useTranslations('Common');
     const locale = useLocale();
 
+    // ── Login / Register state ────────────────────────────────────────────
     const [tab, setTab] = useState<Tab>('login');
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
@@ -23,6 +36,23 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // ── Forgot-password state ─────────────────────────────────────────────
+    const [isForgotMode, setIsForgotMode] = useState(false);
+    const [fpStep, setFpStep] = useState<FpStep>('phone');
+    const [fpPhone, setFpPhone] = useState('');
+    const [fpOtp, setFpOtp] = useState('');
+    const [fpNewPassword, setFpNewPassword] = useState('');
+    const [fpConfirmPassword, setFpConfirmPassword] = useState('');
+    const [fpShowPassword, setFpShowPassword] = useState(false);
+    const [fpLoading, setFpLoading] = useState(false);
+    const [fpError, setFpError] = useState('');
+    const [fpSuccess, setFpSuccess] = useState('');
+    const [fpIdToken, setFpIdToken] = useState('');
+    const [resendTimer, setResendTimer] = useState(0);
+    const confirmationRef = useRef<ConfirmationResult | null>(null);
+    const recaptchaAnchorRef = useRef<HTMLDivElement>(null); // permanent mount point
+    const recaptchaElRef = useRef<HTMLDivElement | null>(null); // dynamic child element
 
     const router = useRouter();
     const { login, isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -38,59 +68,78 @@ export default function LoginPage() {
         }
     }, [isAuthenticated, authLoading, user, router, locale]);
 
-    // Show loading while checking auth
-    if (authLoading) {
-        return (
-            <main className={styles.main}>
-                <div className={styles.card}>
-                    <div className="spinner" />
-                </div>
-            </main>
-        );
-    }
+    // Resend OTP countdown
+    useEffect(() => {
+        if (resendTimer <= 0) return;
+        const id = setTimeout(() => setResendTimer(s => s - 1), 1000);
+        return () => clearTimeout(id);
+    }, [resendTimer]);
 
-    // Don't render login form if authenticated
-    if (isAuthenticated) {
-        return null;
-    }
+    // Clean up reCAPTCHA when leaving forgot-password mode
+    useEffect(() => {
+        if (!isForgotMode) {
+            clearRecaptcha();
+        }
+    }, [isForgotMode]);
 
-    const validateForm = (): boolean => {
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    // Destroys the verifier and removes the dynamic reCAPTCHA DOM element entirely.
+    // Creating a brand-new element each time is the only reliable way to avoid
+    // "reCAPTCHA has already been rendered in this element" because grecaptcha's
+    // internal widget registry is keyed to the element reference, not its id.
+    const clearRecaptcha = () => {
+        const v = window.recaptchaVerifier;
+        if (v) { try { v.clear(); } catch (_) {} }
+        window.recaptchaVerifier = undefined;
+        if (recaptchaElRef.current && recaptchaAnchorRef.current) {
+            try { recaptchaAnchorRef.current.removeChild(recaptchaElRef.current); } catch (_) {}
+        }
+        recaptchaElRef.current = null;
+    };
+
+    // Creates a fresh DOM element + RecaptchaVerifier every time.
+    const getOrCreateRecaptcha = () => {
+        if (!window.recaptchaVerifier) {
+            console.debug('[Firebase] Creating fresh RecaptchaVerifier...');
+            const anchor = recaptchaAnchorRef.current;
+            if (!anchor) throw new Error('reCAPTCHA anchor not mounted');
+            // Always create a brand-new child div
+            const el = document.createElement('div');
+            anchor.appendChild(el);
+            recaptchaElRef.current = el;
+            const auth = getFirebaseAuth();
+            window.recaptchaVerifier = new RecaptchaVerifier(
+                auth,
+                el,
+                {
+                    size: 'invisible',
+                    callback: () => console.debug('[Firebase] reCAPTCHA solved.'),
+                    'expired-callback': () => {
+                        console.debug('[Firebase] reCAPTCHA expired — clearing.');
+                        clearRecaptcha();
+                    },
+                }
+            );
+        }
+        return window.recaptchaVerifier!;
+    };
+
+    // ── Login / Register ──────────────────────────────────────────────────
+    const validateLoginForm = (): boolean => {
         setError('');
-
-        // Validate phone
-        if (!/^[6-9]\d{9}$/.test(phone)) {
-            setError(t('invalidPhone'));
-            return false;
-        }
-
-        // Validate password
-        if (password.length < 8) {
-            setError(t('passwordMinLength'));
-            return false;
-        }
-
-        if (!/\d/.test(password)) {
-            setError(t('passwordNeedNumber'));
-            return false;
-        }
-
-        // For register, check confirm password
-        if (tab === 'register' && password !== confirmPassword) {
-            setError(t('passwordMismatch'));
-            return false;
-        }
-
+        if (!/^[6-9]\d{9}$/.test(phone)) { setError(t('invalidPhone')); return false; }
+        if (password.length < 8) { setError(t('passwordMinLength')); return false; }
+        if (!/\d/.test(password)) { setError(t('passwordNeedNumber')); return false; }
+        if (tab === 'register' && password !== confirmPassword) { setError(t('passwordMismatch')); return false; }
         return true;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (!validateForm()) return;
-
+        if (!validateLoginForm()) return;
         setIsLoading(true);
         setError('');
-
         try {
             const response = tab === 'login'
                 ? await api.login(phone, password)
@@ -101,21 +150,15 @@ export default function LoginPage() {
                     userId: (response.data.user as any).id,
                     userType: response.data.userType,
                     role: (response.data.user as any).role,
-                    phone: phone,
+                    phone,
                     email: (response.data.user as any).email,
                     name: (response.data.user as any).name,
                 });
-
-                // Redirect based on user type and profile completion
                 if (response.data.userType === 'ADMIN') {
                     router.push('/admin/dashboard');
                 } else {
                     const userData = response.data.user as any;
-                    if (userData.profileComplete) {
-                        router.push(`/${locale}/orders`);
-                    } else {
-                        router.push(`/${locale}/complete-profile`);
-                    }
+                    router.push(userData.profileComplete ? `/${locale}/orders` : `/${locale}/complete-profile`);
                 }
             } else {
                 setError(response.error?.message || t('authFailed'));
@@ -127,6 +170,337 @@ export default function LoginPage() {
         }
     };
 
+    // ── Forgot password — Step 1: Send OTP ───────────────────────────────
+    const handleSendOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!/^[6-9]\d{9}$/.test(fpPhone)) {
+            setFpError(t('invalidPhone'));
+            return;
+        }
+        setFpLoading(true);
+        setFpError('');
+        try {
+            console.debug('[Firebase] Requesting OTP for +91' + fpPhone);
+            const verifier = getOrCreateRecaptcha();
+            const confirmation = await signInWithPhoneNumber(
+                getFirebaseAuth(),
+                `+91${fpPhone}`,
+                verifier
+            );
+            confirmationRef.current = confirmation;
+            console.debug('[Firebase] OTP sent successfully.');
+            setFpStep('otp');
+            setResendTimer(60);
+            setFpSuccess(t('fpOtpSent', { phone: fpPhone }));
+        } catch (err: any) {
+            console.error('[Firebase] sendOtp error:', err?.code, err?.message);
+            clearRecaptcha();
+            const code = err?.code || '';
+            if (code === 'auth/invalid-phone-number') {
+                setFpError(t('invalidPhone'));
+            } else if (code === 'auth/invalid-app-credential') {
+                setFpError('reCAPTCHA verification failed. Please refresh the page and try again.');
+            } else if (code === 'auth/quota-exceeded') {
+                setFpError('SMS quota exceeded for this number. Please try again later.');
+            } else if (code === 'auth/too-many-requests') {
+                setFpError('Too many attempts. Please wait a few minutes before trying again.');
+            } else {
+                setFpError(err?.message || tCommon('error'));
+            }
+        } finally {
+            setFpLoading(false);
+        }
+    };
+
+    // ── Forgot password — Step 2: Verify OTP ─────────────────────────────
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!fpOtp || fpOtp.length < 6) { setFpError(t('fpInvalidOtp')); return; }
+        setFpLoading(true);
+        setFpError('');
+        setFpSuccess('');
+        try {
+            if (!confirmationRef.current) throw new Error('No confirmation result');
+            const result = await confirmationRef.current.confirm(fpOtp);
+            const idToken = await result.user.getIdToken();
+            setFpIdToken(idToken);
+            setFpStep('password');
+        } catch {
+            setFpError(t('fpInvalidOtp'));
+        } finally {
+            setFpLoading(false);
+        }
+    };
+
+    // ── Forgot password — Step 3: Reset password ──────────────────────────
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (fpNewPassword.length < 8) { setFpError(t('passwordMinLength')); return; }
+        if (!/\d/.test(fpNewPassword)) { setFpError(t('passwordNeedNumber')); return; }
+        if (fpNewPassword !== fpConfirmPassword) { setFpError(t('passwordMismatch')); return; }
+        setFpLoading(true);
+        setFpError('');
+        try {
+            const response = await api.resetPassword(fpIdToken, fpNewPassword);
+            if (response.success && response.data) {
+                setFpSuccess(t('fpResetSuccess'));
+                login(response.data.token, {
+                    userId: (response.data.user as any).id,
+                    userType: response.data.userType,
+                    role: (response.data.user as any).role,
+                    phone: fpPhone,
+                    email: (response.data.user as any).email,
+                    name: (response.data.user as any).name,
+                });
+                setTimeout(() => {
+                    const userData = response.data!.user as any;
+                    router.push(userData.profileComplete ? `/${locale}/orders` : `/${locale}/complete-profile`);
+                }, 1500);
+            } else {
+                setFpError(response.error?.message || tCommon('error'));
+            }
+        } catch {
+            setFpError(tCommon('error'));
+        } finally {
+            setFpLoading(false);
+        }
+    };
+
+    // ── Resend OTP ────────────────────────────────────────────────────────
+    const handleResend = async () => {
+        if (resendTimer > 0) return;
+        setFpError('');
+        setFpSuccess('');
+        if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+            window.recaptchaVerifier = undefined;
+        }
+        setFpLoading(true);
+        try {
+            console.debug('[Firebase] Resending OTP for +91' + fpPhone);
+            const verifier = getOrCreateRecaptcha();
+            const confirmation = await signInWithPhoneNumber(
+                getFirebaseAuth(),
+                `+91${fpPhone}`,
+                verifier
+            );
+            confirmationRef.current = confirmation;
+            console.debug('[Firebase] OTP resent successfully.');
+            setResendTimer(60);
+            setFpSuccess(t('fpOtpSent', { phone: fpPhone }));
+        } catch (err: any) {
+            console.error('[Firebase] resendOtp error:', err?.code, err?.message);
+            clearRecaptcha();
+            setFpError(err?.message || tCommon('error'));
+        } finally {
+            setFpLoading(false);
+        }
+    };
+
+
+    const enterForgotMode = () => {
+        setIsForgotMode(true);
+        setFpStep('phone');
+        setFpPhone('');
+        setFpOtp('');
+        setFpNewPassword('');
+        setFpConfirmPassword('');
+        setFpError('');
+        setFpSuccess('');
+        setFpIdToken('');
+    };
+
+    const exitForgotMode = () => {
+        setIsForgotMode(false);
+        setFpStep('phone');
+        setFpError('');
+        setFpSuccess('');
+    };
+
+    // ── Loading / auth guard ──────────────────────────────────────────────
+    if (authLoading) {
+        return (
+            <main className={styles.main}>
+                <div className={styles.card}><div className="spinner" /></div>
+            </main>
+        );
+    }
+    if (isAuthenticated) return null;
+
+    // ── Render: Forgot Password ───────────────────────────────────────────
+    if (isForgotMode) {
+        const stepNum = fpStep === 'phone' ? 1 : fpStep === 'otp' ? 2 : 3;
+        return (
+            <main className={styles.main}>
+                {/* reCAPTCHA anchor — child elements created/destroyed dynamically */}
+                <div ref={recaptchaAnchorRef} style={{ position: 'absolute', top: 0, left: 0 }} />
+
+                <div className={styles.card}>
+                    <div className={styles.cardHeader}>
+                        <div className={styles.headerIcon}>
+                            <span className="material-icons">lock_reset</span>
+                        </div>
+                        <h1 className={styles.headerTitle}>{t('fpTitle')}</h1>
+                        <p className={styles.headerSubtitle}>{t('fpSubtitle')}</p>
+                    </div>
+
+                    {/* Step indicator */}
+                    <div className={styles.fpSteps}>
+                        {[1, 2, 3].map(n => (
+                            <div key={n} className={styles.fpStepItem}>
+                                <div className={`${styles.fpStepDot} ${stepNum >= n ? styles.fpStepDotActive : ''} ${stepNum > n ? styles.fpStepDotDone : ''}`}>
+                                    {stepNum > n
+                                        ? <span className="material-icons" style={{ fontSize: 14 }}>check</span>
+                                        : n}
+                                </div>
+                                <span className={`${styles.fpStepLabel} ${stepNum >= n ? styles.fpStepLabelActive : ''}`}>
+                                    {t(n === 1 ? 'fpStep1' : n === 2 ? 'fpStep2' : 'fpStep3')}
+                                </span>
+                                {n < 3 && <div className={`${styles.fpStepLine} ${stepNum > n ? styles.fpStepLineDone : ''}`} />}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className={styles.formWrapper}>
+                        {/* Error / Success messages */}
+                        {fpError && (
+                            <div className={styles.error}>
+                                <span className="material-icons" style={{ fontSize: 16 }}>error_outline</span>
+                                {fpError}
+                            </div>
+                        )}
+                        {fpSuccess && (
+                            <div className={styles.fpSuccess}>
+                                <span className="material-icons" style={{ fontSize: 16 }}>check_circle</span>
+                                {fpSuccess}
+                            </div>
+                        )}
+
+                        {/* Step 1 — Enter phone */}
+                        {fpStep === 'phone' && (
+                            <form onSubmit={handleSendOtp} className={styles.form}>
+                                <div className={styles.inputGroup}>
+                                    <label htmlFor="fp-phone" className={styles.label}>{t('fpPhoneLabel')}</label>
+                                    <div className={styles.inputWithIcon}>
+                                        <span className={`material-icons ${styles.inputIcon}`}>phone</span>
+                                        <span className={styles.countryCode}>+91</span>
+                                        <input
+                                            id="fp-phone"
+                                            type="tel"
+                                            className={`${styles.input} ${styles.phoneInput}`}
+                                            placeholder={t('phonePlaceholder')}
+                                            value={fpPhone}
+                                            onChange={e => setFpPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                            maxLength={10}
+                                            disabled={fpLoading}
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className={styles.submitBtn}
+                                    disabled={fpLoading || fpPhone.length !== 10}
+                                >
+                                    {fpLoading ? <span className="spinner" /> : t('fpSendOtp')}
+                                </button>
+                            </form>
+                        )}
+
+                        {/* Step 2 — Enter OTP */}
+                        {fpStep === 'otp' && (
+                            <form onSubmit={handleVerifyOtp} className={styles.form}>
+                                <div className={styles.inputGroup}>
+                                    <label htmlFor="fp-otp" className={styles.label}>{t('fpOtpLabel')}</label>
+                                    <div className={styles.inputWithIcon}>
+                                        <span className={`material-icons ${styles.inputIcon}`}>sms</span>
+                                        <input
+                                            id="fp-otp"
+                                            type="text"
+                                            inputMode="numeric"
+                                            className={styles.input}
+                                            placeholder={t('fpOtpPlaceholder')}
+                                            value={fpOtp}
+                                            onChange={e => setFpOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                            maxLength={6}
+                                            disabled={fpLoading}
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className={styles.submitBtn}
+                                    disabled={fpLoading || fpOtp.length < 6}
+                                >
+                                    {fpLoading ? <span className="spinner" /> : t('fpVerifyOtp')}
+                                </button>
+                                <button type="button" className={styles.fpResendBtn} onClick={handleResend} disabled={resendTimer > 0 || fpLoading}>
+                                    {resendTimer > 0 ? t('fpResendIn', { seconds: resendTimer }) : t('fpResend')}
+                                </button>
+                            </form>
+                        )}
+
+                        {/* Step 3 — New password */}
+                        {fpStep === 'password' && (
+                            <form onSubmit={handleResetPassword} className={styles.form}>
+                                <div className={styles.inputGroup}>
+                                    <label htmlFor="fp-new-pw" className={styles.label}>{t('fpNewPasswordLabel')}</label>
+                                    <div className={styles.inputWithIcon}>
+                                        <span className={`material-icons ${styles.inputIcon}`}>lock</span>
+                                        <input
+                                            id="fp-new-pw"
+                                            type={fpShowPassword ? 'text' : 'password'}
+                                            className={styles.input}
+                                            placeholder={t('passwordPlaceholder')}
+                                            value={fpNewPassword}
+                                            onChange={e => setFpNewPassword(e.target.value)}
+                                            disabled={fpLoading}
+                                            autoFocus
+                                        />
+                                        <button type="button" className={styles.togglePassword} onClick={() => setFpShowPassword(v => !v)}>
+                                            <span className="material-icons" style={{ fontSize: 18 }}>{fpShowPassword ? 'visibility' : 'visibility_off'}</span>
+                                        </button>
+                                    </div>
+                                    <p className={styles.hint}>{t('passwordHint')}</p>
+                                </div>
+                                <div className={styles.inputGroup}>
+                                    <label htmlFor="fp-confirm-pw" className={styles.label}>{t('fpConfirmPasswordLabel')}</label>
+                                    <div className={styles.inputWithIcon}>
+                                        <span className={`material-icons ${styles.inputIcon}`}>lock_outline</span>
+                                        <input
+                                            id="fp-confirm-pw"
+                                            type={fpShowPassword ? 'text' : 'password'}
+                                            className={styles.input}
+                                            placeholder={t('confirmPasswordPlaceholder')}
+                                            value={fpConfirmPassword}
+                                            onChange={e => setFpConfirmPassword(e.target.value)}
+                                            disabled={fpLoading}
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className={styles.submitBtn}
+                                    disabled={fpLoading || fpNewPassword.length < 8 || fpConfirmPassword.length < 8}
+                                >
+                                    {fpLoading ? <span className="spinner" /> : t('fpResetButton')}
+                                </button>
+                            </form>
+                        )}
+
+                        {/* Back to login link */}
+                        <button type="button" className={styles.fpBackBtn} onClick={exitForgotMode}>
+                            <span className="material-icons" style={{ fontSize: 16 }}>arrow_back</span>
+                            {t('fpBackToLogin')}
+                        </button>
+                    </div>
+                </div>
+            </main>
+        );
+    }
+
+    // ── Render: Login / Register ──────────────────────────────────────────
     return (
         <main className={styles.main}>
             <div className={styles.card}>
@@ -146,14 +520,14 @@ export default function LoginPage() {
                         onClick={() => { setTab('login'); setError(''); }}
                     >
                         {t('loginTab')}
-                        <div className={`${styles.tabIndicator} ${tab === 'login' ? styles.activeIndicator : ''}`}></div>
+                        <div className={`${styles.tabIndicator} ${tab === 'login' ? styles.activeIndicator : ''}`} />
                     </button>
                     <button
                         className={`${styles.tab} ${tab === 'register' ? styles.activeTab : ''}`}
                         onClick={() => { setTab('register'); setError(''); }}
                     >
                         {t('registerTab')}
-                        <div className={`${styles.tabIndicator} ${tab === 'register' ? styles.activeIndicator : ''}`}></div>
+                        <div className={`${styles.tabIndicator} ${tab === 'register' ? styles.activeIndicator : ''}`} />
                     </button>
                 </div>
 
@@ -169,9 +543,7 @@ export default function LoginPage() {
                         {/* Name Input (Register only) */}
                         {tab === 'register' && (
                             <div className={styles.inputGroup}>
-                                <label htmlFor="name" className={styles.label}>
-                                    {t('nameLabel')}
-                                </label>
+                                <label htmlFor="name" className={styles.label}>{t('nameLabel')}</label>
                                 <div className={styles.inputWithIcon}>
                                     <span className={`material-icons ${styles.inputIcon}`}>person</span>
                                     <input
@@ -180,7 +552,7 @@ export default function LoginPage() {
                                         className={styles.input}
                                         placeholder={t('namePlaceholder')}
                                         value={name}
-                                        onChange={(e) => setName(e.target.value)}
+                                        onChange={e => setName(e.target.value)}
                                         disabled={isLoading}
                                     />
                                 </div>
@@ -189,9 +561,7 @@ export default function LoginPage() {
 
                         {/* Phone Input */}
                         <div className={styles.inputGroup}>
-                            <label htmlFor="phone" className={styles.label}>
-                                {t('phoneLabel')}
-                            </label>
+                            <label htmlFor="phone" className={styles.label}>{t('phoneLabel')}</label>
                             <div className={styles.inputWithIcon}>
                                 <span className={`material-icons ${styles.inputIcon}`}>phone</span>
                                 <span className={styles.countryCode}>+91</span>
@@ -201,7 +571,7 @@ export default function LoginPage() {
                                     className={`${styles.input} ${styles.phoneInput}`}
                                     placeholder={t('phonePlaceholder')}
                                     value={phone}
-                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                                     maxLength={10}
                                     disabled={isLoading}
                                 />
@@ -210,9 +580,14 @@ export default function LoginPage() {
 
                         {/* Password Input */}
                         <div className={styles.inputGroup}>
-                            <label htmlFor="password" className={styles.label}>
-                                {t('passwordLabel')}
-                            </label>
+                            <div className={styles.labelRow}>
+                                <label htmlFor="password" className={styles.label}>{t('passwordLabel')}</label>
+                                {tab === 'login' && (
+                                    <button type="button" className={styles.forgotBtn} onClick={enterForgotMode}>
+                                        {t('forgotPassword')}
+                                    </button>
+                                )}
+                            </div>
                             <div className={styles.inputWithIcon}>
                                 <span className={`material-icons ${styles.inputIcon}`}>lock</span>
                                 <input
@@ -221,32 +596,22 @@ export default function LoginPage() {
                                     className={styles.input}
                                     placeholder={t('passwordPlaceholder')}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={e => setPassword(e.target.value)}
                                     disabled={isLoading}
                                 />
-                                <button
-                                    type="button"
-                                    className={styles.togglePassword}
-                                    onClick={() => setShowPassword(!showPassword)}
-                                >
-                                    <span className="material-icons" style={{ fontSize: 18 }}>
-                                        {showPassword ? 'visibility' : 'visibility_off'}
-                                    </span>
+                                <button type="button" className={styles.togglePassword} onClick={() => setShowPassword(!showPassword)}>
+                                    <span className="material-icons" style={{ fontSize: 18 }}>{showPassword ? 'visibility' : 'visibility_off'}</span>
                                 </button>
                             </div>
                             {tab === 'register' && (
-                                <p className={styles.hint}>
-                                    {t('passwordHint')}
-                                </p>
+                                <p className={styles.hint}>{t('passwordHint')}</p>
                             )}
                         </div>
 
                         {/* Confirm Password (Register only) */}
                         {tab === 'register' && (
                             <div className={styles.inputGroup}>
-                                <label htmlFor="confirmPassword" className={styles.label}>
-                                    {t('confirmPasswordLabel')}
-                                </label>
+                                <label htmlFor="confirmPassword" className={styles.label}>{t('confirmPasswordLabel')}</label>
                                 <div className={styles.inputWithIcon}>
                                     <span className={`material-icons ${styles.inputIcon}`}>lock_outline</span>
                                     <input
@@ -255,7 +620,7 @@ export default function LoginPage() {
                                         className={styles.input}
                                         placeholder={t('confirmPasswordPlaceholder')}
                                         value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        onChange={e => setConfirmPassword(e.target.value)}
                                         disabled={isLoading}
                                     />
                                 </div>
@@ -268,19 +633,17 @@ export default function LoginPage() {
                             className={styles.submitBtn}
                             disabled={isLoading || phone.length !== 10 || password.length < 8}
                         >
-                            {isLoading ? (
-                                <span className="spinner" />
-                            ) : (
-                                tab === 'login' ? t('loginButton') : t('registerButton')
-                            )}
+                            {isLoading
+                                ? <span className="spinner" />
+                                : tab === 'login' ? t('loginButton') : t('registerButton')}
                         </button>
                     </form>
 
                     {/* Divider */}
                     <div className={styles.divider}>
-                        <div className={styles.dividerLine}></div>
+                        <div className={styles.dividerLine} />
                         <span className={styles.dividerText}>{t('orContinueWith')}</span>
-                        <div className={styles.dividerLine}></div>
+                        <div className={styles.dividerLine} />
                     </div>
 
                     {/* Google Sign-In */}
@@ -295,9 +658,7 @@ export default function LoginPage() {
                     </a>
 
                     {/* Footer */}
-                    <p className={styles.cardFooter}>
-                        {t('termsFooter')}
-                    </p>
+                    <p className={styles.cardFooter}>{t('termsFooter')}</p>
                 </div>
             </div>
         </main>

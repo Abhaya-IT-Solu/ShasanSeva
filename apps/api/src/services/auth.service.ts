@@ -5,6 +5,7 @@ import { db, users, admins } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
 import { redis, REDIS_KEYS, REDIS_TTL } from '../lib/redis.js';
 import { logger } from '../lib/utils.js';
+import { verifyFirebaseIdToken } from '../lib/firebase.js';
 import type { AuthSession, UserProfile, AdminProfile } from '@shasansetu/types';
 
 interface JwtPayload {
@@ -208,6 +209,69 @@ export async function updateUserPassword(
 
     logger.info('Password updated', { userId, userType });
     return { success: true };
+}
+
+/**
+ * Reset user password using a Firebase phone-auth ID token.
+ * The token proves the user owns the phone number — no old password needed.
+ */
+export async function resetPasswordWithFirebaseToken(
+    firebaseIdToken: string,
+    newPassword: string
+): Promise<{ success: true; user: UserProfile } | { success: false; error: string }> {
+    // 1. Validate new password first (fail fast before hitting Firebase)
+    const validation = validatePassword(newPassword);
+    if (!validation.valid) {
+        return { success: false, error: validation.error! };
+    }
+
+    // 2. Verify token with Firebase Admin — this confirms phone ownership
+    let decodedToken;
+    try {
+        decodedToken = await verifyFirebaseIdToken(firebaseIdToken);
+    } catch (err) {
+        logger.warn('Firebase ID token verification failed', { error: String(err) });
+        return { success: false, error: 'OTP verification failed. Please try again.' };
+    }
+
+    // 3. Extract phone number from decoded token
+    const rawPhone = decodedToken.phone_number;
+    if (!rawPhone) {
+        return { success: false, error: 'Phone number not found in verification token.' };
+    }
+
+    // Normalise to 10-digit Indian number (strip +91 prefix if present)
+    const phone = rawPhone.startsWith('+91') ? rawPhone.slice(3) : rawPhone.replace(/^\+/, '');
+
+    // 4. Find user in DB by phone
+    const existingUsers = await db.select().from(users).where(eq(users.phone, phone));
+    if (existingUsers.length === 0) {
+        return { success: false, error: 'No account found for this phone number.' };
+    }
+
+    const user = existingUsers[0];
+
+    // 5. Hash and update password
+    const newHash = await hashPassword(newPassword);
+    await db.update(users)
+        .set({ passwordHash: newHash, updatedAt: new Date() })
+        .where(eq(users.id, user.id));
+
+    logger.info('Password reset via Firebase phone OTP', { userId: user.id, phone });
+
+    return {
+        success: true,
+        user: {
+            id: user.id,
+            phone: user.phone,
+            email: user.email || undefined,
+            name: user.name || undefined,
+            category: user.category || undefined,
+            profileComplete: user.profileComplete || false,
+            address: user.address || undefined,
+            createdAt: user.createdAt.toISOString(),
+        },
+    };
 }
 
 /**
