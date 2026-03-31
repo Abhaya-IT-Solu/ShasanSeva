@@ -100,6 +100,13 @@ jobs:
             API_URL=${{ secrets.API_URL }}
             ENVEOF
 
+            # ── Write FIREBASE_SERVICE_ACCOUNT_JSON separately ──
+            # WHY separately? The JSON contains quotes, newlines and backslashes
+            # that would break the heredoc above. printf %s writes it as-is.
+            printf 'FIREBASE_SERVICE_ACCOUNT_JSON=%s\n' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' \
+              >> /home/ubuntu/shasansetu/.env
+
+
             # ── Pull the latest image from Docker Hub ──
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/shasansetu-api:latest
 
