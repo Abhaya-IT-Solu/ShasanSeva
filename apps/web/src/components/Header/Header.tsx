@@ -35,13 +35,13 @@ export function Header() {
                 <div className={styles.container}>
                     <div className={styles.utilityContent}>
                         <div className={styles.utilityLeft}>
-                            <a href="https://wa.me/919876543210" className={styles.utilityLink}>
+                            <a href="https://wa.me/917517866060" className={styles.utilityLink}>
                                 <span className="material-icons" style={{ fontSize: 14 }}>chat</span>
                                 WhatsApp Support
                             </a>
                             <a href="tel:1800123456" className={styles.utilityLink}>
                                 <span className="material-icons" style={{ fontSize: 14 }}>support_agent</span>
-                                Helpline: 1800-123-456
+                                Helpline: ---
                             </a>
                         </div>
                         <div className={styles.utilityRight}>

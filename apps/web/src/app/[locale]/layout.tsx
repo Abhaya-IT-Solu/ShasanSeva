@@ -3,6 +3,8 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { Header } from '@/components/Header';
+import Footer from '@/components/Footer/Footer';
+import CookieConsent from '@/components/CookieConsent/CookieConsent';
 
 type Locale = 'en' | 'mr';
 
@@ -27,6 +29,8 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
             <Header />
             <main>{children}</main>
+            <Footer />
+            <CookieConsent />
         </NextIntlClientProvider>
     );
 }

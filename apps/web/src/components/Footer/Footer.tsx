@@ -18,7 +18,7 @@ export default function Footer() {
                     <div className={styles.brand}>
                         <Link href="/" className={styles.logo}>
                             <Image
-                                src="/logo/logo_icon.png"
+                                src="/logo/logo_text.png"
                                 alt="ShasanSeva"
                                 width={180}
                                 height={50}
@@ -58,11 +58,11 @@ export default function Footer() {
                         <ul className={styles.contactList}>
                             <li>
                                 <span className={styles.icon}>📞</span>
-                                <a href="tel:+919876543210">+91 98765 43210</a>
+                                <a href="tel:+917517866060">+91 7517866060</a>
                             </li>
                             <li>
                                 <span className={styles.icon}>📧</span>
-                                <a href="mailto:support@shasanseva.com">support@shasanseva.com</a>
+                                <a href="mailto:support@shasanseva.in">support@shasanseva.in</a>
                             </li>
                             <li>
                                 <span className={styles.icon}>📍</span>

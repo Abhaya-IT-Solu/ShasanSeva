@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import styles from './page.module.css';
-import Footer from '@/components/Footer/Footer';
 import { useState, useEffect } from 'react';
 
 // Category data with Material Icons (matching Stitch design)
@@ -309,8 +308,6 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
-
-            <Footer />
         </div>
     );
 }
