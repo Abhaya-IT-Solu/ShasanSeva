@@ -27,6 +27,9 @@ const queryClient = postgres(connectionString, {
 
 export const db = drizzle(queryClient, { schema });
 
+// Export the raw postgres client for graceful shutdown
+export const sql = queryClient;
+
 // Export schema for use elsewhere
 export { schema };
 export type Database = typeof db;

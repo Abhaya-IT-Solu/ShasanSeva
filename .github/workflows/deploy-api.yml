@@ -126,6 +126,12 @@ jobs:
               --restart unless-stopped \
               --env-file /home/ubuntu/shasansetu/.env \
               -p 3001:3001 \
+              --memory=768m \
+              --health-cmd="curl -f http://localhost:3001/api/health || exit 1" \
+              --health-interval=30s \
+              --health-retries=3 \
+              --health-start-period=15s \
+              --health-timeout=10s \
               ${{ secrets.DOCKERHUB_USERNAME }}/shasansetu-api:latest
 
             # ── Clean up old images to save disk space ──
