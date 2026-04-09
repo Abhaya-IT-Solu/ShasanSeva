@@ -127,12 +127,28 @@ jobs:
               --env-file /home/ubuntu/shasansetu/.env \
               -p 3001:3001 \
               --memory=768m \
-              --health-cmd="curl -f http://localhost:3001/api/health || exit 1" \
+              --health-cmd="wget -qO- http://localhost:3001/api/health || exit 1" \
               --health-interval=30s \
               --health-retries=3 \
               --health-start-period=15s \
               --health-timeout=10s \
+              --label autoheal=true \
               ${{ secrets.DOCKERHUB_USERNAME }}/shasansetu-api:latest
+
+            # ── Start autoheal — monitors unhealthy containers and restarts them ──
+            # WHY? Docker health checks only FLAG a container as unhealthy.
+            # They do NOT restart it. Autoheal watches for the unhealthy status
+            # and triggers a restart automatically.
+            docker stop autoheal 2>/dev/null || true
+            docker rm autoheal 2>/dev/null || true
+            docker run -d \
+              --name autoheal \
+              --restart unless-stopped \
+              -e AUTOHEAL_CONTAINER_LABEL=autoheal \
+              -e AUTOHEAL_INTERVAL=60 \
+              -e AUTOHEAL_START_PERIOD=120 \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              willfarrell/autoheal:latest
 
             # ── Clean up old images to save disk space ──
             # WHY? Old images accumulate. This removes unused ones.

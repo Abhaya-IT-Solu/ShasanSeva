@@ -263,6 +263,16 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateAnnounc
         const { id } = req.params;
         const updates = { ...req.body };
 
+        // Guard: if no fields to update, return early
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'No fields to update',
+                })
+            );
+        }
+
         // Verify exists
         const existing = await db.select()
             .from(announcements)
