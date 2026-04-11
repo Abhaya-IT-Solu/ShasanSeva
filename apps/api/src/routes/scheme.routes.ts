@@ -20,7 +20,7 @@ const translationSchema = z.object({
 // Validation schemas
 const createSchemeSchema = z.object({
     slug: z.string().min(3).max(255).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
-    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH']),
+    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH', 'GOVT_CARD', 'LICENCE', 'TAX']),
     schemeType: z.enum(['GOVERNMENT', 'PRIVATE']),
     requiredDocs: z.array(z.object({
         type: z.string(),
@@ -31,6 +31,7 @@ const createSchemeSchema = z.object({
         description_mr: z.string().optional(),
     })).default([]),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid fee format'),
+    averageCompletionDays: z.number().int().min(1).max(3650).optional(),
     status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
     // Translations
     translations: z.object({
@@ -41,7 +42,7 @@ const createSchemeSchema = z.object({
 
 const updateSchemeSchema = z.object({
     slug: z.string().min(3).max(255).regex(/^[a-z0-9-]+$/).optional(),
-    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH']).optional(),
+    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH', 'GOVT_CARD', 'LICENCE', 'TAX']).optional(),
     schemeType: z.enum(['GOVERNMENT', 'PRIVATE']).optional(),
     requiredDocs: z.array(z.object({
         type: z.string(),
@@ -52,6 +53,7 @@ const updateSchemeSchema = z.object({
         description_mr: z.string().optional(),
     })).optional(),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
+    averageCompletionDays: z.number().int().min(1).max(3650).optional().nullable(),
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
     translations: z.object({
         en: translationSchema.optional(),
@@ -60,7 +62,7 @@ const updateSchemeSchema = z.object({
 });
 
 const schemeFiltersSchema = z.object({
-    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH']).optional(),
+    category: z.enum(['STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS', 'OTHER', 'HEALTH', 'GOVT_CARD', 'LICENCE', 'TAX']).optional(),
     schemeType: z.enum(['GOVERNMENT', 'PRIVATE']).optional(),
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
     search: z.string().optional(),
@@ -123,6 +125,7 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
             category: schemes.category,
             schemeType: schemes.schemeType,
             serviceFee: schemes.serviceFee,
+            averageCompletionDays: schemes.averageCompletionDays,
             status: schemes.status,
             // Translation fields
             name: schemeTranslations.name,
@@ -227,6 +230,7 @@ router.get('/by-id/:id', async (req, res) => {
             serviceFee: scheme.serviceFee,
             status: scheme.status,
             requiredDocs: scheme.requiredDocs,
+            averageCompletionDays: scheme.average_completion_days,
             translations,
         }));
     } catch (error) {
@@ -271,6 +275,7 @@ router.get('/:slug', async (req, res) => {
             category: schemes.category,
             schemeType: schemes.schemeType,
             serviceFee: schemes.serviceFee,
+            averageCompletionDays: schemes.average_completion_days,
             requiredDocs: schemes.requiredDocs,
             status: schemes.status,
             name: schemeTranslations.name,
@@ -376,6 +381,7 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
             benefits: data.translations.en.benefits,
             requiredDocs: data.requiredDocs,
             serviceFee: data.serviceFee,
+            averageCompletionDays: data.averageCompletionDays?.toString(),
             status: data.status,
             createdBy: adminId,
         }).returning();
@@ -477,6 +483,9 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
         if (updates.requiredDocs) schemeUpdates.requiredDocs = updates.requiredDocs;
         if (updates.serviceFee) schemeUpdates.serviceFee = updates.serviceFee;
         if (updates.status) schemeUpdates.status = updates.status;
+        if (updates.averageCompletionDays !== undefined) {
+            schemeUpdates.averageCompletionDays = updates.averageCompletionDays?.toString() ?? null;
+        }
 
         // Update legacy fields from English translation
         if (updates.translations?.en) {

@@ -1,0 +1,1226 @@
+ docker ps
+CONTAINER ID   IMAGE                                  COMMAND                  CREATED      STATUS                  PORTS                                         NAMES
+074428d567d8   nileshambekar1/shasansetu-api:latest   "docker-entrypoint.s…"   2 days ago   Up 2 days (unhealthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp   shasansetu-api
+ubuntu@ip-172-31-43-247:~$ docker logs shasansetu-api
+[INFO] 2026-04-06T19:01:45.617Z - 🚀 ShasanSetu API server running on port 3001
+[INFO] 2026-04-06T19:01:45.620Z - 📍 Environment: production
+[INFO] 2026-04-06T19:01:45.621Z - 🌐 Web URL: https://www.shasanseva.in
+[INFO] 2026-04-06T19:01:59.094Z - GET /api/schemes {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36'
+}
+[INFO] 2026-04-06T19:02:05.638Z - GET /api/announcements {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T19:02:05.753Z - GET /api/schemes {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T19:02:22.218Z - GET /api/admin/users {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T19:02:34.674Z - GET /api/orders/admin/queue {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T19:02:41.503Z - GET /api/admin/admins {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T19:08:00.331Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-06T19:21:52.135Z - POST /iams/api/v1/auth/signin { ip: '::ffff:172.17.0.1', userAgent: 'axios/1.13.6' }
+[INFO] 2026-04-06T19:26:22.443Z - GET /api/schemes {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36'
+}
+[INFO] 2026-04-06T19:26:23.446Z - Cached schemes list { locale: 'en', category: 'FARMER', count: 3 }
+[INFO] 2026-04-06T19:26:24.283Z - GET /api/schemes {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36'
+}
+[INFO] 2026-04-06T19:26:24.412Z - Cache hit for schemes list { locale: 'en', category: 'FARMER' }
+[INFO] 2026-04-06T19:26:30.507Z - GET /api/schemes/mangel-tyala-solar-pump-yojana {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36'
+}
+[INFO] 2026-04-06T19:26:30.845Z - Cached scheme detail { slug: 'mangel-tyala-solar-pump-yojana', locale: 'en' }
+[INFO] 2026-04-06T19:26:32.971Z - GET /api/schemes/mangel-tyala-solar-pump-yojana {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36'
+}
+[INFO] 2026-04-06T19:26:33.295Z - Cached scheme detail { slug: 'mangel-tyala-solar-pump-yojana', locale: 'mr' }
+[INFO] 2026-04-06T19:26:49.217Z - GET /api/auth/google {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Mobile Safari/537.36'
+}
+[INFO] 2026-04-06T19:27:36.043Z - GET / {
+  ip: '::ffff:16.59.62.237',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T19:29:19.512Z - GET / {
+  ip: '::ffff:16.59.62.237',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T19:40:10.987Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-06T21:19:34.414Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-06T21:19:35.972Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-06T21:29:46.053Z - POST /iams/api/v1/auth/signin { ip: '::ffff:172.17.0.1', userAgent: 'axios/1.13.6' }
+[INFO] 2026-04-06T21:48:02.542Z - GET /robots.txt {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36; compatible; OAI-SearchBot/1.3; robots.txt; +https://openai.com/searchbot'
+}
+[INFO] 2026-04-06T22:40:30.422Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:83.0) Gecko/20100101 Firefox/83.0'
+}
+[INFO] 2026-04-06T22:40:30.870Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:83.0) Gecko/20100101 Firefox/83.0'
+}
+[INFO] 2026-04-06T22:48:37.881Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; InternetMeasurement/1.0; +https://internet-measurement.com/)'
+}
+[INFO] 2026-04-06T23:11:10.461Z - GET / {
+  ip: '::ffff:16.58.56.214',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-06T23:12:48.987Z - GET / {
+  ip: '::ffff:16.58.56.214',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T00:10:28.472Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 OPR/108.0.0.0'
+}
+[INFO] 2026-04-07T00:11:14.728Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T00:11:16.014Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T00:12:41.226Z - GET /iams/api/v1/forgot-password/sendOtp {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T00:19:41.583Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 OPR/108.0.0.0'
+}
+[INFO] 2026-04-07T00:24:06.124Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T02:10:51.801Z - GET /owa/auth/logon.aspx { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-07T02:16:22.638Z - GET /api/orders { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:22.843Z - GET /api/orders { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:22.896Z - GET /api/notifications { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:22.902Z - GET /api/notifications { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:22.910Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:22.916Z - GET /api/announcements/public { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:22.924Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:22.931Z - GET /api/announcements/public { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:16:23.948Z - Cached schemes list { locale: 'mr', category: undefined, count: 4 }
+[INFO] 2026-04-07T02:16:23.950Z - Cached schemes list { locale: 'mr', category: undefined, count: 4 }
+[INFO] 2026-04-07T02:17:32.577Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:33.625Z - Session created { userId: '018ad2a9-9ff7-4cb2-83ad-ad7b57570c7f', userType: 'ADMIN' }
+[INFO] 2026-04-07T02:17:34.331Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:34.414Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:34.478Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:34.485Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:34.530Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:35.497Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:40.392Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:17:40.419Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:18:20.645Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T02:18:28.229Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-07T02:18:28.512Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-07T03:09:47.452Z - GET /developmentserver/metadatauploader { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-07T04:58:30.552Z - GET /containers/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CyberOKInspect/1.0; +``https://www.cyberok.ru/policy.html)'
+}
+[INFO] 2026-04-07T05:04:24.097Z - GET /iams/api/v1/forgot-password/sendOtp { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T05:15:08.844Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-07T05:42:40.241Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T06:21:54.566Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T06:37:31.989Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CyberOKInspect/1.0; +https://www.cyberok.ru/policy.html)'
+}
+[INFO] 2026-04-07T06:37:35.617Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CyberOKInspect/1.0; +https://www.cyberok.ru/policy.html)'
+}
+[INFO] 2026-04-07T07:01:52.538Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)'
+}
+[INFO] 2026-04-07T07:02:09.479Z - GET /sitemap.xml {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)'
+}
+[INFO] 2026-04-07T07:26:44.200Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T07:28:06.132Z - GET /autodiscover/autodiscover.json { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-07T07:48:01.356Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T07:55:26.065Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T08:08:29.383Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T08:15:18.560Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T08:16:18.435Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T08:22:18.193Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T08:38:42.076Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T09:12:49.052Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T09:12:49.419Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T09:12:55.116Z - GET /api/notifications { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T09:12:55.125Z - GET /api/orders { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T09:12:56.109Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-07T09:32:16.668Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T09:32:17.244Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T10:05:49.138Z - GET /Dr0v { ip: '::ffff:172.17.0.1', userAgent: '-' }
+[INFO] 2026-04-07T10:06:51.452Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-07T10:12:28.657Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 6.2;en-US) AppleWebKit/537.32.36 (KHTML, live Gecko) Chrome/60.0.3042.94 Safari/537.32'
+}
+[INFO] 2026-04-07T10:30:34.820Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T10:30:35.500Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T10:39:31.281Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T10:46:17.042Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-07T10:46:22.449Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T10:53:18.718Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:00:09.091Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:07:19.239Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:14:15.971Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:20:57.626Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-07T11:21:04.421Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:27:50.004Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:34:32.129Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:41:24.525Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:48:09.382Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T11:55:04.435Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T13:04:14.636Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T13:08:12.514Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T13:18:06.052Z - GET / {
+  ip: '::ffff:16.58.56.214',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T13:18:29.124Z - GET / {
+  ip: '::ffff:16.58.56.214',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T14:30:28.908Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T14:33:18.118Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T14:33:19.950Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T15:19:53.312Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-07T15:38:35.022Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'python-requests/2.32.5' }
+[INFO] 2026-04-07T16:10:31.739Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0'
+}
+[INFO] 2026-04-07T16:11:20.858Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T16:49:21.524Z - GET /login {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
+[INFO] 2026-04-07T17:03:09.820Z - GET /iams/api/v1/forgot-password/sendOtp { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T17:06:10.781Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T17:10:37.948Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity'
+}
+[INFO] 2026-04-07T17:12:34.123Z - GET /robots.txt {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36; compatible; OAI-SearchBot/1.3; robots.txt; +https://openai.com/searchbot'
+}
+[INFO] 2026-04-07T17:13:16.881Z - GET /login {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T18:10:13.683Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/118.0'
+}
+[INFO] 2026-04-07T18:33:57.105Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T18:33:57.721Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T19:15:37.990Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T19:39:54.714Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T19:46:50.368Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T19:51:32.689Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T19:53:29.040Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T20:00:09.227Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T20:16:36.732Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T20:28:44.700Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.3 Safari/605.1.15'
+}
+[INFO] 2026-04-07T20:33:57.967Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T20:45:28.277Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T21:10:41.721Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T21:10:45.158Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T21:15:16.640Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T21:34:10.436Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T21:48:16.362Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'curl/7.29.0' }
+[INFO] 2026-04-07T21:48:50.437Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 9_2_2) AppleWebKit/599.47 (KHTML, like Gecko) Chrome/53.0.2452 Safari/537.36'
+}
+[INFO] 2026-04-07T21:48:50.759Z - GET /favicon.ico { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-07T21:48:51.059Z - GET /robots.txt { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-07T21:48:51.062Z - GET /sitemap.xml { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-07T21:51:22.414Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T21:56:08.865Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T22:41:33.042Z - GET /iams/api/v1/forgot-password/sendOtp { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-07T23:16:39.959Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-07T23:38:40.945Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T23:38:42.767Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-07T23:40:40.927Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CyberOKInspect/1.0; +https://www.cyberok.ru/policy.html)'
+}
+[INFO] 2026-04-07T23:40:45.268Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CyberOKInspect/1.0; +https://www.cyberok.ru/policy.html)'
+}
+[INFO] 2026-04-08T00:02:36.705Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0'
+}
+[INFO] 2026-04-08T00:08:56.722Z - GET /webui/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
+}
+[INFO] 2026-04-08T00:12:35.575Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0'
+}
+[INFO] 2026-04-08T00:17:43.914Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:108.0) Gecko/20100101 Firefox/108.0'
+}
+[INFO] 2026-04-08T00:32:38.627Z - GET /geoserver/web/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
+}
+[INFO] 2026-04-08T00:38:33.918Z - GET /.git/config {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/92.0.4515.159 Safari/537.36'
+}
+[INFO] 2026-04-08T01:13:16.340Z - GET /dns-query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:16.612Z - POST /dns-query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:16.883Z - GET /dns-query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:17.156Z - GET /dns-query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:18.122Z - POST /dns-query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:18.394Z - GET /dns-query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:18.666Z - GET /query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:18.937Z - POST /query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:19.208Z - GET /query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:20.040Z - GET /query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:20.818Z - POST /query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:21.090Z - GET /query { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:21.361Z - GET /resolve { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:21.632Z - POST /resolve { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:21.904Z - GET /resolve { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:22.175Z - GET /resolve { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:22.447Z - POST /resolve { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:22.718Z - GET /resolve { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:22.990Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:23.261Z - POST / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:23.533Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:23.804Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:24.075Z - POST / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T01:13:24.349Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T02:58:54.929Z - GET /.git/config {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.88 Safari/537.36 Vivaldi/2.4.1488.36'
+}
+[INFO] 2026-04-08T03:56:32.671Z - GET /api/sonicos/is-sslvpn-enabled {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T03:56:33.964Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T04:24:20.452Z - GET /ReportServer { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-08T05:46:29.839Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T05:46:41.438Z - GET /api/schemes {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T05:46:41.794Z - Cached schemes list { locale: 'en', category: 'STUDENT', count: 1 }
+[INFO] 2026-04-08T05:46:46.192Z - GET /api/schemes/scholarship-form {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T05:46:46.527Z - Cached scheme detail { slug: 'scholarship-form', locale: 'en' }
+[INFO] 2026-04-08T05:46:57.249Z - GET /api/schemes/scholarship-form {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T05:46:57.585Z - Cached scheme detail { slug: 'scholarship-form', locale: 'mr' }
+[INFO] 2026-04-08T05:47:02.222Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T05:51:22.372Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-08T05:59:04.413Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T06:14:12.381Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T06:14:13.678Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T06:33:06.602Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity'
+}
+[INFO] 2026-04-08T06:44:46.915Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-08T06:46:05.646Z - GET /ecp/Current/exporttool/microsoft.exchange.ediscovery.exporttool.application { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-08T07:39:34.077Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.3'
+}
+[INFO] 2026-04-08T07:44:41.774Z - POST /iams/api/v1/auth/signin { ip: '::ffff:172.17.0.1', userAgent: 'axios/1.13.6' }
+[INFO] 2026-04-08T07:46:22.987Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0'
+}
+[INFO] 2026-04-08T07:46:23.434Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:65.0) Gecko/20100101 Firefox/65.0'
+}
+[INFO] 2026-04-08T07:56:17.591Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T07:56:18.072Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T08:16:28.584Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)'
+}
+[INFO] 2026-04-08T08:19:17.300Z - GET /login {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)'
+}
+[INFO] 2026-04-08T08:49:29.585Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T08:49:31.119Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T09:32:24.498Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T09:39:08.833Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T09:45:47.440Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T09:46:36.246Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T09:52:41.277Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T09:59:30.988Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T10:02:10.403Z - POST /iams/api/v1/auth/signin { ip: '::ffff:172.17.0.1', userAgent: 'axios/1.13.6' }
+[INFO] 2026-04-08T10:13:46.775Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'HTTP Banner Detection (https://security.ipip.net)'
+}
+[INFO] 2026-04-08T10:18:04.287Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-08T10:44:11.419Z - GET /Dr0v { ip: '::ffff:172.17.0.1', userAgent: '-' }
+[INFO] 2026-04-08T10:56:21.221Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:03:11.149Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:07:20.754Z - GET /robots.txt {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.134 Safari/537.36'
+}
+[INFO] 2026-04-08T11:09:29.455Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-08T11:10:04.436Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:16:50.326Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:23:36.284Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:27:16.692Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T11:30:33.174Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:37:18.862Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:44:01.735Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:50:49.093Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-08T11:55:59.178Z - GET /developmentserver/metadatauploader { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-08T13:00:46.704Z - GET /..%2F..%2F..%2F..%2F..%2F..%2Fetc%2Fpasswd {
+  ip: '::ffff:5.187.35.142',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:146.0) Gecko/20100101 Firefox/146.0'
+}
+[INFO] 2026-04-08T13:25:58.939Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T13:26:00.352Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T13:28:45.060Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:28:45.695Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:28:56.432Z - GET /owa/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:28:56.992Z - GET /zabbix/favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:29:08.055Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:29:21.743Z - GET /css/images/PTZOptics_powerby.png {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:29:22.266Z - GET /identity/jsLibs/IdmBrandingBar.js {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:29:37.044Z - GET /login.do {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:29:50.385Z - GET /owncloud/status.php {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:30:03.777Z - GET /status.php {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:30:17.677Z - GET /internal_forms_authentication {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:30:28.288Z - GET /console {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:30:39.987Z - GET /sugar_version.json {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:30:52.452Z - GET /identity {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:04.807Z - GET /ssi.cgi/Login.htm {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:16.020Z - GET /js/NewWindow_2_all.js {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:16.453Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:16.992Z - GET /showLogin.cc {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:29.271Z - GET /OA_HTML/AppsLocalLogin.jsp {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:39.350Z - GET /api/session/properties {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:49.803Z - GET /admin/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:50.348Z - GET /login.html {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:31:59.679Z - GET /jasperserver/login.html {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:32:07.582Z - GET /jasperserver-pro/login.html {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:32:18.004Z - GET /jasperserverTest/login.html {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:32:28.694Z - GET /login/login {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:32:29.225Z - GET /Web/Auth {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:32:47.937Z - GET /favicon-32x32.png {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:32:48.487Z - GET /partymgr/control/main {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:33:07.877Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:33:08.450Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:33:09.022Z - GET /cgi-bin/authLogin.cgi {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:33:27.358Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:33:27.897Z - GET /xmldata {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:33:28.460Z - GET /login {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:33:48.003Z - GET /php/login.php {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:34:06.919Z - GET /Telerik.Web.UI.WebResource.axd {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:34:24.133Z - GET /WebInterface/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:34:41.387Z - GET /solr/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:35:01.592Z - GET /aspera/faspex/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:35:02.172Z - GET /cgi-bin/config.exp {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:35:18.737Z - GET /sitecore/shell/sitecore.version.xml {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:35:43.706Z - GET /index.jsp {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T13:36:00.319Z - GET /cf_scripts/scripts/ajax/ckeditor/ckeditor.js {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36'
+}
+[INFO] 2026-04-08T14:23:54.706Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T14:47:06.036Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T14:51:07.572Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T14:51:08.183Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T15:05:47.098Z - HEAD /actuator/heapdump {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; HeapdumpScanner/1.0)'
+}
+[INFO] 2026-04-08T15:05:47.815Z - HEAD /heapdump {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; HeapdumpScanner/1.0)'
+}
+[INFO] 2026-04-08T15:05:48.096Z - HEAD /manage/heapdump {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; HeapdumpScanner/1.0)'
+}
+[INFO] 2026-04-08T15:17:56.559Z - GET / {
+  ip: '::ffff:18.116.101.220',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T15:20:33.392Z - GET / {
+  ip: '::ffff:18.116.101.220',
+  userAgent: 'visionheight.com/scan Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T15:23:27.961Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'curl/7.64.1' }
+[INFO] 2026-04-08T15:23:58.094Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'curl/7.74.0' }
+[INFO] 2026-04-08T16:40:38.978Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0'
+}
+[INFO] 2026-04-08T17:53:05.841Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-08T19:22:44.328Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T19:22:46.160Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T20:25:24.159Z - POST /iams/api/v1/slots/reserveSlot { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T20:35:33.861Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T20:35:35.188Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-08T20:39:27.146Z - POST /iams/api/v1/slots/reserveSlot { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T20:48:37.035Z - POST /iams/api/v1/slots/reserveSlot { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-08T20:58:49.675Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)'
+}
+[INFO] 2026-04-08T20:59:01.507Z - GET /security.txt {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)'
+}
+[INFO] 2026-04-08T21:45:48.100Z - GET /login { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-08T22:43:03.815Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'python-requests/2.32.5' }
+[INFO] 2026-04-08T23:58:01.509Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)'
+}
+[INFO] 2026-04-08T23:58:04.834Z - GET /actuator/health { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-09T00:02:10.385Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0'
+}
+[INFO] 2026-04-09T00:08:02.189Z - GET /webui/ {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T00:11:46.976Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.0'
+}
+[INFO] 2026-04-09T00:18:32.772Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; rv:108.0) Gecko/20100101 Firefox/108.0'
+}
+[INFO] 2026-04-09T00:38:55.248Z - GET /.git/config {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T00:50:00.991Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T00:50:01.755Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T01:35:22.300Z - POST /iams/api/v1/slots/reserveSlot { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-09T01:59:07.591Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Linux; Android 9; Moto Z3 Play) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.111 Mobile Safari/537.36'
+}
+[INFO] 2026-04-09T03:46:07.607Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20100101 Firefox/8.0'
+}
+[INFO] 2026-04-09T04:12:00.355Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T04:12:01.105Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T04:36:00.836Z - GET /.git/config {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Android; Linux armv7l; rv:2.0.1) Gecko/20100101 Firefox/4.0.1 Fennec/2.0.1'
+}
+[INFO] 2026-04-09T04:41:27.493Z - GET / { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T04:42:30.137Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36'
+}
+[INFO] 2026-04-09T04:44:53.870Z - POST /iams/api/v1/slots/reserveSlot { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-09T04:45:57.819Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36'
+}
+[INFO] 2026-04-09T04:59:02.290Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+}
+[INFO] 2026-04-09T04:59:20.607Z - GET /favicon.ico {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+}
+[INFO] 2026-04-09T04:59:20.914Z - GET /robots.txt {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+}
+[INFO] 2026-04-09T04:59:21.230Z - GET /sitemap.xml {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+}
+[INFO] 2026-04-09T04:59:25.326Z - POST /update_weights_from_tensor {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36'
+}
+[INFO] 2026-04-09T05:50:18.453Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-09T06:49:24.982Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T06:53:23.623Z - GET / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3803.0 Safari/537.36 Edg/76.0.174.0'
+}
+[INFO] 2026-04-09T07:31:38.962Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T07:38:28.368Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T08:02:09.217Z - GET /api/shop/settings {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+}
+[INFO] 2026-04-09T08:02:51.899Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-09T08:07:03.202Z - GET /api/shop/settings {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+}
+[INFO] 2026-04-09T08:25:23.335Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-09T08:33:23.056Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'python-requests/2.32.5' }
+[INFO] 2026-04-09T08:42:55.104Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-09T08:53:53.993Z - POST /update/picture.cgi { ip: '::ffff:172.17.0.1', userAgent: 'Mozilla/5.0 zgrab/0.x' }
+[INFO] 2026-04-09T08:55:16.361Z - GET / { ip: '::ffff:172.17.0.1', userAgent: 'Go-http-client/1.1' }
+[INFO] 2026-04-09T09:06:31.413Z - GET /iams/api/v1/slots/reserveSlot {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T09:10:58.241Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-09T09:15:15.739Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T09:15:16.485Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T09:18:56.175Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T09:25:39.190Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T09:32:36.339Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T09:39:25.818Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T09:46:16.414Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T09:53:09.027Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T09:59:58.235Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:06:59.533Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:11:42.200Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: 'endpoint-checker/2.0' }
+[INFO] 2026-04-09T10:13:41.719Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:20:30.876Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:27:20.467Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:34:11.284Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:40:58.777Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:47:59.857Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T10:54:42.007Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:01:41.154Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:08:29.206Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:15:20.334Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:15:52.155Z - GET /.env {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T11:15:52.937Z - POST / {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.5845.140 Safari/537.36'
+}
+[INFO] 2026-04-09T11:22:08.806Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:28:59.634Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:29:56.516Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:29:56.522Z - GET /api/notifications { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:29:56.527Z - GET /api/orders { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:29:56.529Z - GET /api/announcements/public { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:29:57.811Z - Cached schemes list { locale: 'mr', category: undefined, count: 4 }
+[INFO] 2026-04-09T11:30:28.625Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:29.597Z - Session created { userId: '018ad2a9-9ff7-4cb2-83ad-ad7b57570c7f', userType: 'ADMIN' }
+[INFO] 2026-04-09T11:30:30.784Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:30.963Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:31.000Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:31.002Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:31.008Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:31.794Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:50.732Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:50.856Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:30:53.105Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:31:03.301Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-09T11:31:03.648Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-09T11:35:52.281Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:36:52.470Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:52.483Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.704Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.712Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.715Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.717Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.721Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.724Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.728Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.736Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.741Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:54.752Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:56.402Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:36:56.404Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:37:18.203Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:37:18.206Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:37:22.082Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:37:32.321Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-09T11:37:32.595Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-09T11:37:48.979Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-09T11:37:49.251Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-09T11:42:37.833Z - GET /iams/api/v1/high-commissions { ip: '::ffff:172.17.0.1', userAgent: undefined }
+[INFO] 2026-04-09T11:55:12.584Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:12.600Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.919Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.924Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.926Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.933Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.937Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.940Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.943Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.950Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.957Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:14.966Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:16.528Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:16.529Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:22.598Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:22.709Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:25.648Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T11:55:33.232Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-09T11:55:33.500Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-09T11:56:22.950Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-09T11:56:23.850Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-09T12:00:30.973Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-09T12:00:31.872Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-09T12:05:38.955Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:38.968Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:40.791Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.573Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.673Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.676Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.680Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.683Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.687Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.694Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.703Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.711Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:43.713Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:45.220Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:56.179Z - POST /api/auth/logout { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:05:56.387Z - Session invalidated { userId: '018ad2a9-9ff7-4cb2-83ad-ad7b57570c7f' }
+[INFO] 2026-04-09T12:07:11.589Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:11.593Z - GET /api/notifications { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:11.599Z - GET /api/notifications { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:11.613Z - GET /api/announcements/public { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:11.615Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:11.618Z - GET /api/orders { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:11.625Z - GET /api/orders { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:11.630Z - GET /api/announcements/public { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:12.496Z - Cached schemes list { locale: 'mr', category: undefined, count: 4 }
+[INFO] 2026-04-09T12:07:12.514Z - Cached schemes list { locale: 'mr', category: undefined, count: 4 }
+[INFO] 2026-04-09T12:07:25.642Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:25.973Z - Session created { userId: '018ad2a9-9ff7-4cb2-83ad-ad7b57570c7f', userType: 'ADMIN' }
+[INFO] 2026-04-09T12:07:27.507Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:27.508Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:27.516Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:27.521Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:27.626Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:28.422Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:30.078Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:30.190Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:32.306Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:07:36.547Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[ERROR] 2026-04-09T12:07:36.812Z - Failed to update announcement Error: No values to set
+    at mapUpdateSet (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/utils.js:90:11)
+    at PgUpdateBuilder.set (file:///app/node_modules/.pnpm/drizzle-orm@0.38.4_@opentelemetry+api@1.9.0_@types+react@18.3.27_postgres@3.4.8_react@18.3.1/node_modules/drizzle-orm/pg-core/query-builders/update.js:30:7)
+    at file:///app/apps/api/dist/routes/announcement.routes.js:283:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[INFO] 2026-04-09T12:13:19.549Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:19.567Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.370Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.504Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.525Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.576Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.579Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.651Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.776Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.780Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.782Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:22.787Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:13:24.639Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:14:20.104Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:14:20.256Z - GET /api/announcements { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:14:22.826Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:14:23.224Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:14:27.188Z - PATCH /api/announcements/d2a06aaa-1984-4b31-88ed-9d3d8defae5f { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:15.512Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:15.515Z - GET /api/auth/me { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.644Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.660Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.665Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.670Z - GET /api/admin/users { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.686Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.688Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.764Z - GET /api/orders/admin/queue { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.768Z - GET /api/schemes { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.771Z - GET /api/admin/admins { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:16.799Z - GET /api/admin/stats { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:20.882Z - POST /api/auth/logout { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:17:21.090Z - Session invalidated { userId: '018ad2a9-9ff7-4cb2-83ad-ad7b57570c7f' }
+[INFO] 2026-04-09T12:18:13.461Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:19:26.043Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:19:58.837Z - POST /api/auth/logout { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:20:09.043Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:20:23.169Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:20:48.514Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:21:18.915Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:21:57.067Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:22:17.820Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:24:15.655Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:24:37.750Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:25:25.500Z - POST /api/auth/login { ip: '::ffff:172.17.0.1', userAgent: 'Dart/3.10 (dart:io)' }
+[INFO] 2026-04-09T12:25:53.008Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:25:58.525Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:26:48.899Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:29:38.170Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:30:12.387Z - POST /api/auth/login {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:30:18.053Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:39:12.456Z - POST /api/auth/login {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:42:31.591Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:48:54.665Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:52:44.522Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:52:46.906Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:54:51.843Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T12:55:07.154Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T13:55:12.562Z - GET /api/announcements/public {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T13:55:13.458Z - GET /api/auth/me {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+[INFO] 2026-04-09T13:55:17.129Z - GET /api/schemes {
+  ip: '::ffff:172.17.0.1',
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
+}
+ubuntu@ip-172-31-43-247:~$ docker ps
+CONTAINER ID   IMAGE                                  COMMAND                  CREATED      STATUS                  PORTS                                         NAMES
+074428d567d8   nileshambekar1/shasansetu-api:latest   "docker-entrypoint.s…"   2 days ago   Up 2 days (unhealthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp   shasansetu-api
+ubuntu@ip-172-31-43-247:~$ htop
+ubuntu@ip-172-31-43-247:~$

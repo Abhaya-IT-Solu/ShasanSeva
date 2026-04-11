@@ -14,6 +14,7 @@ interface Scheme {
     category?: string;
     schemeType?: string;
     serviceFee: string;
+    averageCompletionDays?: string | null;
     status: string;
 }
 
@@ -72,10 +73,11 @@ function SchemesContent() {
             case 'FARMER': return styles.categoryFarmer;
             case 'LOAN': return styles.categoryLoan;
             case 'CERTIFICATE': return styles.categoryCertificate;
-            case 'EMPLOYMENT': return styles.categoryEmployment;
+            case 'JOBS': return styles.categoryJobs;
             case 'HEALTH': return styles.categoryHealth;
-            case 'WOMEN': return styles.categoryWomen;
-            case 'SENIOR': return styles.categorySenior;
+            case 'GOVT_CARD': return styles.categoryGovtCard;
+            case 'LICENCE': return styles.categoryLicence;
+            case 'TAX': return styles.categoryTax;
             case 'OTHER': return styles.categoryOther;
             default: return '';
         }
@@ -193,8 +195,15 @@ function SchemesContent() {
                                             <span className={styles.fee}>
                                                 {t('serviceFee')}: ₹{scheme.serviceFee}
                                             </span>
+                                            {scheme.averageCompletionDays && (
+                                                <span className={styles.completionTime}>
+                                                    <span className="material-icons" style={{ fontSize: 12, verticalAlign: 'middle', marginRight: 2 }}>schedule</span>
+                                                    ~{scheme.averageCompletionDays} days
+                                                </span>
+                                            )}
                                             <span className={styles.arrow}>→</span>
                                         </div>
+
                                     </Link>
                                 ))}
                             </div>

@@ -36,6 +36,7 @@ export default function NewSchemePage() {
         benefits: '',
         serviceFee: '',
         status: 'ACTIVE',
+        averageCompletionDays: ''
     });
 
     // Marathi translations
@@ -100,6 +101,7 @@ export default function NewSchemePage() {
                     serviceFee: formData.serviceFee,
                     status: formData.status,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
+                    averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : undefined,
                     translations: {
                         en: {
                             name: formData.name,
@@ -227,10 +229,13 @@ export default function NewSchemePage() {
                                         <option value="STUDENT">Student</option>
                                         <option value="FARMER">Farmer</option>
                                         <option value="LOAN">Loan</option>
-                                        <option value="CERTIFICATE">Important Certificates</option>
+                                        <option value="CERTIFICATE">Certificates</option>
                                         <option value="JOBS">Jobs Application Assistance</option>
-                                        <option value="OTHER">Other Services</option>
                                         <option value="HEALTH">Health Schemes</option>
+                                        <option value="GOVT_CARD">Government Cards</option>
+                                        <option value="LICENCE">Licences</option>
+                                        <option value="TAX">Tax Section</option>
+                                        <option value="OTHER">Other Services</option>
                                     </select>
                                 </div>
 
@@ -260,6 +265,20 @@ export default function NewSchemePage() {
                                         required
                                     />
                                 </div>
+                                <div className="input-group">
+                                    <label className="input-label">Avg. Completion Time (Days)</label>
+                                    <input
+                                        type="number"
+                                        name="averageCompletionDays"
+                                        className="input"
+                                        value={formData.averageCompletionDays}
+                                        onChange={handleInputChange}
+                                        min="1"
+                                        max="3650"
+                                        placeholder="e.g. 30"
+                                    />
+                                </div>
+
                             </div>
                         </section>
 

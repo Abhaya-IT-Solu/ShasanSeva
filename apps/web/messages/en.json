@@ -86,25 +86,25 @@
             "name": "Important Certificates",
             "description": "Essential documents for various government and legal procedures."
         },
-        "EMPLOYMENT": {
-            "name": "Employment Schemes",
+        "JOBS": {
+            "name": "Jobs Assistance",
             "description": "Job assistance, skill training, and employment generation schemes."
         },
         "HEALTH": {
             "name": "Health Schemes",
             "description": "Health insurance, medical assistance, and wellness programs."
         },
-        "WOMEN": {
-            "name": "Women Welfare",
-            "description": "Special schemes and programs designed for women empowerment."
+        "GOVT_CARD": {
+            "name": "Government Cards",
+            "description": "Ration cards, caste certificates, voter ID, and other official government cards."
         },
-        "LOAN_CANDIDATE": {
-            "name": "Loan Applicant",
-            "description": "Business loans, personal loans, and financial assistance programs."
+        "LICENCE": {
+            "name": "Licences",
+            "description": "Shop licences, driving licence, trade licences, and other official permits."
         },
-        "SENIOR": {
-            "name": "Senior Citizens",
-            "description": "Pension, healthcare, and welfare schemes for elderly citizens."
+        "TAX": {
+            "name": "Tax Section",
+            "description": "Income tax filing assistance, GST registration, and tax-related services."
         },
         "OTHER": {
             "name": "Other Services",

@@ -7,14 +7,15 @@ import { useState, useEffect } from 'react';
 
 // Category data with Material Icons (matching Stitch design)
 const CATEGORIES = [
-    { id: 'FARMER', icon: 'agriculture', isNew: true },
+    { id: 'FARMER', icon: 'agriculture', isNew: false },
     { id: 'STUDENT', icon: 'school', isNew: false },
-    { id: 'HEALTH', icon: 'health_and_safety', isNew: false },
-    { id: 'LOAN', icon: 'account_balance_wallet', isNew: true },
     { id: 'CERTIFICATE', icon: 'home_work', isNew: false },
-    { id: 'WOMEN', icon: 'family_restroom', isNew: false },
-    { id: 'EMPLOYMENT', icon: 'engineering', isNew: false },
-    { id: 'SENIOR', icon: 'commute', isNew: false },
+    { id: 'LOAN', icon: 'account_balance_wallet', isNew: false },
+    { id: 'HEALTH', icon: 'health_and_safety', isNew: false },
+    { id: 'JOBS', icon: 'engineering', isNew: false },
+    { id: 'GOVT_CARD', icon: 'badge', isNew: true },
+    { id: 'LICENCE', icon: 'assignment_turned_in', isNew: true },
+    { id: 'TAX', icon: 'receipt_long', isNew: true },
     { id: 'OTHER', icon: 'bolt', isNew: false },
 ];
 

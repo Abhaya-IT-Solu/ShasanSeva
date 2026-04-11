@@ -1,0 +1,1 @@
+ALTER TABLE "schemes" ADD COLUMN "average_completion_days" numeric(5, 0);

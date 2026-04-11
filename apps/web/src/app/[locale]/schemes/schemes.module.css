@@ -2,6 +2,17 @@
     min-height: 100vh;
     background: var(--color-gray-50);
 }
+.categoryJobs { background: #fff3e0; color: #e65100; }
+.categoryGovtCard { background: #e8eaf6; color: #283593; }
+.categoryLicence { background: #f3e5f5; color: #6a1b9a; }
+.categoryTax { background: #e8f5e9; color: #1b5e20; }
+.completionTime {
+    font-size: 11px;
+    color: var(--color-gray-500);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
 
 /* Main */
 .main {

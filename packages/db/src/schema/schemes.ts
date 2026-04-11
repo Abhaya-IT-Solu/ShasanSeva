@@ -14,12 +14,13 @@ export const schemes = pgTable('schemes', {
     name: varchar('name', { length: 255 }).notNull(),
     slug: varchar('slug', { length: 255 }).unique().notNull(),
     description: text('description'),
-    category: varchar('category', { length: 50 }), // STUDENT, FARMER, LOAN
+    category: varchar('category', { length: 50 }), // STUDENT, FARMER, LOAN, etc.
     schemeType: varchar('scheme_type', { length: 50 }), // GOVERNMENT, PRIVATE
     eligibility: text('eligibility'),
     benefits: text('benefits'),
     requiredDocs: jsonb('required_docs').$type<RequiredDocument[]>().default([]),
     serviceFee: decimal('service_fee', { precision: 10, scale: 2 }).notNull(),
+    averageCompletionDays: decimal('average_completion_days', { precision: 5, scale: 0 }),
     status: varchar('status', { length: 20 }).default('ACTIVE'), // ACTIVE, INACTIVE
 
     createdBy: uuid('created_by').references(() => admins.id),
@@ -43,6 +44,9 @@ export const SchemeCategory = {
     JOBS: 'JOBS',                  // Jobs Application Assistance
     OTHER: 'OTHER',                // Other Services
     HEALTH: 'HEALTH',              // Health Schemes
+    GOVT_CARD: 'GOVT_CARD',        // Government Cards
+    LICENCE: 'LICENCE',            // Licences
+    TAX: 'TAX',                    // Tax Section
 } as const;
 
 export type SchemeCategoryType = (typeof SchemeCategory)[keyof typeof SchemeCategory];
