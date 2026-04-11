@@ -275,7 +275,7 @@ router.get('/:slug', async (req, res) => {
             category: schemes.category,
             schemeType: schemes.schemeType,
             serviceFee: schemes.serviceFee,
-            averageCompletionDays: schemes.average_completion_days,
+            averageCompletionDays: schemes.averageCompletionDays,
             requiredDocs: schemes.requiredDocs,
             status: schemes.status,
             name: schemeTranslations.name,
