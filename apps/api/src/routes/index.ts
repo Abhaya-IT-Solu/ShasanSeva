@@ -11,12 +11,25 @@ import notificationRoutes from './notification.routes.js';
 import proofRoutes from './proof.routes.js';
 import feedbackRoutes from './feedback.routes.js';
 import announcementRoutes from './announcement.routes.js';
+import { sql } from '@shasansetu/db';
 
 const router: Router = Router();
 
-// Health check
-router.get('/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check — probes DB so autoheal can detect connection pool issues
+router.get('/health', async (_req, res) => {
+    try {
+        // Simple DB ping with 5s timeout — if pool is exhausted this will throw
+        await Promise.race([
+            sql`SELECT 1`,
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('DB ping timeout')), 5000)
+            ),
+        ]);
+        res.json({ status: 'ok', db: 'ok', timestamp: new Date().toISOString() });
+    } catch {
+        // Return 503 — autoheal sees unhealthy container and restarts it
+        res.status(503).json({ status: 'error', db: 'unreachable', timestamp: new Date().toISOString() });
+    }
 });
 
 // Mount routes

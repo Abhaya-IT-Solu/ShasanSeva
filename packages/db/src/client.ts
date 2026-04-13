@@ -23,6 +23,9 @@ const queryClient = postgres(connectionString, {
   idle_timeout: 20,
   max_lifetime: 1800, // 30 minutes — forces DNS re-resolution on reconnect
   connect_timeout: 10, // fail fast instead of hanging at 60s
+  connection: {
+    statement_timeout: 15000, // kill any query taking longer than 15s
+  },
 });
 
 export const db = drizzle(queryClient, { schema });
