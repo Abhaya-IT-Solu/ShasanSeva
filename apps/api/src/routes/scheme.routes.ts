@@ -243,8 +243,8 @@ router.get('/by-id/:id', async (req, res) => {
             status: scheme.status,
             requiredDocs: scheme.requiredDocs,
             averageCompletionDays: scheme.average_completion_days,
-            logoUrl: scheme.logoUrl || null,
-            referenceImageUrl: scheme.referenceImageUrl || null,
+            logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
+            referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
             translations,
         }));
     } catch (error) {
@@ -675,8 +675,20 @@ router.post('/:id/upload-image', authMiddleware, adminMiddleware, validateBody(u
         const key = generateSchemeKey(id, type, ext);
 
         const uploadResult = await getUploadUrlForKey(key, contentType);
+
+        // Save the R2 key to the schemes table immediately
+        const updateField = type === 'logo'
+            ? { logoUrl: key, updatedAt: new Date() }
+            : { referenceImageUrl: key, updatedAt: new Date() };
+
+        await db.update(schemes)
+            .set(updateField)
+            .where(eq(schemes.id, id));
+
+        // Invalidate cache so the detail page shows the new image
+        await invalidateSchemeCache();
         
-        logger.info('Scheme image upload URL generated', { schemeId: id, type, key });
+        logger.info('Scheme image upload URL generated and key saved', { schemeId: id, type, key });
 
         return res.json(successResponse({
             uploadUrl: uploadResult.uploadUrl,

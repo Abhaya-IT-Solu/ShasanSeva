@@ -135,22 +135,18 @@ export default function NewSchemePage() {
                 if (schemeId && (logoFile || refImageFile)) {
                     const uploadImage = async (file: File, type: 'logo' | 'reference') => {
                         try {
+                            // Step 1: Get pre-signed URL (also saves the key to DB)
                             const urlRes = await api.request(`/api/schemes/${schemeId}/upload-image`, {
                                 method: 'POST',
                                 body: { type, contentType: file.type },
                             });
                             if (urlRes.success) {
-                                const { uploadUrl, key } = urlRes.data as any;
+                                const { uploadUrl } = urlRes.data as any;
+                                // Step 2: Upload file to R2
                                 await fetch(uploadUrl, {
                                     method: 'PUT',
                                     headers: { 'Content-Type': file.type },
                                     body: file,
-                                });
-                                // Update scheme with the key
-                                const field = type === 'logo' ? 'logoUrl' : 'referenceImageUrl';
-                                await api.request(`/api/schemes/${schemeId}`, {
-                                    method: 'PATCH',
-                                    body: { [field]: key },
                                 });
                             }
                         } catch (err) {

@@ -71,6 +71,13 @@
       "when": 1778267400000,
       "tag": "0009_add_scheme_images",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778062114833,
+      "tag": "0010_striped_banshee",
+      "breakpoints": true
     }
   ]
 }

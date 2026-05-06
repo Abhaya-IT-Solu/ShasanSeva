@@ -104,16 +104,16 @@ export default function EditSchemePage() {
                         serviceFee: scheme.serviceFee || '',
                         averageCompletionDays: scheme.averageCompletionDays || '',
                         status: scheme.status || 'ACTIVE',
-                        logoUrl: scheme.logoUrl || '',
-                        referenceImageUrl: scheme.referenceImageUrl || '',
+                        logoUrl: '',
+                        referenceImageUrl: '',
                     });
 
-                    // Set image previews from existing URLs
+                    // Set image previews from existing public URLs
                     if (scheme.logoUrl) {
-                        setLogoPreview(scheme.logoUrl);
+                        setLogoPreview(scheme.logoUrl); // Already a public URL from the API
                     }
                     if (scheme.referenceImageUrl) {
-                        setRefImagePreview(scheme.referenceImageUrl);
+                        setRefImagePreview(scheme.referenceImageUrl); // Already a public URL from the API
                     }
 
                     // Set English translations
@@ -209,9 +209,8 @@ export default function EditSchemePage() {
                 body: file,
             });
 
-            // Step 3: Update form data with R2 key
-            const field = type === 'logo' ? 'logoUrl' : 'referenceImageUrl';
-            setFormData(prev => ({ ...prev, [field]: key }));
+            // Step 3: The upload endpoint already saved the key to DB
+            // Just update the preview
             setPreview(publicUrl || URL.createObjectURL(file));
         } catch (err: any) {
             setError(err.message || `Failed to upload ${type} image`);
@@ -238,8 +237,6 @@ export default function EditSchemePage() {
                     serviceFee: formData.serviceFee,
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : null,
                     status: formData.status,
-                    logoUrl: formData.logoUrl || null,
-                    referenceImageUrl: formData.referenceImageUrl || null,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
                     translations: {
                         en: englishData,
@@ -472,9 +469,14 @@ export default function EditSchemePage() {
                                         {logoPreview ? (
                                             <div className={formStyles.imagePreview}>
                                                 <img src={logoPreview} alt="Logo preview" />
-                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={async () => {
                                                     setLogoPreview(null);
-                                                    setFormData(prev => ({ ...prev, logoUrl: '' }));
+                                                    try {
+                                                        await api.request(`/api/schemes/${schemeId}`, {
+                                                            method: 'PATCH',
+                                                            body: { logoUrl: null },
+                                                        });
+                                                    } catch (e) { /* silent */ }
                                                 }}>✕</button>
                                             </div>
                                         ) : (
@@ -501,9 +503,14 @@ export default function EditSchemePage() {
                                         {refImagePreview ? (
                                             <div className={formStyles.imagePreview}>
                                                 <img src={refImagePreview} alt="Reference preview" />
-                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={async () => {
                                                     setRefImagePreview(null);
-                                                    setFormData(prev => ({ ...prev, referenceImageUrl: '' }));
+                                                    try {
+                                                        await api.request(`/api/schemes/${schemeId}`, {
+                                                            method: 'PATCH',
+                                                            body: { referenceImageUrl: null },
+                                                        });
+                                                    } catch (e) { /* silent */ }
                                                 }}>✕</button>
                                             </div>
                                         ) : (
