@@ -35,13 +35,13 @@ export function Header() {
                 <div className={styles.container}>
                     <div className={styles.utilityContent}>
                         <div className={styles.utilityLeft}>
-                            <a href="https://wa.me/917517866060" className={styles.utilityLink}>
+                            <a href="https://wa.me/917517866060" target="_blank" rel="noopener noreferrer"className={styles.utilityLink}>
                                 <span className="material-icons" style={{ fontSize: 14 }}>chat</span>
                                 WhatsApp Support
                             </a>
                             <a href="tel:1800123456" className={styles.utilityLink}>
                                 <span className="material-icons" style={{ fontSize: 14 }}>support_agent</span>
-                                Helpline: ---
+                                Helpline: +91 7517866060
                             </a>
                         </div>
                         <div className={styles.utilityRight}>
@@ -60,7 +60,14 @@ export function Header() {
                         </Link>
                         <div className={styles.navLinks}>
                             <Link href="/" className={styles.navLink}>Home</Link>
-                            <Link href="/schemes" className={styles.navLink}>Schemes</Link>
+                            <Link href="/schemes" className={styles.navLink}>{t('schemes')}</Link>
+                            {isAuthenticated && (
+                                <>
+                                    <Link href="/dashboard" className={styles.navLink}>{t('dashboard')}</Link>
+                                    <Link href="/orders" className={styles.navLink}>{t('myOrders')}</Link>
+                                    <Link href="/profile" className={styles.navLink}>{t('profile')}</Link>
+                                </>
+                            )}
                         </div>
                         <div className={styles.navActions}>
                             {authLoading ? (
@@ -96,14 +103,9 @@ export function Header() {
                                     )}
                                 </div>
                             ) : (
-                                <>
-                                    <Link href="/login" className={styles.secondaryBtn}>
-                                        {t('login')}
-                                    </Link>
-                                    <Link href="/login" className={styles.primaryBtn}>
-                                        Register
-                                    </Link>
-                                </>
+                                <Link href="/login" className={styles.primaryBtn}>
+                                    {t('login')}
+                                </Link>
                             )}
                         </div>
                     </div>

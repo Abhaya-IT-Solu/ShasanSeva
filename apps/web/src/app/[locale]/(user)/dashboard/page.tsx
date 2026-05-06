@@ -20,6 +20,8 @@ const QUICK_ACTIONS = [
     { key: 'myApplications', icon: 'description', href: '/orders', linkKey: 'viewStatus' },
     { key: 'myDocuments', icon: 'folder_shared', href: '/profile', linkKey: 'openVault' },
     { key: 'helpSupport', icon: 'help_outline', href: '/schemes', linkKey: 'getHelp' },
+    { key: 'myProfile', icon: 'person', href: '/profile', linkKey: 'viewProfile' },
+    { key: 'editProfile', icon: 'edit', href: '/complete-profile', linkKey: 'editNow' },
 ];
 
 export default function UserDashboard() {
@@ -76,7 +78,7 @@ export default function UserDashboard() {
     return (
         <div className={styles.page}>
             <main className={styles.main}>
-                {/* Hero Welcome Banner */}
+                {/* Hero Welcome Banner
                 <section className={styles.heroBanner}>
                     <div className={styles.heroBlob1}></div>
                     <div className={styles.heroBlob2}></div>
@@ -94,10 +96,10 @@ export default function UserDashboard() {
                             {t('newApplication')}
                         </Link>
                     </div>
-                </section>
+                </section> */}
 
                 {/* Quick Actions */}
-                <section>
+                <section className={styles.quickActionsSection}>
                     <h2 className={styles.sectionTitle}>
                         <span className={styles.titleBar}></span>
                         {t('quickActions')}

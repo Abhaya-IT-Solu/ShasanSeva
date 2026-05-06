@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { api } from '@/lib/api';
@@ -28,6 +28,15 @@ const CATEGORY_ICONS: Record<string, string> = {
     OTHER: 'bolt',
 };
 
+const ALL_STATUSES = [
+    'PENDING_PAYMENT',
+    'PAID',
+    'IN_PROGRESS',
+    'DOCUMENTS_VERIFIED',
+    'COMPLETED',
+    'CANCELLED',
+];
+
 export default function OrdersPage() {
     const t = useTranslations('OrdersPage');
     const tStatus = useTranslations('Statuses');
@@ -35,6 +44,8 @@ export default function OrdersPage() {
 
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
 
     const STATUS_STYLES: Record<string, string> = {
         PENDING_PAYMENT: styles.statusYellow,
@@ -63,6 +74,15 @@ export default function OrdersPage() {
         fetchOrders();
     }, []);
 
+    const filteredOrders = useMemo(() => {
+        return orders.filter((order) => {
+            const matchesSearch = searchQuery.trim() === '' ||
+                (order.schemeName || '').toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = statusFilter === 'ALL' || order.status === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+    }, [orders, searchQuery, statusFilter]);
+
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString(locale === 'mr' ? 'mr-IN' : 'en-IN', {
             year: 'numeric', month: 'short', day: 'numeric'
@@ -80,9 +100,49 @@ export default function OrdersPage() {
                     </div>
                     <Link href="/schemes" className={styles.newAppBtn}>
                         <span className="material-icons" style={{ fontSize: 18 }}>add_circle</span>
-                        New Application
+                        {t('newApplication')}
                     </Link>
                 </div>
+
+                {/* Filters Row */}
+                {!isLoading && orders.length > 0 && (
+                    <div className={styles.filtersRow}>
+                        <div className={styles.searchWrapper}>
+                            <span className={`material-icons ${styles.searchIcon}`}>search</span>
+                            <input
+                                type="text"
+                                className={styles.searchInput}
+                                placeholder={t('searchPlaceholder')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                                <button
+                                    className={styles.clearBtn}
+                                    onClick={() => setSearchQuery('')}
+                                    aria-label="Clear search"
+                                >
+                                    <span className="material-icons" style={{ fontSize: 18 }}>close</span>
+                                </button>
+                            )}
+                        </div>
+                        <div className={styles.statusFilterWrapper}>
+                            <span className={`material-icons ${styles.filterIcon}`}>filter_list</span>
+                            <select
+                                className={styles.statusSelect}
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="ALL">{t('allStatuses')}</option>
+                                {ALL_STATUSES.map((status) => (
+                                    <option key={status} value={status}>
+                                        {tStatus(status as any) || status}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                )}
 
                 {/* Orders List */}
                 {isLoading ? (
@@ -99,9 +159,16 @@ export default function OrdersPage() {
                             {t('browseSchemes')}
                         </Link>
                     </div>
+                ) : filteredOrders.length === 0 ? (
+                    <div className={styles.emptyState}>
+                        <div className={styles.emptyIconWrapper}>
+                            <span className="material-icons" style={{ fontSize: 48, color: 'var(--color-gray-300)' }}>search_off</span>
+                        </div>
+                        <p className={styles.emptyText}>No matching applications found</p>
+                    </div>
                 ) : (
                     <div className={styles.ordersCard}>
-                        {orders.map((order, idx) => {
+                        {filteredOrders.map((order, idx) => {
                             const statusStyle = STATUS_STYLES[order.status] || styles.statusGray;
                             const statusLabel = tStatus(order.status as any) || order.status;
                             const icon = CATEGORY_ICONS[order.schemeCategory || ''] || 'description';
@@ -110,7 +177,7 @@ export default function OrdersPage() {
                                 <Link
                                     key={order.id}
                                     href={`/orders/${order.id}`}
-                                    className={`${styles.orderItem} ${idx < orders.length - 1 ? styles.orderItemBorder : ''}`}
+                                    className={`${styles.orderItem} ${idx < filteredOrders.length - 1 ? styles.orderItemBorder : ''}`}
                                 >
                                     <div className={styles.orderTop}>
                                         <div className={styles.orderInfo}>
