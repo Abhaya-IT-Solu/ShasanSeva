@@ -28,6 +28,7 @@ const envSchema = z.object({
     R2_ACCESS_KEY_ID: z.string().min(1, 'R2_ACCESS_KEY_ID is required'),
     R2_SECRET_ACCESS_KEY: z.string().min(1, 'R2_SECRET_ACCESS_KEY is required'),
     R2_BUCKET_NAME: z.string().default('shasansetu-documents'),
+    R2_PUBLIC_URL: z.string().optional(),
 
     // Firebase Admin (for phone OTP verification in forgot-password flow)
     // Option A: full service account JSON as a single env var

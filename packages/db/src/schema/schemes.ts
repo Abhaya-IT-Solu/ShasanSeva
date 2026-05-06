@@ -21,6 +21,8 @@ export const schemes = pgTable('schemes', {
     requiredDocs: jsonb('required_docs').$type<RequiredDocument[]>().default([]),
     serviceFee: decimal('service_fee', { precision: 10, scale: 2 }).notNull(),
     averageCompletionDays: decimal('average_completion_days', { precision: 5, scale: 0 }),
+    logoUrl: text('logo_url'),                     // Optional: R2 key for scheme logo
+    referenceImageUrl: text('reference_image_url'), // Optional: R2 key for reference/sample image
     status: varchar('status', { length: 20 }).default('ACTIVE'), // ACTIVE, INACTIVE
 
     createdBy: uuid('created_by').references(() => admins.id),

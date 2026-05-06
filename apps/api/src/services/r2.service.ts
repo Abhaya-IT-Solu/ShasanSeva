@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '../config/env.js';
 import { logger } from '../lib/utils.js';
+import { env } from '../config/env.js';
 
 // R2 uses S3-compatible API
 const r2Client = new S3Client({
@@ -46,6 +46,23 @@ function generateKey(params: UploadUrlParams): string {
         return `users/${userId}/orders/${orderId}/${documentType}_${timestamp}.${fileExtension}`;
     }
     return `users/${userId}/documents/${documentType}_${timestamp}.${fileExtension}`;
+}
+
+/**
+ * Generate a storage key for scheme assets (logo, reference image)
+ */
+export function generateSchemeKey(schemeId: string, type: 'logo' | 'reference', fileExtension: string): string {
+    const timestamp = Date.now();
+    return `schemes/${schemeId}/${type}_${timestamp}.${fileExtension}`;
+}
+
+/**
+ * Get the public URL for an R2 object key
+ * Returns null if R2_PUBLIC_URL is not configured
+ */
+export function getPublicUrl(key: string): string | null {
+    if (!env.R2_PUBLIC_URL) return null;
+    return `${env.R2_PUBLIC_URL}/${key}`;
 }
 
 /**
@@ -101,6 +118,39 @@ export async function getUploadUrl(params: UploadUrlParams): Promise<{
         };
     } catch (error) {
         logger.error('Failed to generate upload URL', error);
+        throw new Error('Failed to generate upload URL');
+    }
+}
+
+/**
+ * Get a pre-signed URL for uploading with a specific key
+ * Used for scheme assets where the key is pre-generated
+ */
+export async function getUploadUrlForKey(key: string, contentType: string): Promise<{
+    uploadUrl: string;
+    key: string;
+    expiresIn: number;
+}> {
+    const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        ContentType: contentType,
+    });
+
+    try {
+        const uploadUrl = await getSignedUrl(r2Client, command, {
+            expiresIn: UPLOAD_URL_EXPIRY,
+        });
+
+        logger.info('Generated upload URL for key', { key, contentType });
+
+        return {
+            uploadUrl,
+            key,
+            expiresIn: UPLOAD_URL_EXPIRY,
+        };
+    } catch (error) {
+        logger.error('Failed to generate upload URL for key', error);
         throw new Error('Failed to generate upload URL');
     }
 }
@@ -203,6 +253,7 @@ export function getExtensionFromContentType(contentType: string): string {
         'image/jpeg': 'jpg',
         'image/png': 'png',
         'image/webp': 'webp',
+        'image/svg+xml': 'svg',
         'application/pdf': 'pdf',
     };
     return extensions[contentType] || 'bin';

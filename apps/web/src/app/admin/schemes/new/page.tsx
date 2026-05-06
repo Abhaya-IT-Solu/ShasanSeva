@@ -36,8 +36,16 @@ export default function NewSchemePage() {
         benefits: '',
         serviceFee: '',
         status: 'ACTIVE',
-        averageCompletionDays: ''
+        averageCompletionDays: '',
+        logoUrl: '',
+        referenceImageUrl: '',
     });
+
+    // Image upload states — for new scheme, use URL input (upload after creation)
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [refImageFile, setRefImageFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [refImagePreview, setRefImagePreview] = useState<string | null>(null);
 
     // Marathi translations
     const [marathiData, setMarathiData] = useState({
@@ -120,6 +128,39 @@ export default function NewSchemePage() {
             });
 
             if (response.success) {
+                const createdScheme = response.data as any;
+                const schemeId = createdScheme?.id;
+
+                // Upload images if files were selected
+                if (schemeId && (logoFile || refImageFile)) {
+                    const uploadImage = async (file: File, type: 'logo' | 'reference') => {
+                        try {
+                            const urlRes = await api.request(`/api/schemes/${schemeId}/upload-image`, {
+                                method: 'POST',
+                                body: { type, contentType: file.type },
+                            });
+                            if (urlRes.success) {
+                                const { uploadUrl, key } = urlRes.data as any;
+                                await fetch(uploadUrl, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': file.type },
+                                    body: file,
+                                });
+                                // Update scheme with the key
+                                const field = type === 'logo' ? 'logoUrl' : 'referenceImageUrl';
+                                await api.request(`/api/schemes/${schemeId}`, {
+                                    method: 'PATCH',
+                                    body: { [field]: key },
+                                });
+                            }
+                        } catch (err) {
+                            console.error(`Failed to upload ${type} image`, err);
+                        }
+                    };
+                    if (logoFile) await uploadImage(logoFile, 'logo');
+                    if (refImageFile) await uploadImage(refImageFile, 'reference');
+                }
+
                 setSuccess('Scheme created successfully!');
                 setTimeout(() => {
                     router.push('/admin/schemes');
@@ -308,6 +349,78 @@ export default function NewSchemePage() {
                                     rows={4}
                                     placeholder="Enter scheme benefits..."
                                 />
+                            </div>
+                        </section>
+
+                        {/* Images Section */}
+                        <section className={formStyles.section}>
+                            <h2>Scheme Images (Optional)</h2>
+                            <p style={{ fontSize: 14, color: 'var(--color-gray-500)', marginBottom: 16 }}>
+                                Images will be uploaded after the scheme is created.
+                            </p>
+                            <div className={formStyles.row}>
+                                <div className="input-group">
+                                    <label className="input-label">Scheme Logo</label>
+                                    <div className={formStyles.imageUploadBox}>
+                                        {logoPreview ? (
+                                            <div className={formStyles.imagePreview}>
+                                                <img src={logoPreview} alt="Logo preview" />
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
+                                                    setLogoPreview(null);
+                                                    setLogoFile(null);
+                                                }}>✕</button>
+                                            </div>
+                                        ) : (
+                                            <label className={formStyles.uploadLabel}>
+                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                                <span>Select Logo</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                    hidden
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setLogoFile(file);
+                                                            setLogoPreview(URL.createObjectURL(file));
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Reference / Sample Image</label>
+                                    <div className={formStyles.imageUploadBox}>
+                                        {refImagePreview ? (
+                                            <div className={formStyles.imagePreview}>
+                                                <img src={refImagePreview} alt="Reference preview" />
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
+                                                    setRefImagePreview(null);
+                                                    setRefImageFile(null);
+                                                }}>✕</button>
+                                            </div>
+                                        ) : (
+                                            <label className={formStyles.uploadLabel}>
+                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                                <span>Select Reference Image</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                    hidden
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setRefImageFile(file);
+                                                            setRefImagePreview(URL.createObjectURL(file));
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </section>
                     </>

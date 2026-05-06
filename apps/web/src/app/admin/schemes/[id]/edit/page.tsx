@@ -36,6 +36,8 @@ interface SchemeData {
         mr?: Translation;
     };
     averageCompletionDays?: string | null;
+    logoUrl?: string | null;
+    referenceImageUrl?: string | null;
 }
 
 type TabType = 'english' | 'marathi';
@@ -59,7 +61,15 @@ export default function EditSchemePage() {
         serviceFee: '',
         averageCompletionDays: '',
         status: 'ACTIVE',
+        logoUrl: '',
+        referenceImageUrl: '',
     });
+
+    // Image upload states
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [refImagePreview, setRefImagePreview] = useState<string | null>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [uploadingRef, setUploadingRef] = useState(false);
 
     // English translations
     const [englishData, setEnglishData] = useState({
@@ -94,7 +104,17 @@ export default function EditSchemePage() {
                         serviceFee: scheme.serviceFee || '',
                         averageCompletionDays: scheme.averageCompletionDays || '',
                         status: scheme.status || 'ACTIVE',
+                        logoUrl: scheme.logoUrl || '',
+                        referenceImageUrl: scheme.referenceImageUrl || '',
                     });
+
+                    // Set image previews from existing URLs
+                    if (scheme.logoUrl) {
+                        setLogoPreview(scheme.logoUrl);
+                    }
+                    if (scheme.referenceImageUrl) {
+                        setRefImagePreview(scheme.referenceImageUrl);
+                    }
 
                     // Set English translations
                     if (scheme.translations?.en) {
@@ -164,6 +184,42 @@ export default function EditSchemePage() {
         setRequiredDocs(requiredDocs.filter((_, i) => i !== index));
     };
 
+    const handleImageUpload = async (file: File, type: 'logo' | 'reference') => {
+        const setUploading = type === 'logo' ? setUploadingLogo : setUploadingRef;
+        const setPreview = type === 'logo' ? setLogoPreview : setRefImagePreview;
+
+        setUploading(true);
+        try {
+            // Step 1: Get pre-signed upload URL
+            const urlResponse = await api.request(`/api/schemes/${schemeId}/upload-image`, {
+                method: 'POST',
+                body: { type, contentType: file.type },
+            });
+
+            if (!urlResponse.success) {
+                throw new Error(urlResponse.error?.message || 'Failed to get upload URL');
+            }
+
+            const { uploadUrl, key, publicUrl } = urlResponse.data as any;
+
+            // Step 2: Upload file directly to R2
+            await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            });
+
+            // Step 3: Update form data with R2 key
+            const field = type === 'logo' ? 'logoUrl' : 'referenceImageUrl';
+            setFormData(prev => ({ ...prev, [field]: key }));
+            setPreview(publicUrl || URL.createObjectURL(file));
+        } catch (err: any) {
+            setError(err.message || `Failed to upload ${type} image`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -182,6 +238,8 @@ export default function EditSchemePage() {
                     serviceFee: formData.serviceFee,
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : null,
                     status: formData.status,
+                    logoUrl: formData.logoUrl || null,
+                    referenceImageUrl: formData.referenceImageUrl || null,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
                     translations: {
                         en: englishData,
@@ -401,6 +459,71 @@ export default function EditSchemePage() {
                                     rows={4}
                                     placeholder="Enter scheme benefits..."
                                 />
+                            </div>
+                        </section>
+
+                        {/* Images Section */}
+                        <section className={formStyles.section}>
+                            <h2>Scheme Images (Optional)</h2>
+                            <div className={formStyles.row}>
+                                <div className="input-group">
+                                    <label className="input-label">Scheme Logo</label>
+                                    <div className={formStyles.imageUploadBox}>
+                                        {logoPreview ? (
+                                            <div className={formStyles.imagePreview}>
+                                                <img src={logoPreview} alt="Logo preview" />
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
+                                                    setLogoPreview(null);
+                                                    setFormData(prev => ({ ...prev, logoUrl: '' }));
+                                                }}>✕</button>
+                                            </div>
+                                        ) : (
+                                            <label className={formStyles.uploadLabel}>
+                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                                <span>{uploadingLogo ? 'Uploading...' : 'Upload Logo'}</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                    hidden
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleImageUpload(file, 'logo');
+                                                    }}
+                                                    disabled={uploadingLogo}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Reference / Sample Image</label>
+                                    <div className={formStyles.imageUploadBox}>
+                                        {refImagePreview ? (
+                                            <div className={formStyles.imagePreview}>
+                                                <img src={refImagePreview} alt="Reference preview" />
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
+                                                    setRefImagePreview(null);
+                                                    setFormData(prev => ({ ...prev, referenceImageUrl: '' }));
+                                                }}>✕</button>
+                                            </div>
+                                        ) : (
+                                            <label className={formStyles.uploadLabel}>
+                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                                <span>{uploadingRef ? 'Uploading...' : 'Upload Reference Image'}</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                    hidden
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleImageUpload(file, 'reference');
+                                                    }}
+                                                    disabled={uploadingRef}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </section>
                     </>

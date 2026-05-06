@@ -210,7 +210,13 @@
         "noDocsRequired": "No specific documents required",
         "note": "Note",
         "disclaimer": "This is a professional assistance service. Payment is for document handling and application support. Approval is not guaranteed.",
-        "applyNote": "You'll need to upload the required documents before payment"
+        "applyNote": "You'll need to upload the required documents before payment",
+        "categoryLabel": "Category",
+        "averageTime": "Avg. Processing Time",
+        "days": "days",
+        "schemeTypeLabel": "Scheme Type",
+        "referenceImage": "Reference / Sample Image",
+        "clickToEnlarge": "Click to view full size"
     },
     "DashboardPage": {
         "goodMorning": "Good Morning",
