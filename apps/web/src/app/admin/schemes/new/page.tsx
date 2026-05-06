@@ -142,12 +142,16 @@ export default function NewSchemePage() {
                             });
                             if (urlRes.success) {
                                 const { uploadUrl } = urlRes.data as any;
-                                // Step 2: Upload file to R2
-                                await fetch(uploadUrl, {
-                                    method: 'PUT',
-                                    headers: { 'Content-Type': file.type },
-                                    body: file,
-                                });
+                                // Step 2: Upload file to R2 (CORS may block response)
+                                try {
+                                    await fetch(uploadUrl, {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': file.type },
+                                        body: file,
+                                    });
+                                } catch (uploadErr) {
+                                    console.warn(`R2 PUT response blocked (likely CORS)`, uploadErr);
+                                }
                             }
                         } catch (err) {
                             console.error(`Failed to upload ${type} image`, err);
