@@ -6,7 +6,7 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.j
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { redis, REDIS_KEYS, REDIS_TTL, invalidateSchemeCache } from '../lib/redis.js';
-import { getUploadUrlForKey, getPublicUrl, generateSchemeKey, getExtensionFromContentType } from '../services/r2.service.js';
+import { uploadBuffer, getPublicUrl, generateSchemeKey, getExtensionFromContentType } from '../services/r2.service.js';
 
 const router: Router = Router();
 
@@ -634,17 +634,19 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 
 /**
  * POST /api/schemes/:id/upload-image
- * Get a pre-signed upload URL for scheme logo or reference image (admin only)
+ * Upload scheme logo or reference image (admin only)
+ * Accepts file as base64 in JSON body — proxied through backend to R2
  */
 const uploadImageSchema = z.object({
     type: z.enum(['logo', 'reference']),
     contentType: z.string(),
+    fileData: z.string(), // base64 encoded file
 });
 
 router.post('/:id/upload-image', authMiddleware, adminMiddleware, validateBody(uploadImageSchema), async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, contentType } = req.body;
+        const { type, contentType, fileData } = req.body;
 
         // Check scheme exists
         const existing = await db.select({ id: schemes.id })
@@ -674,9 +676,11 @@ router.post('/:id/upload-image', authMiddleware, adminMiddleware, validateBody(u
         const ext = getExtensionFromContentType(contentType) || contentType.split('/')[1];
         const key = generateSchemeKey(id, type, ext);
 
-        const uploadResult = await getUploadUrlForKey(key, contentType);
+        // Decode base64 and upload directly to R2 from the server
+        const buffer = Buffer.from(fileData, 'base64');
+        await uploadBuffer(key, buffer, contentType);
 
-        // Save the R2 key to the schemes table immediately
+        // Save the R2 key to the schemes table
         const updateField = type === 'logo'
             ? { logoUrl: key, updatedAt: new Date() }
             : { referenceImageUrl: key, updatedAt: new Date() };
@@ -688,20 +692,18 @@ router.post('/:id/upload-image', authMiddleware, adminMiddleware, validateBody(u
         // Invalidate cache so the detail page shows the new image
         await invalidateSchemeCache();
         
-        logger.info('Scheme image upload URL generated and key saved', { schemeId: id, type, key });
+        logger.info('Scheme image uploaded and saved', { schemeId: id, type, key, size: buffer.length });
 
         return res.json(successResponse({
-            uploadUrl: uploadResult.uploadUrl,
             key,
             publicUrl: getPublicUrl(key),
-            expiresIn: uploadResult.expiresIn,
         }));
     } catch (error) {
         logger.error('Scheme image upload error', error);
         return res.status(500).json(
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
-                message: 'Failed to generate upload URL',
+                message: 'Failed to upload image',
             })
         );
     }

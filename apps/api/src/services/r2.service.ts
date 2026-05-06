@@ -156,6 +156,27 @@ export async function getUploadUrlForKey(key: string, contentType: string): Prom
 }
 
 /**
+ * Upload a buffer directly to R2 (server-side, bypasses CORS)
+ * Used for proxied uploads from the admin panel
+ */
+export async function uploadBuffer(key: string, buffer: Buffer, contentType: string): Promise<void> {
+    const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+    });
+
+    try {
+        await r2Client.send(command);
+        logger.info('Uploaded buffer to R2', { key, contentType, size: buffer.length });
+    } catch (error) {
+        logger.error('Failed to upload buffer to R2', error);
+        throw new Error('Failed to upload file to storage');
+    }
+}
+
+/**
  * Get a pre-signed URL for downloading a document
  * This URL expires after 15 minutes for security
  */

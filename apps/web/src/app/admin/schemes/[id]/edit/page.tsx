@@ -190,34 +190,29 @@ export default function EditSchemePage() {
 
         setUploading(true);
         try {
-            // Step 1: Get pre-signed upload URL (also saves the R2 key to DB)
-            const urlResponse = await api.request(`/api/schemes/${schemeId}/upload-image`, {
-                method: 'POST',
-                body: { type, contentType: file.type },
+            // Convert file to base64
+            const fileData = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const result = reader.result as string;
+                    // Remove the data:image/xxx;base64, prefix
+                    resolve(result.split(',')[1]);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
             });
 
-            if (!urlResponse.success) {
-                throw new Error(urlResponse.error?.message || 'Failed to get upload URL');
+            // Upload via backend proxy (bypasses CORS)
+            const response = await api.request(`/api/schemes/${schemeId}/upload-image`, {
+                method: 'POST',
+                body: { type, contentType: file.type, fileData },
+            });
+
+            if (!response.success) {
+                throw new Error(response.error?.message || 'Failed to upload image');
             }
 
-            const { uploadUrl, publicUrl } = urlResponse.data as any;
-
-            // Step 2: Upload file directly to R2
-            // The R2 PUT is cross-origin — the upload may succeed but the browser
-            // blocks the response due to CORS, causing fetch() to throw.
-            // We handle this gracefully since the key is already saved to DB.
-            try {
-                await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': file.type },
-                    body: file,
-                });
-            } catch (uploadErr) {
-                // CORS error on response — the upload likely succeeded anyway
-                console.warn(`R2 PUT response blocked (likely CORS), upload may have succeeded`, uploadErr);
-            }
-
-            // Step 3: Show preview using local blob URL (most reliable)
+            // Show preview using local blob URL
             setPreview(URL.createObjectURL(file));
         } catch (err: any) {
             setError(err.message || `Failed to upload ${type} image`);

@@ -135,24 +135,22 @@ export default function NewSchemePage() {
                 if (schemeId && (logoFile || refImageFile)) {
                     const uploadImage = async (file: File, type: 'logo' | 'reference') => {
                         try {
-                            // Step 1: Get pre-signed URL (also saves the key to DB)
-                            const urlRes = await api.request(`/api/schemes/${schemeId}/upload-image`, {
-                                method: 'POST',
-                                body: { type, contentType: file.type },
+                            // Convert file to base64
+                            const fileData = await new Promise<string>((resolve, reject) => {
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                    const result = reader.result as string;
+                                    resolve(result.split(',')[1]);
+                                };
+                                reader.onerror = reject;
+                                reader.readAsDataURL(file);
                             });
-                            if (urlRes.success) {
-                                const { uploadUrl } = urlRes.data as any;
-                                // Step 2: Upload file to R2 (CORS may block response)
-                                try {
-                                    await fetch(uploadUrl, {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': file.type },
-                                        body: file,
-                                    });
-                                } catch (uploadErr) {
-                                    console.warn(`R2 PUT response blocked (likely CORS)`, uploadErr);
-                                }
-                            }
+
+                            // Upload via backend proxy (bypasses CORS)
+                            await api.request(`/api/schemes/${schemeId}/upload-image`, {
+                                method: 'POST',
+                                body: { type, contentType: file.type, fileData },
+                            });
                         } catch (err) {
                             console.error(`Failed to upload ${type} image`, err);
                         }
