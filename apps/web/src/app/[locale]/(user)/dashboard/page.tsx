@@ -20,10 +20,12 @@ const QUICK_ACTIONS = [
     { key: 'myApplications', icon: 'description', href: '/orders', linkKey: 'viewStatus' },
     { key: 'myDocuments', icon: 'folder_shared', href: '/profile', linkKey: 'openVault' },
     { key: 'helpSupport', icon: 'help_outline', href: '/schemes', linkKey: 'getHelp' },
+    { key: 'myProfile', icon: 'person', href: '/profile', linkKey: 'viewProfile' },
+    { key: 'editProfile', icon: 'edit', href: '/complete-profile', linkKey: 'editNow' },
 ];
 
 export default function UserDashboard() {
-    const { user } = useAuth();
+    const {} = useAuth();
     const t = useTranslations('DashboardPage');
     const tStatus = useTranslations('Statuses');
     const locale = useLocale();
@@ -66,17 +68,11 @@ export default function UserDashboard() {
         return map[status] || styles.statusGray;
     };
 
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return t('goodMorning');
-        if (hour < 17) return t('goodAfternoon');
-        return t('goodEvening');
-    };
 
     return (
         <div className={styles.page}>
             <main className={styles.main}>
-                {/* Hero Welcome Banner */}
+                {/* Hero Welcome Banner
                 <section className={styles.heroBanner}>
                     <div className={styles.heroBlob1}></div>
                     <div className={styles.heroBlob2}></div>
@@ -94,10 +90,10 @@ export default function UserDashboard() {
                             {t('newApplication')}
                         </Link>
                     </div>
-                </section>
+                </section> */}
 
                 {/* Quick Actions */}
-                <section>
+                <section className={styles.quickActionsSection}>
                     <h2 className={styles.sectionTitle}>
                         <span className={styles.titleBar}></span>
                         {t('quickActions')}

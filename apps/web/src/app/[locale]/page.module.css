@@ -59,8 +59,8 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 32px;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
 .container {
@@ -81,7 +81,7 @@
 .hero {
     position: static;
     overflow: hidden;
-    padding: 64px 16px 48px;
+    padding: 32px 16px 24px;
     background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 50%, #fff7e0 100%);
 }
 
@@ -106,14 +106,14 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     border-radius: 9999px;
     background: white;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     color: #9a3412;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     border: 1px solid #fed7aa;
 }
 
@@ -143,7 +143,7 @@
     font-size: 36px;
     font-weight: 700;
     color: var(--color-primary);
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     line-height: 1.15;
 }
 
@@ -153,7 +153,7 @@
 
 @media (min-width: 768px) {
     .heroTitle {
-        font-size: 56px;
+        font-size: 44px;
     }
 }
 
@@ -161,14 +161,14 @@
     font-size: 18px;
     color: var(--color-gray-600);
     max-width: 640px;
-    margin: 0 auto 40px;
-    line-height: 1.6;
+    margin: 0 auto 20px;
+    line-height: 1.5;
     font-weight: 500;
 }
 
 /* Search Bar */
 .searchBar {
-    max-width: 640px;
+    max-width: 580px;
     margin: 0 auto;
     position: relative;
     display: flex;
@@ -187,12 +187,12 @@
 
 .searchInput {
     width: 100%;
-    padding: 20px 140px 20px 56px;
-    border-radius: 16px;
+    padding: 14px 120px 14px 48px;
+    border-radius: 12px;
     border: 2px solid #c8e6c9;
     background: white;
-    box-shadow: 0 20px 40px rgba(27, 94, 32, 0.05);
-    font-size: 16px;
+    box-shadow: 0 10px 24px rgba(27, 94, 32, 0.04);
+    font-size: 15px;
     color: var(--color-gray-700);
     outline: none;
     transition: border-color 0.2s;
@@ -208,15 +208,15 @@
 
 .searchBtn {
     position: absolute;
-    right: 8px;
-    top: 8px;
-    bottom: 8px;
-    padding: 0 32px;
+    right: 6px;
+    top: 6px;
+    bottom: 6px;
+    padding: 0 24px;
     background: var(--color-secondary);
     color: white;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
-    border-radius: 12px;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
     transition: background 0.2s;
@@ -229,11 +229,11 @@
 
 /* Popular Searches */
 .popularSearches {
-    margin-top: 32px;
+    margin-top: 16px;
     display: flex;
     justify-content: center;
-    gap: 24px;
-    font-size: 14px;
+    gap: 16px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--color-gray-500);
     flex-wrap: wrap;
@@ -261,8 +261,9 @@
    Services Grid (Stitch: 3-col, green icon boxes)
    ================================ */
 .servicesSection {
-    padding: 80px 0;
-    background: white;
+    padding: 40px 0 60px;
+    background-color: white;
+    backdrop-filter: blur(10px);
 }
 
 .sectionHeaderRow {
@@ -272,6 +273,7 @@
     margin-bottom: 40px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--color-gray-100);
+    background-color: white;
 }
 
 .sectionTitle {
@@ -314,6 +316,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 24px;
+    margin-top: 1px;
 }
 
 @media (min-width: 640px) {
@@ -336,6 +339,7 @@
     border: 1px solid rgba(27, 94, 32, 0.15);
     cursor: pointer;
     transition: all 0.3s ease;
+     margin-top: 1px;
 }
 
 .serviceCard:hover {
@@ -854,26 +858,26 @@
    ================================ */
 @media (max-width: 640px) {
     .hero {
-        padding: 40px 16px 32px;
+        padding: 24px 16px 16px;
     }
 
     .heroTitle {
-        font-size: 28px;
+        font-size: 24px;
     }
 
     .heroDescription {
-        font-size: 16px;
-        margin-bottom: 24px;
+        font-size: 14px;
+        margin-bottom: 14px;
     }
 
     .searchInput {
-        padding: 16px 120px 16px 48px;
-        font-size: 14px;
+        padding: 12px 100px 12px 40px;
+        font-size: 13px;
     }
 
     .searchBtn {
-        padding: 0 20px;
-        font-size: 14px;
+        padding: 0 16px;
+        font-size: 13px;
     }
 
     .sectionHeaderRow {
@@ -887,7 +891,7 @@
     }
 
     .servicesSection {
-        padding: 48px 0;
+        padding: 32px 0;
     }
 
     .appShowcase {

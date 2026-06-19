@@ -1,7 +1,7 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { env } from '../config/env.js';
 import { logger } from '../lib/utils.js';
+import { env } from '../config/env.js';
 
 // R2 uses S3-compatible API
 const r2Client = new S3Client({
@@ -46,6 +46,23 @@ function generateKey(params: UploadUrlParams): string {
         return `users/${userId}/orders/${orderId}/${documentType}_${timestamp}.${fileExtension}`;
     }
     return `users/${userId}/documents/${documentType}_${timestamp}.${fileExtension}`;
+}
+
+/**
+ * Generate a storage key for scheme assets (logo, reference image)
+ */
+export function generateSchemeKey(schemeId: string, type: 'logo' | 'reference', fileExtension: string): string {
+    const timestamp = Date.now();
+    return `schemes/${schemeId}/${type}_${timestamp}.${fileExtension}`;
+}
+
+/**
+ * Get the public URL for an R2 object key
+ * Returns null if R2_PUBLIC_URL is not configured
+ */
+export function getPublicUrl(key: string): string | null {
+    if (!env.R2_PUBLIC_URL) return null;
+    return `${env.R2_PUBLIC_URL}/${key}`;
 }
 
 /**
@@ -106,6 +123,60 @@ export async function getUploadUrl(params: UploadUrlParams): Promise<{
 }
 
 /**
+ * Get a pre-signed URL for uploading with a specific key
+ * Used for scheme assets where the key is pre-generated
+ */
+export async function getUploadUrlForKey(key: string, contentType: string): Promise<{
+    uploadUrl: string;
+    key: string;
+    expiresIn: number;
+}> {
+    const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        ContentType: contentType,
+    });
+
+    try {
+        const uploadUrl = await getSignedUrl(r2Client, command, {
+            expiresIn: UPLOAD_URL_EXPIRY,
+        });
+
+        logger.info('Generated upload URL for key', { key, contentType });
+
+        return {
+            uploadUrl,
+            key,
+            expiresIn: UPLOAD_URL_EXPIRY,
+        };
+    } catch (error) {
+        logger.error('Failed to generate upload URL for key', error);
+        throw new Error('Failed to generate upload URL');
+    }
+}
+
+/**
+ * Upload a buffer directly to R2 (server-side, bypasses CORS)
+ * Used for proxied uploads from the admin panel
+ */
+export async function uploadBuffer(key: string, buffer: Buffer, contentType: string): Promise<void> {
+    const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+    });
+
+    try {
+        await r2Client.send(command);
+        logger.info('Uploaded buffer to R2', { key, contentType, size: buffer.length });
+    } catch (error) {
+        logger.error('Failed to upload buffer to R2', error);
+        throw new Error('Failed to upload file to storage');
+    }
+}
+
+/**
  * Get a pre-signed URL for downloading a document
  * This URL expires after 15 minutes for security
  */
@@ -153,29 +224,7 @@ export async function deleteDocument(key: string): Promise<void> {
     }
 }
 
-/**
- * Upload a raw Buffer to R2 (used for generated files like PDF receipts)
- */
-export async function uploadBuffer(params: {
-    key: string;
-    buffer: Buffer;
-    contentType: string;
-}): Promise<void> {
-    const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: params.key,
-        Body: params.buffer,
-        ContentType: params.contentType,
-    });
 
-    try {
-        await r2Client.send(command);
-        logger.info('Buffer uploaded to R2', { key: params.key, size: params.buffer.length });
-    } catch (error) {
-        logger.error('Failed to upload buffer to R2', error);
-        throw new Error('Failed to upload buffer to R2');
-    }
-}
 
 // Allowed content types for documents
 export const ALLOWED_CONTENT_TYPES = [
@@ -203,6 +252,7 @@ export function getExtensionFromContentType(contentType: string): string {
         'image/jpeg': 'jpg',
         'image/png': 'png',
         'image/webp': 'webp',
+        'image/svg+xml': 'svg',
         'application/pdf': 'pdf',
     };
     return extensions[contentType] || 'bin';

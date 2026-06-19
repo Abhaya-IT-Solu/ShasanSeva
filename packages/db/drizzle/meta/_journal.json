@@ -64,6 +64,27 @@
       "when": 1775918504943,
       "tag": "0008_ambitious_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778267400000,
+      "tag": "0009_add_scheme_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778062114833,
+      "tag": "0010_striped_banshee",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781717413446,
+      "tag": "0011_lazy_red_shift",
+      "breakpoints": true
     }
   ]
 }

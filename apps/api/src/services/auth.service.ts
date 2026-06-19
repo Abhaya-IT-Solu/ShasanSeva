@@ -134,7 +134,8 @@ export async function authenticateUser(
     const user = existingUsers[0];
 
     if (!user.passwordHash) {
-        return { success: false, error: 'Password not set. Please register again.' };
+        // This user was created via Google OAuth — they have no password
+        return { success: false, error: 'This phone number is linked to a Google account. Please sign in with Google.' };
     }
 
     const isValid = await verifyPassword(password, user.passwordHash);
@@ -299,9 +300,9 @@ export async function findOrCreateUserByEmail(
         };
     }
 
-    // Create new user with email
+    // Create new user with email — phone is null until they complete their profile
     const newUsers = await db.insert(users).values({
-        phone: '', // Empty phone for OAuth users, they'll need to add it later
+        phone: null,   // Will be filled in during profile completion
         email,
         name: name || undefined,
         profileComplete: false,

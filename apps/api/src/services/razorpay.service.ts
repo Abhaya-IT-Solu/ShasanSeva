@@ -77,8 +77,11 @@ export function verifyPaymentSignature(params: VerifyPaymentParams): boolean {
             .update(body)
             .digest('hex');
 
-        // Compare signatures
-        const isValid = expectedSignature === razorpaySignature;
+        // Compare signatures using constant-time comparison to prevent timing oracle attacks
+        const expectedBuf = Buffer.from(expectedSignature, 'hex');
+        const actualBuf = Buffer.from(razorpaySignature, 'hex');
+        const isValid = expectedBuf.length === actualBuf.length &&
+            crypto.timingSafeEqual(expectedBuf, actualBuf);
 
         if (isValid) {
             logger.info('Payment signature verified', { razorpayOrderId, razorpayPaymentId });
@@ -111,7 +114,11 @@ export function verifyWebhookSignature(
             .update(body)
             .digest('hex');
 
-        return expectedSignature === signature;
+        // Constant-time comparison to prevent timing oracle attacks
+        const expectedBuf = Buffer.from(expectedSignature, 'hex');
+        const actualBuf = Buffer.from(signature, 'hex');
+        return expectedBuf.length === actualBuf.length &&
+            crypto.timingSafeEqual(expectedBuf, actualBuf);
     } catch (error) {
         logger.error('Webhook signature verification failed', error);
         return false;

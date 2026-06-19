@@ -11,6 +11,8 @@ import {
 import { validateBody } from '../middleware/validation.middleware.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
+import { db, users } from '@shasansetu/db';
+import { eq } from 'drizzle-orm';
 
 const router: Router = Router();
 
@@ -259,6 +261,24 @@ router.get('/me', authMiddleware, async (req, res) => {
                 errorResponse({
                     code: ErrorCodes.UNAUTHORIZED,
                     message: 'Not authenticated',
+                })
+            );
+        }
+
+        if (req.user.userType === 'USER') {
+            const userResult = await db.select({ profileData: users.profileData })
+                .from(users)
+                .where(eq(users.id, req.user.userId));
+            
+            return res.json(
+                successResponse({
+                    userId: req.user.userId,
+                    userType: req.user.userType,
+                    role: req.user.role,
+                    phone: req.user.phone,
+                    email: req.user.email,
+                    name: req.user.name,
+                    profileData: userResult[0]?.profileData || {},
                 })
             );
         }

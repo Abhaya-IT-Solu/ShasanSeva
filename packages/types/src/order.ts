@@ -24,6 +24,7 @@ export interface OrderDetail {
     paymentTimestamp: string;
     documents: OrderDocument[];
     proofs: OrderProof[];
+    applicationFormData?: Record<string, any>;
     adminNotes?: string;
     assignedTo?: string;
     createdAt: string;
@@ -52,6 +53,7 @@ export interface OrderProof {
 export interface CreateOrderRequest {
     schemeId: string;
     documents: UploadedDocument[];
+    applicationFormData?: Record<string, any>;
     consentAccepted: boolean;
     termsVersion: string;
 }

@@ -16,6 +16,17 @@ interface RequiredDoc {
     description_mr: string;
 }
 
+interface CustomField {
+    id: string;
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'email' | 'phone';
+    label: string;
+    label_mr: string;
+    required: boolean;
+    placeholder: string;
+    placeholder_mr: string;
+    options: { label: string; label_mr: string; value: string }[];
+}
+
 interface Translation {
     name: string;
     description?: string;
@@ -31,11 +42,14 @@ interface SchemeData {
     serviceFee: string;
     status: string;
     requiredDocs: RequiredDoc[];
+    customFields?: CustomField[];
     translations: {
         en?: Translation;
         mr?: Translation;
     };
     averageCompletionDays?: string | null;
+    logoUrl?: string | null;
+    referenceImageUrl?: string | null;
 }
 
 type TabType = 'english' | 'marathi';
@@ -59,7 +73,15 @@ export default function EditSchemePage() {
         serviceFee: '',
         averageCompletionDays: '',
         status: 'ACTIVE',
+        logoUrl: '',
+        referenceImageUrl: '',
     });
+
+    // Image upload states
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [refImagePreview, setRefImagePreview] = useState<string | null>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [uploadingRef, setUploadingRef] = useState(false);
 
     // English translations
     const [englishData, setEnglishData] = useState({
@@ -78,6 +100,9 @@ export default function EditSchemePage() {
     });
 
     const [requiredDocs, setRequiredDocs] = useState<RequiredDoc[]>([]);
+    const [customFields, setCustomFields] = useState<CustomField[]>([]);
+    // Per-field temporary input for new dropdown option being typed
+    const [newOptionInputs, setNewOptionInputs] = useState<Record<number, string>>({});
 
     // Fetch existing scheme data with translations
     useEffect(() => {
@@ -94,7 +119,17 @@ export default function EditSchemePage() {
                         serviceFee: scheme.serviceFee || '',
                         averageCompletionDays: scheme.averageCompletionDays || '',
                         status: scheme.status || 'ACTIVE',
+                        logoUrl: '',
+                        referenceImageUrl: '',
                     });
+
+                    // Set image previews from existing public URLs
+                    if (scheme.logoUrl) {
+                        setLogoPreview(scheme.logoUrl); // Already a public URL from the API
+                    }
+                    if (scheme.referenceImageUrl) {
+                        setRefImagePreview(scheme.referenceImageUrl); // Already a public URL from the API
+                    }
 
                     // Set English translations
                     if (scheme.translations?.en) {
@@ -117,6 +152,7 @@ export default function EditSchemePage() {
                     }
 
                     setRequiredDocs(scheme.requiredDocs || []);
+                    setCustomFields(scheme.customFields || []);
                 } else {
                     setError('Scheme not found');
                 }
@@ -164,6 +200,88 @@ export default function EditSchemePage() {
         setRequiredDocs(requiredDocs.filter((_, i) => i !== index));
     };
 
+    const addCustomField = () => {
+        setCustomFields([
+            ...customFields,
+            { id: '', type: 'text', label: '', label_mr: '', required: true, placeholder: '', placeholder_mr: '', options: [] },
+        ]);
+    };
+
+    const updateCustomField = (index: number, field: keyof CustomField, value: any) => {
+        const updated = [...customFields];
+        updated[index] = { ...updated[index], [field]: value };
+        setCustomFields(updated);
+    };
+
+    const removeCustomField = (index: number) => {
+        setCustomFields(customFields.filter((_, i) => i !== index));
+        setNewOptionInputs(prev => {
+            const next = { ...prev };
+            delete next[index];
+            return next;
+        });
+    };
+
+    const addDropdownOption = (fieldIndex: number) => {
+        const value = (newOptionInputs[fieldIndex] || '').trim();
+        if (!value) return;
+        const updated = [...customFields];
+        const existingOptions = updated[fieldIndex].options || [];
+        if (existingOptions.some(o => o.value === value)) return;
+        updated[fieldIndex] = {
+            ...updated[fieldIndex],
+            options: [...existingOptions, { value, label: value, label_mr: value }],
+        };
+        setCustomFields(updated);
+        setNewOptionInputs(prev => ({ ...prev, [fieldIndex]: '' }));
+    };
+
+    const removeDropdownOption = (fieldIndex: number, optionValue: string) => {
+        const updated = [...customFields];
+        updated[fieldIndex] = {
+            ...updated[fieldIndex],
+            options: updated[fieldIndex].options.filter(o => o.value !== optionValue),
+        };
+        setCustomFields(updated);
+    };
+
+    const handleImageUpload = async (file: File, type: 'logo' | 'reference') => {
+        const setUploading = type === 'logo' ? setUploadingLogo : setUploadingRef;
+        const setPreview = type === 'logo' ? setLogoPreview : setRefImagePreview;
+
+        setUploading(true);
+        try {
+            // Convert file to base64
+            const fileData = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const result = reader.result as string;
+                    // Remove the data:image/xxx;base64, prefix
+                    resolve(result.split(',')[1]);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            // Upload via backend proxy (bypasses CORS)
+            const response = await api.request(`/api/schemes/${schemeId}/upload-image`, {
+                method: 'POST',
+                body: { type, contentType: file.type, fileData },
+            });
+
+            if (!response.success) {
+                throw new Error(response.error?.message || 'Failed to upload image');
+            }
+
+            // Show preview using local blob URL
+            setPreview(URL.createObjectURL(file));
+        } catch (err: any) {
+            setError(err.message || `Failed to upload ${type} image`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -183,6 +301,7 @@ export default function EditSchemePage() {
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : null,
                     status: formData.status,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
+                    customFields: customFields.filter(f => f.id && f.label),
                     translations: {
                         en: englishData,
                         mr: marathiData.name ? marathiData : undefined,
@@ -403,6 +522,81 @@ export default function EditSchemePage() {
                                 />
                             </div>
                         </section>
+
+                        {/* Images Section */}
+                        <section className={formStyles.section}>
+                            <h2>Scheme Images (Optional)</h2>
+                            <div className={formStyles.row}>
+                                <div className="input-group">
+                                    <label className="input-label">Scheme Logo</label>
+                                    <div className={formStyles.imageUploadBox}>
+                                        {logoPreview ? (
+                                            <div className={formStyles.imagePreview}>
+                                                <img src={logoPreview} alt="Logo preview" />
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={async () => {
+                                                    setLogoPreview(null);
+                                                    try {
+                                                        await api.request(`/api/schemes/${schemeId}`, {
+                                                            method: 'PATCH',
+                                                            body: { logoUrl: null },
+                                                        });
+                                                    } catch (e) { /* silent */ }
+                                                }}>✕</button>
+                                            </div>
+                                        ) : (
+                                            <label className={formStyles.uploadLabel}>
+                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                                <span>{uploadingLogo ? 'Uploading...' : 'Upload Logo'}</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                    hidden
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleImageUpload(file, 'logo');
+                                                    }}
+                                                    disabled={uploadingLogo}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Reference / Sample Image</label>
+                                    <div className={formStyles.imageUploadBox}>
+                                        {refImagePreview ? (
+                                            <div className={formStyles.imagePreview}>
+                                                <img src={refImagePreview} alt="Reference preview" />
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={async () => {
+                                                    setRefImagePreview(null);
+                                                    try {
+                                                        await api.request(`/api/schemes/${schemeId}`, {
+                                                            method: 'PATCH',
+                                                            body: { referenceImageUrl: null },
+                                                        });
+                                                    } catch (e) { /* silent */ }
+                                                }}>✕</button>
+                                            </div>
+                                        ) : (
+                                            <label className={formStyles.uploadLabel}>
+                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                                <span>{uploadingRef ? 'Uploading...' : 'Upload Reference Image'}</span>
+                                                <input
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                    hidden
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) handleImageUpload(file, 'reference');
+                                                    }}
+                                                    disabled={uploadingRef}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </>
                 )}
 
@@ -515,6 +709,127 @@ export default function EditSchemePage() {
                                     >
                                         ✕
                                     </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </section>
+
+                {/* Custom Fields (shown on both tabs) */}
+                <section className={formStyles.section}>
+                    <div className={formStyles.sectionHeader}>
+                        <h2>Custom Form Fields</h2>
+                        <button type="button" onClick={addCustomField} className="btn btn-secondary">
+                            + Add Field
+                        </button>
+                    </div>
+                    <p style={{ fontSize: 14, color: 'var(--color-gray-500)', marginBottom: 16 }}>
+                        Define specific details to collect from users for this scheme (e.g. College Name, Date of Birth).
+                    </p>
+
+                    <div className={formStyles.documentsList}>
+                        {customFields.length === 0 ? (
+                            <p style={{ color: 'var(--color-gray-500)', textAlign: 'center', padding: 'var(--space-4)' }}>
+                                No custom fields added. Click &quot;+ Add Field&quot; to define custom fields.
+                            </p>
+                        ) : (
+                            customFields.map((field, index) => (
+                                <div key={index} className={formStyles.documentRow} style={{ flexWrap: 'wrap' }}>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Field ID (e.g. college_name)"
+                                        value={field.id}
+                                        onChange={(e) => updateCustomField(index, 'id', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                        style={{ flex: 1, minWidth: '150px' }}
+                                    />
+                                    <select 
+                                        className="input" 
+                                        value={field.type}
+                                        onChange={(e) => updateCustomField(index, 'type', e.target.value)}
+                                        style={{ flex: 1, minWidth: '120px' }}
+                                    >
+                                        <option value="text">Short Text</option>
+                                        <option value="textarea">Long Text</option>
+                                        <option value="number">Number</option>
+                                        <option value="date">Date</option>
+                                        <option value="email">Email</option>
+                                        <option value="phone">Phone</option>
+                                        <option value="select">Dropdown</option>
+                                    </select>
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Label (English)"
+                                        value={field.label}
+                                        onChange={(e) => updateCustomField(index, 'label', e.target.value)}
+                                        style={{ flex: 1.5, minWidth: '150px' }}
+                                    />
+                                    <input
+                                        type="text"
+                                        className="input"
+                                        placeholder="Label (Marathi)"
+                                        value={field.label_mr || ''}
+                                        onChange={(e) => updateCustomField(index, 'label_mr', e.target.value)}
+                                        style={{ flex: 1.5, minWidth: '150px' }}
+                                    />
+                                    <label className={formStyles.checkboxLabel}>
+                                        <input
+                                            type="checkbox"
+                                            checked={field.required}
+                                            onChange={(e) => updateCustomField(index, 'required', e.target.checked)}
+                                        />
+                                        Required
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeCustomField(index)}
+                                        className={formStyles.removeBtn}
+                                    >
+                                        ✕
+                                    </button>
+                                    
+                                    {field.type === 'select' && (
+                                        <div className={formStyles.optionsBuilder}>
+                                            <div className={formStyles.optionsBuilderLabel}>Dropdown Options</div>
+                                            <div className={formStyles.optionChips}>
+                                                {(field.options || []).length === 0 ? (
+                                                    <span className={formStyles.optionsEmpty}>No options added yet</span>
+                                                ) : (
+                                                    field.options.map(opt => (
+                                                        <span key={opt.value} className={formStyles.optionChip}>
+                                                            {opt.label}
+                                                            <button
+                                                                type="button"
+                                                                className={formStyles.optionChipRemove}
+                                                                onClick={() => removeDropdownOption(index, opt.value)}
+                                                                title={`Remove "${opt.label}"`}
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </span>
+                                                    ))
+                                                )}
+                                            </div>
+                                            <div className={formStyles.optionInputRow}>
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    placeholder="Type option and press Enter"
+                                                    value={newOptionInputs[index] || ''}
+                                                    onChange={e => setNewOptionInputs(prev => ({ ...prev, [index]: e.target.value }))}
+                                                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDropdownOption(index); } }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className={formStyles.addOptionBtn}
+                                                    onClick={() => addDropdownOption(index)}
+                                                >
+                                                    + Add
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}

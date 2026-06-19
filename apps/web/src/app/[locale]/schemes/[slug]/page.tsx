@@ -26,6 +26,9 @@ interface Scheme {
     requiredDocs: RequiredDoc[];
     serviceFee: string;
     status: string;
+    averageCompletionDays?: string;
+    logoUrl?: string | null;
+    referenceImageUrl?: string | null;
 }
 
 export default function SchemeDetailPage() {
@@ -40,6 +43,7 @@ export default function SchemeDetailPage() {
     const [scheme, setScheme] = useState<Scheme | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [lightboxOpen, setLightboxOpen] = useState(false);
 
     useEffect(() => {
         const fetchScheme = async () => {
@@ -109,19 +113,68 @@ export default function SchemeDetailPage() {
                 <div className={styles.content}>
                     {/* Scheme Header */}
                     <div className={styles.schemeHeader}>
-                        <div className={styles.badges}>
-                            <span className={`${styles.category} ${styles[`category${scheme.category}`]}`}>
-                                {getCategoryName(scheme.category)}
-                            </span>
-                            <span className={styles.type}>
-                                <span className="material-icons" style={{ fontSize: 16 }}>{scheme.schemeType === 'GOVERNMENT' ? 'account_balance' : 'business'}</span>
-                                {scheme.schemeType === 'GOVERNMENT' ? t('government') : t('private')}
-                            </span>
+                        <div className={styles.headerTop}>
+                            {scheme.logoUrl && (
+                                <div className={styles.logoWrapper}>
+                                    <img
+                                        src={scheme.logoUrl}
+                                        alt={`${scheme.name} logo`}
+                                        className={styles.schemeLogo}
+                                    />
+                                </div>
+                            )}
+                            <div className={styles.headerInfo}>
+                                <div className={styles.badges}>
+                                    <span className={`${styles.category} ${styles[`category${scheme.category}`]}`}>
+                                        {getCategoryName(scheme.category)}
+                                    </span>
+                                    <span className={styles.type}>
+                                        <span className="material-icons" style={{ fontSize: 16 }}>{scheme.schemeType === 'GOVERNMENT' ? 'account_balance' : 'business'}</span>
+                                        {scheme.schemeType === 'GOVERNMENT' ? t('government') : t('private')}
+                                    </span>
+                                </div>
+                                <h1 className={styles.title}>{scheme.name}</h1>
+                            </div>
                         </div>
-                        <h1 className={styles.title}>{scheme.name}</h1>
                         {scheme.description && (
                             <p className={styles.description}>{scheme.description}</p>
                         )}
+                    </div>
+
+                    {/* Quick Info Cards */}
+                    <div className={styles.infoCards}>
+                        <div className={styles.infoCard}>
+                            <span className="material-icons" style={{ color: 'var(--color-primary)', fontSize: 22 }}>category</span>
+                            <div>
+                                <span className={styles.infoLabel}>{t('categoryLabel')}</span>
+                                <span className={styles.infoValue}>{getCategoryName(scheme.category)}</span>
+                            </div>
+                        </div>
+                        {scheme.averageCompletionDays && (
+                            <div className={styles.infoCard}>
+                                <span className="material-icons" style={{ color: '#f59e0b', fontSize: 22 }}>schedule</span>
+                                <div>
+                                    <span className={styles.infoLabel}>{t('averageTime')}</span>
+                                    <span className={styles.infoValue}>~{scheme.averageCompletionDays} {t('days')}</span>
+                                </div>
+                            </div>
+                        )}
+                        <div className={styles.infoCard}>
+                            <span className="material-icons" style={{ color: '#10b981', fontSize: 22 }}>payments</span>
+                            <div>
+                                <span className={styles.infoLabel}>{t('serviceFee')}</span>
+                                <span className={styles.infoValue}>₹{scheme.serviceFee}</span>
+                            </div>
+                        </div>
+                        <div className={styles.infoCard}>
+                            <span className="material-icons" style={{ color: '#6366f1', fontSize: 22 }}>
+                                {scheme.schemeType === 'GOVERNMENT' ? 'account_balance' : 'business'}
+                            </span>
+                            <div>
+                                <span className={styles.infoLabel}>{t('schemeTypeLabel')}</span>
+                                <span className={styles.infoValue}>{scheme.schemeType === 'GOVERNMENT' ? t('government') : t('private')}</span>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Eligibility */}
@@ -167,6 +220,33 @@ export default function SchemeDetailPage() {
                             )}
                         </div>
                     </section>
+
+                    {/* Reference Image */}
+                    {scheme.referenceImageUrl && (
+                        <section className={styles.section}>
+                            <h2>
+                                <span className="material-icons" style={{ fontSize: 20 }}>image</span>
+                                {t('referenceImage')}
+                            </h2>
+                            <div
+                                className={styles.referenceImageWrapper}
+                                onClick={() => setLightboxOpen(true)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => e.key === 'Enter' && setLightboxOpen(true)}
+                            >
+                                <img
+                                    src={scheme.referenceImageUrl}
+                                    alt={`${scheme.name} reference`}
+                                    className={styles.referenceImage}
+                                />
+                                <span className={styles.enlargeHint}>
+                                    <span className="material-icons" style={{ fontSize: 16 }}>zoom_in</span>
+                                    {t('clickToEnlarge')}
+                                </span>
+                            </div>
+                        </section>
+                    )}
                 </div>
 
                 {/* Sidebar - Apply Card */}
@@ -176,6 +256,16 @@ export default function SchemeDetailPage() {
                             <span className={styles.feeLabel}>{t('serviceFee')}</span>
                             <span className={styles.feeAmount}>₹{scheme.serviceFee}</span>
                         </div>
+
+                        {scheme.averageCompletionDays && (
+                            <div className={styles.avgTimeSection}>
+                                <span className="material-icons" style={{ fontSize: 18, color: '#f59e0b' }}>schedule</span>
+                                <div>
+                                    <span className={styles.avgTimeLabel}>{t('averageTime')}</span>
+                                    <span className={styles.avgTimeValue}>~{scheme.averageCompletionDays} {t('days')}</span>
+                                </div>
+                            </div>
+                        )}
 
                         <div className={styles.disclaimer}>
                             <p>
@@ -196,6 +286,30 @@ export default function SchemeDetailPage() {
                     </div>
                 </aside>
             </main>
+
+            {/* Lightbox */}
+            {lightboxOpen && scheme.referenceImageUrl && (
+                <div
+                    className={styles.lightboxOverlay}
+                    onClick={() => setLightboxOpen(false)}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <button
+                        className={styles.lightboxClose}
+                        onClick={() => setLightboxOpen(false)}
+                        aria-label="Close"
+                    >
+                        <span className="material-icons">close</span>
+                    </button>
+                    <img
+                        src={scheme.referenceImageUrl}
+                        alt={`${scheme.name} reference - full size`}
+                        className={styles.lightboxImage}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 }

@@ -15,12 +15,24 @@ interface RequiredDoc {
     description?: string;
 }
 
+interface CustomField {
+    id: string;
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'email' | 'phone';
+    label: string;
+    label_mr?: string;
+    required: boolean;
+    placeholder?: string;
+    placeholder_mr?: string;
+    options?: { label: string; label_mr: string; value: string }[];
+}
+
 interface Scheme {
     id: string;
     name: string;
     slug: string;
     requiredDocs: RequiredDoc[];
     serviceFee: number;
+    customFields?: CustomField[];
 }
 
 interface UploadedDoc {
@@ -31,7 +43,7 @@ interface UploadedDoc {
     status: 'uploading' | 'uploaded' | 'error';
 }
 
-type Step = 'documents' | 'review' | 'payment' | 'success';
+type Step = 'details' | 'documents' | 'review' | 'payment' | 'success';
 
 declare global {
     interface Window {
@@ -48,6 +60,7 @@ export default function ApplyPage() {
 
     const [scheme, setScheme] = useState<Scheme | null>(null);
     const [currentStep, setCurrentStep] = useState<Step>('documents');
+    const [applicationFormData, setApplicationFormData] = useState<Record<string, any>>({});
     const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -61,12 +74,24 @@ export default function ApplyPage() {
     }, [isAuthenticated, router, params.slug, locale]);
 
     useEffect(() => {
+        if (user?.profileData) {
+            setApplicationFormData(prev => ({
+                ...user.profileData,
+                ...prev
+            }));
+        }
+    }, [user]);
+
+    useEffect(() => {
         const fetchScheme = async () => {
             try {
                 const response = await fetch(`/api/schemes/${params.slug}?locale=${locale}`);
                 const data = await response.json();
                 if (data.success) {
                     setScheme(data.data);
+                    if (data.data.customFields && data.data.customFields.length > 0) {
+                        setCurrentStep('details');
+                    }
                 } else {
                     setError(t('schemeNotFound'));
                 }
@@ -125,7 +150,7 @@ export default function ApplyPage() {
         try {
             const orderResponse = await api.request('/api/payments/create-order', {
                 method: 'POST',
-                body: { schemeId: scheme.id },
+                body: { schemeId: scheme.id, applicationFormData },
             });
             if (!orderResponse.success) throw new Error('Failed to create payment order');
             const { orderId: newOrderId, razorpayOrderId, razorpayKeyId, amount } = orderResponse.data as any;
@@ -158,8 +183,10 @@ export default function ApplyPage() {
                     }
                 },
                 modal: {
-                    ondismiss: async () => {
-                        await handleCancelPayment(newOrderId);
+                    ondismiss: () => {
+                        // Do NOT delete the order here — this would race with the payment handler callback.
+                        // The PENDING_PAYMENT order will be reused on the next attempt (idempotency logic in create-order).
+                        setCurrentStep('review');
                     },
                 },
                 prefill: {
@@ -206,6 +233,7 @@ export default function ApplyPage() {
     }
 
     const STEPS = [
+        ...(scheme?.customFields && scheme.customFields.length > 0 ? [{ id: 'details', label: t('stepDetails') || 'Details', icon: 'feed' }] : []),
         { id: 'documents', label: t('stepDocuments') || 'Documents', icon: 'description' },
         { id: 'review',    label: t('stepReview')    || 'Review',    icon: 'rate_review' },
         { id: 'payment',   label: t('stepPayment')   || 'Payment',   icon: 'payments' },
@@ -255,6 +283,81 @@ export default function ApplyPage() {
                         })}
                     </div>
                 </div>
+
+                {/* ── Step: Details ── */}
+                {currentStep === 'details' && scheme && scheme.customFields && (
+                    <div className={styles.card}>
+                        <div className={styles.cardHeader}>
+                            <h1>{t('applicationDetails') || 'Application Details'}</h1>
+                            <p>{t('applicationDetailsSubtitle') || 'Please fill in the required information for this scheme.'}</p>
+                        </div>
+                        <div className={styles.cardBody}>
+                            <div className={styles.formGrid}>
+                                {scheme.customFields.map(field => (
+                                    <div key={field.id} className={styles.formGroup}>
+                                        <label className={styles.formLabel}>
+                                            {locale === 'mr' && field.label_mr ? field.label_mr : field.label}
+                                            {field.required && <span className={styles.requiredStar}>*</span>}
+                                        </label>
+                                        {field.type === 'select' ? (
+                                            <select
+                                                className={styles.formInput}
+                                                required={field.required}
+                                                value={applicationFormData[field.id] || ''}
+                                                onChange={e => setApplicationFormData({...applicationFormData, [field.id]: e.target.value})}
+                                            >
+                                                <option value="">{t('selectAnOption') || 'Select an option'}</option>
+                                                {field.options?.map(opt => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {locale === 'mr' && opt.label_mr ? opt.label_mr : opt.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : field.type === 'textarea' ? (
+                                            <textarea
+                                                className={styles.formTextarea}
+                                                required={field.required}
+                                                placeholder={locale === 'mr' && field.placeholder_mr ? field.placeholder_mr : field.placeholder}
+                                                value={applicationFormData[field.id] || ''}
+                                                onChange={e => setApplicationFormData({...applicationFormData, [field.id]: e.target.value})}
+                                            />
+                                        ) : (
+                                            <input
+                                                type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : field.type === 'email' ? 'email' : 'text'}
+                                                className={styles.formInput}
+                                                required={field.required}
+                                                placeholder={locale === 'mr' && field.placeholder_mr ? field.placeholder_mr : field.placeholder}
+                                                value={applicationFormData[field.id] || ''}
+                                                onChange={e => setApplicationFormData({...applicationFormData, [field.id]: e.target.value})}
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className={styles.actions}>
+                                <Link href={`/schemes/${scheme.slug}`} className={styles.btnBack}>
+                                    <span className="material-icons" style={{ fontSize: 16 }}>arrow_back</span>
+                                    {t('backToScheme')}
+                                </Link>
+                                <button 
+                                    className={styles.btnPrimary} 
+                                    onClick={() => {
+                                        // Validate required fields
+                                        const missing = scheme.customFields?.filter(f => f.required && !applicationFormData[f.id]);
+                                        if (missing && missing.length > 0) {
+                                            alert(`Please fill all required fields: ${missing.map(f => f.label).join(', ')}`);
+                                            return;
+                                        }
+                                        setCurrentStep('documents');
+                                    }}
+                                >
+                                    {t('continueToDocuments') || 'Continue to Documents'}
+                                    <span className="material-icons" style={{ fontSize: 16 }}>arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ── Step: Documents ── */}
                 {currentStep === 'documents' && (
@@ -329,10 +432,17 @@ export default function ApplyPage() {
                             </div>
 
                             <div className={styles.actions}>
-                                <Link href={`/schemes/${scheme.slug}`} className={styles.btnBack}>
-                                    <span className="material-icons" style={{ fontSize: 16 }}>arrow_back</span>
-                                    {t('backToScheme')}
-                                </Link>
+                                {scheme.customFields && scheme.customFields.length > 0 ? (
+                                    <button className={styles.btnBack} onClick={() => setCurrentStep('details')}>
+                                        <span className="material-icons" style={{ fontSize: 16 }}>arrow_back</span>
+                                        {t('backToDetails') || 'Back'}
+                                    </button>
+                                ) : (
+                                    <Link href={`/schemes/${scheme.slug}`} className={styles.btnBack}>
+                                        <span className="material-icons" style={{ fontSize: 16 }}>arrow_back</span>
+                                        {t('backToScheme')}
+                                    </Link>
+                                )}
                                 <button className={styles.btnSecondary} onClick={() => setCurrentStep('review')}>
                                     {t('skipForNow')}
                                     <span className="material-icons" style={{ fontSize: 16 }}>arrow_forward</span>
@@ -375,6 +485,28 @@ export default function ApplyPage() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Application Details */}
+                            {scheme.customFields && scheme.customFields.length > 0 && (
+                                <div className={styles.card}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.cardHeaderRow}>
+                                            <span className="material-icons">feed</span>
+                                            <h2>{t('applicationDetails') || 'Application Details'}</h2>
+                                        </div>
+                                    </div>
+                                    <div className={styles.cardBody}>
+                                        <div className={styles.detailsGrid}>
+                                            {scheme.customFields.map(field => (
+                                                <div key={field.id} className={styles.detailItem}>
+                                                    <div className={styles.detailLabel}>{locale === 'mr' && field.label_mr ? field.label_mr : field.label}</div>
+                                                    <div className={styles.detailValue}>{applicationFormData[field.id] || '-'}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Documents */}
                             <div className={styles.card}>

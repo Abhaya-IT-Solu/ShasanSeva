@@ -11,6 +11,7 @@ interface User {
     phone: string;
     email?: string;
     name?: string;
+    profileData?: Record<string, any>;
 }
 
 interface AuthContextType {

@@ -6,6 +6,7 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.j
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { redis, REDIS_KEYS, REDIS_TTL, invalidateSchemeCache } from '../lib/redis.js';
+import { uploadBuffer, getPublicUrl, generateSchemeKey, getExtensionFromContentType } from '../services/r2.service.js';
 
 const router: Router = Router();
 
@@ -30,8 +31,25 @@ const createSchemeSchema = z.object({
         description: z.string().optional(),
         description_mr: z.string().optional(),
     })).default([]),
+    customFields: z.array(z.object({
+        id: z.string(),
+        type: z.enum(['text', 'number', 'date', 'select', 'textarea', 'email', 'phone']),
+        label: z.string(),
+        label_mr: z.string().optional(),
+        required: z.boolean(),
+        placeholder: z.string().optional(),
+        placeholder_mr: z.string().optional(),
+        options: z.array(z.object({
+            label: z.string(),
+            label_mr: z.string().optional(),
+            value: z.string(),
+        })).optional(),
+        validationRegex: z.string().optional(),
+    })).default([]).optional(),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid fee format'),
     averageCompletionDays: z.number().int().min(1).max(3650).optional(),
+    logoUrl: z.string().optional().nullable(),
+    referenceImageUrl: z.string().optional().nullable(),
     status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
     // Translations
     translations: z.object({
@@ -52,8 +70,25 @@ const updateSchemeSchema = z.object({
         description: z.string().optional(),
         description_mr: z.string().optional(),
     })).optional(),
+    customFields: z.array(z.object({
+        id: z.string(),
+        type: z.enum(['text', 'number', 'date', 'select', 'textarea', 'email', 'phone']),
+        label: z.string(),
+        label_mr: z.string().optional(),
+        required: z.boolean(),
+        placeholder: z.string().optional(),
+        placeholder_mr: z.string().optional(),
+        options: z.array(z.object({
+            label: z.string(),
+            label_mr: z.string().optional(),
+            value: z.string(),
+        })).optional(),
+        validationRegex: z.string().optional(),
+    })).optional(),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
     averageCompletionDays: z.number().int().min(1).max(3650).optional().nullable(),
+    logoUrl: z.string().optional().nullable(),
+    referenceImageUrl: z.string().optional().nullable(),
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
     translations: z.object({
         en: translationSchema.optional(),
@@ -126,6 +161,7 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
             schemeType: schemes.schemeType,
             serviceFee: schemes.serviceFee,
             averageCompletionDays: schemes.averageCompletionDays,
+            logoUrl: schemes.logoUrl,
             status: schemes.status,
             // Translation fields
             name: schemeTranslations.name,
@@ -149,18 +185,24 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
             );
         }
 
+        // Resolve public URLs for logos
+        const resolvedResult = filteredResult.map((s: typeof filteredResult[number]) => ({
+            ...s,
+            logoUrl: s.logoUrl ? getPublicUrl(s.logoUrl) : null,
+        }));
+
         // Cache the result for public requests
-        if (useCache && filteredResult.length > 0) {
+        if (useCache && resolvedResult.length > 0) {
             const cacheKey = REDIS_KEYS.SCHEMES_LIST(locale || 'en', category);
             try {
-                await redis.set(cacheKey, JSON.stringify(filteredResult), { ex: REDIS_TTL.SCHEMES_LIST });
-                logger.info('Cached schemes list', { locale, category, count: filteredResult.length });
+                await redis.set(cacheKey, JSON.stringify(resolvedResult), { ex: REDIS_TTL.SCHEMES_LIST });
+                logger.info('Cached schemes list', { locale, category, count: resolvedResult.length });
             } catch (cacheError: unknown) {
                 logger.warn('Redis cache write failed', cacheError as Record<string, unknown>);
             }
         }
 
-        return res.json(successResponse(filteredResult));
+        return res.json(successResponse(resolvedResult));
     } catch (error) {
         logger.error('List schemes error', error);
         return res.status(500).json(
@@ -230,7 +272,10 @@ router.get('/by-id/:id', async (req, res) => {
             serviceFee: scheme.serviceFee,
             status: scheme.status,
             requiredDocs: scheme.requiredDocs,
+            customFields: scheme.customFields,
             averageCompletionDays: scheme.average_completion_days,
+            logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
+            referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
             translations,
         }));
     } catch (error) {
@@ -276,7 +321,10 @@ router.get('/:slug', async (req, res) => {
             schemeType: schemes.schemeType,
             serviceFee: schemes.serviceFee,
             averageCompletionDays: schemes.averageCompletionDays,
+            logoUrl: schemes.logoUrl,
+            referenceImageUrl: schemes.referenceImageUrl,
             requiredDocs: schemes.requiredDocs,
+            customFields: schemes.customFields,
             status: schemes.status,
             name: schemeTranslations.name,
             description: schemeTranslations.description,
@@ -322,6 +370,8 @@ router.get('/:slug', async (req, res) => {
         const responseData = {
             ...scheme,
             requiredDocs: transformedDocs,
+            logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
+            referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
         };
 
         // Cache the result for public requests
@@ -380,8 +430,11 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
             eligibility: data.translations.en.eligibility,
             benefits: data.translations.en.benefits,
             requiredDocs: data.requiredDocs,
+            customFields: data.customFields,
             serviceFee: data.serviceFee,
             averageCompletionDays: data.averageCompletionDays?.toString(),
+            logoUrl: data.logoUrl || null,
+            referenceImageUrl: data.referenceImageUrl || null,
             status: data.status,
             createdBy: adminId,
         }).returning();
@@ -481,11 +534,14 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
         if (updates.category) schemeUpdates.category = updates.category;
         if (updates.schemeType) schemeUpdates.schemeType = updates.schemeType;
         if (updates.requiredDocs) schemeUpdates.requiredDocs = updates.requiredDocs;
+        if (updates.customFields) schemeUpdates.customFields = updates.customFields;
         if (updates.serviceFee) schemeUpdates.serviceFee = updates.serviceFee;
         if (updates.status) schemeUpdates.status = updates.status;
         if (updates.averageCompletionDays !== undefined) {
             schemeUpdates.averageCompletionDays = updates.averageCompletionDays?.toString() ?? null;
         }
+        if (updates.logoUrl !== undefined) schemeUpdates.logoUrl = updates.logoUrl;
+        if (updates.referenceImageUrl !== undefined) schemeUpdates.referenceImageUrl = updates.referenceImageUrl;
 
         // Update legacy fields from English translation
         if (updates.translations?.en) {
@@ -605,6 +661,83 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
                 message: 'Failed to delete scheme',
+            })
+        );
+    }
+});
+
+/**
+ * POST /api/schemes/:id/upload-image
+ * Upload scheme logo or reference image (admin only)
+ * Accepts file as base64 in JSON body — proxied through backend to R2
+ */
+const uploadImageSchema = z.object({
+    type: z.enum(['logo', 'reference']),
+    contentType: z.string(),
+    fileData: z.string(), // base64 encoded file
+});
+
+router.post('/:id/upload-image', authMiddleware, adminMiddleware, validateBody(uploadImageSchema), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type, contentType, fileData } = req.body;
+
+        // Check scheme exists
+        const existing = await db.select({ id: schemes.id })
+            .from(schemes)
+            .where(eq(schemes.id, id));
+
+        if (existing.length === 0) {
+            return res.status(404).json(
+                errorResponse({
+                    code: ErrorCodes.NOT_FOUND,
+                    message: 'Scheme not found',
+                })
+            );
+        }
+
+        // Validate content type (images only for scheme assets)
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+        if (!allowedTypes.includes(contentType)) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'Only JPEG, PNG, WebP, and SVG images are allowed',
+                })
+            );
+        }
+
+        const ext = getExtensionFromContentType(contentType) || contentType.split('/')[1];
+        const key = generateSchemeKey(id, type, ext);
+
+        // Decode base64 and upload directly to R2 from the server
+        const buffer = Buffer.from(fileData, 'base64');
+        await uploadBuffer(key, buffer, contentType);
+
+        // Save the R2 key to the schemes table
+        const updateField = type === 'logo'
+            ? { logoUrl: key, updatedAt: new Date() }
+            : { referenceImageUrl: key, updatedAt: new Date() };
+
+        await db.update(schemes)
+            .set(updateField)
+            .where(eq(schemes.id, id));
+
+        // Invalidate cache so the detail page shows the new image
+        await invalidateSchemeCache();
+        
+        logger.info('Scheme image uploaded and saved', { schemeId: id, type, key, size: buffer.length });
+
+        return res.json(successResponse({
+            key,
+            publicUrl: getPublicUrl(key),
+        }));
+    } catch (error) {
+        logger.error('Scheme image upload error', error);
+        return res.status(500).json(
+            errorResponse({
+                code: ErrorCodes.INTERNAL_ERROR,
+                message: 'Failed to upload image',
             })
         );
     }

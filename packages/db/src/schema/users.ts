@@ -20,7 +20,7 @@ export interface SavedDocument {
 
 export const users = pgTable('users', {
     id: uuid('id').defaultRandom().primaryKey(),
-    phone: varchar('phone', { length: 15 }).unique().notNull(),
+    phone: varchar('phone', { length: 15 }).unique(),  // Nullable for OAuth users — added during profile completion
     email: varchar('email', { length: 255 }).unique(),
     name: varchar('name', { length: 255 }),
     category: varchar('category', { length: 50 }), // STUDENT, FARMER, LOAN_CANDIDATE, OTHER
@@ -30,6 +30,7 @@ export const users = pgTable('users', {
     // Profile Details (optional)
     address: jsonb('address').$type<UserAddress>(),
     savedDocuments: jsonb('saved_documents').$type<SavedDocument[]>().default([]),
+    profileData: jsonb('profile_data').$type<Record<string, any>>().default({}),
 
     profileComplete: boolean('profile_complete').default(false),
     createdAt: timestamp('created_at').defaultNow().notNull(),
