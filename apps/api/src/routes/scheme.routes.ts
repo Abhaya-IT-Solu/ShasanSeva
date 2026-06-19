@@ -31,6 +31,21 @@ const createSchemeSchema = z.object({
         description: z.string().optional(),
         description_mr: z.string().optional(),
     })).default([]),
+    customFields: z.array(z.object({
+        id: z.string(),
+        type: z.enum(['text', 'number', 'date', 'select', 'textarea', 'email', 'phone']),
+        label: z.string(),
+        label_mr: z.string().optional(),
+        required: z.boolean(),
+        placeholder: z.string().optional(),
+        placeholder_mr: z.string().optional(),
+        options: z.array(z.object({
+            label: z.string(),
+            label_mr: z.string().optional(),
+            value: z.string(),
+        })).optional(),
+        validationRegex: z.string().optional(),
+    })).default([]).optional(),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid fee format'),
     averageCompletionDays: z.number().int().min(1).max(3650).optional(),
     logoUrl: z.string().optional().nullable(),
@@ -54,6 +69,21 @@ const updateSchemeSchema = z.object({
         required: z.boolean(),
         description: z.string().optional(),
         description_mr: z.string().optional(),
+    })).optional(),
+    customFields: z.array(z.object({
+        id: z.string(),
+        type: z.enum(['text', 'number', 'date', 'select', 'textarea', 'email', 'phone']),
+        label: z.string(),
+        label_mr: z.string().optional(),
+        required: z.boolean(),
+        placeholder: z.string().optional(),
+        placeholder_mr: z.string().optional(),
+        options: z.array(z.object({
+            label: z.string(),
+            label_mr: z.string().optional(),
+            value: z.string(),
+        })).optional(),
+        validationRegex: z.string().optional(),
     })).optional(),
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
     averageCompletionDays: z.number().int().min(1).max(3650).optional().nullable(),
@@ -242,6 +272,7 @@ router.get('/by-id/:id', async (req, res) => {
             serviceFee: scheme.serviceFee,
             status: scheme.status,
             requiredDocs: scheme.requiredDocs,
+            customFields: scheme.customFields,
             averageCompletionDays: scheme.average_completion_days,
             logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
             referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
@@ -293,6 +324,7 @@ router.get('/:slug', async (req, res) => {
             logoUrl: schemes.logoUrl,
             referenceImageUrl: schemes.referenceImageUrl,
             requiredDocs: schemes.requiredDocs,
+            customFields: schemes.customFields,
             status: schemes.status,
             name: schemeTranslations.name,
             description: schemeTranslations.description,
@@ -398,6 +430,7 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
             eligibility: data.translations.en.eligibility,
             benefits: data.translations.en.benefits,
             requiredDocs: data.requiredDocs,
+            customFields: data.customFields,
             serviceFee: data.serviceFee,
             averageCompletionDays: data.averageCompletionDays?.toString(),
             logoUrl: data.logoUrl || null,
@@ -501,6 +534,7 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
         if (updates.category) schemeUpdates.category = updates.category;
         if (updates.schemeType) schemeUpdates.schemeType = updates.schemeType;
         if (updates.requiredDocs) schemeUpdates.requiredDocs = updates.requiredDocs;
+        if (updates.customFields) schemeUpdates.customFields = updates.customFields;
         if (updates.serviceFee) schemeUpdates.serviceFee = updates.serviceFee;
         if (updates.status) schemeUpdates.status = updates.status;
         if (updates.averageCompletionDays !== undefined) {

@@ -8,6 +8,18 @@ export interface RequiredDocument {
     required: boolean;
     description?: string;
 }
+// Custom Form Field definition
+export interface CustomFormField {
+    id: string;               // e.g., 'college_name', 'marks_10th'
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'email' | 'phone';
+    label: string;            // English label
+    label_mr?: string;        // Marathi label
+    required: boolean;
+    placeholder?: string;
+    placeholder_mr?: string;
+    options?: { label: string; label_mr?: string; value: string }[]; // For type = 'select'
+    validationRegex?: string; // Optional regex pattern
+}
 
 export const schemes = pgTable('schemes', {
     id: uuid('id').defaultRandom().primaryKey(),
@@ -19,6 +31,7 @@ export const schemes = pgTable('schemes', {
     eligibility: text('eligibility'),
     benefits: text('benefits'),
     requiredDocs: jsonb('required_docs').$type<RequiredDocument[]>().default([]),
+    customFields: jsonb('custom_fields').$type<CustomFormField[]>().default([]),
     serviceFee: decimal('service_fee', { precision: 10, scale: 2 }).notNull(),
     averageCompletionDays: decimal('average_completion_days', { precision: 5, scale: 0 }),
     logoUrl: text('logo_url'),                     // Optional: R2 key for scheme logo

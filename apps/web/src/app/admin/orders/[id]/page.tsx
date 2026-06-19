@@ -41,6 +41,7 @@ interface OrderDetail {
     assignedTo?: string;
     createdAt: string;
     updatedAt: string;
+    applicationFormData?: Record<string, any> | null;
     scheme: {
         id: string;
         name: string;
@@ -546,6 +547,21 @@ export default function OrderDetailPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Custom Application Form Data */}
+                        {order.applicationFormData && Object.keys(order.applicationFormData).length > 0 && (
+                            <div className={styles.detailCard}>
+                                <h2>Application Form Details</h2>
+                                <div className={styles.infoGrid}>
+                                    {Object.entries(order.applicationFormData).map(([key, value]) => (
+                                        <div key={key} className={styles.infoItem}>
+                                            <span className={styles.infoLabel}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                            <span className={styles.infoValue}>{String(value)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Documents with Download & Actions */}
                         <div className={styles.detailCard}>

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, decimal, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, decimal, timestamp, index, jsonb } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { schemes } from './schemes.js';
 import { admins } from './admins.js';
@@ -7,6 +7,7 @@ export const orders = pgTable('orders', {
     id: uuid('id').defaultRandom().primaryKey(),
     userId: uuid('user_id').references(() => users.id).notNull(),
     schemeId: uuid('scheme_id').references(() => schemes.id).notNull(),
+    applicationFormData: jsonb('application_form_data').$type<Record<string, any>>().default({}),
 
     status: varchar('status', { length: 30 }).default('PENDING_PAYMENT').notNull(),
     // PENDING_PAYMENT, PAID, IN_PROGRESS, PROOF_UPLOADED, COMPLETED, CANCELLED

@@ -57,7 +57,9 @@ interface Order {
         slug?: string;
         description?: string;
         requiredDocs?: RequiredDoc[];
+        customFields?: CustomField[];
     };
+    applicationFormData?: Record<string, any>;
 }
 
 const STATUS_STEPS = ['PAID', 'IN_PROGRESS', 'DOCUMENTS_VERIFIED', 'COMPLETED'];
@@ -511,6 +513,37 @@ export default function OrderDetailPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Application Details Card (if custom forms were filled) */}
+                {order.scheme?.customFields && order.scheme.customFields.length > 0 && order.applicationFormData && Object.keys(order.applicationFormData).length > 0 && (
+                    <div className={styles.detailCard}>
+                        <div>
+                            <div className={styles.cardIconBox}>
+                                <div className={styles.cardIcon}>
+                                    <span className="material-icons">feed</span>
+                                </div>
+                                <h3>{t('applicationDetails') || 'Application Details'}</h3>
+                            </div>
+                            <div className={styles.cardBody} style={{ gap: '12px' }}>
+                                {order.scheme.customFields.map(field => {
+                                    // Skip empty fields or file uploads that might be handled differently
+                                    if (order.applicationFormData && order.applicationFormData[field.id] === undefined) return null;
+                                    
+                                    return (
+                                        <div key={field.id} className={styles.cardRow} style={{ borderBottom: '1px solid #f1f5f1', paddingBottom: '8px' }}>
+                                            <span className={styles.cardRowLabel} style={{ minWidth: '120px' }}>
+                                                {locale === 'mr' && field.label_mr ? field.label_mr : field.label}
+                                            </span>
+                                            <span className={styles.cardRowValue} style={{ textAlign: 'right' }}>
+                                                {order.applicationFormData[field.id] || '-'}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </section>
 
             {/* Documents Table */}

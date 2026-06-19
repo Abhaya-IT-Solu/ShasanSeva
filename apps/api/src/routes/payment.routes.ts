@@ -5,7 +5,6 @@ import { validateBody } from '../middleware/validation.middleware.js';
 import {
     createRazorpayOrder,
     verifyPaymentSignature,
-    verifyWebhookSignature,
 } from '../services/razorpay.service.js';
 import { db, orders, schemes, documents, users } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
@@ -18,6 +17,7 @@ const router: Router = Router();
 // Schema for creating payment order
 const createOrderSchema = z.object({
     schemeId: z.string().uuid(),
+    applicationFormData: z.record(z.any()).optional(),
 });
 
 // Schema for verifying payment
@@ -41,7 +41,7 @@ const verifyPaymentSchema = z.object({
 router.post('/create-order', authMiddleware, validateBody(createOrderSchema), async (req: Request, res: Response) => {
     try {
         const userId = req.user!.userId;
-        const { schemeId } = req.body;
+        const { schemeId, applicationFormData } = req.body;
 
         // Get scheme details
         const schemeResult = await db.select()
@@ -84,6 +84,9 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
         if (existingOrders.length > 0) {
             // Reuse the existing PENDING_PAYMENT order
             order = existingOrders[0];
+            await db.update(orders)
+                .set({ applicationFormData: applicationFormData || {} })
+                .where(eq(orders.id, order.id));
             logger.info('Reusing existing PENDING_PAYMENT order', { orderId: order.id, userId, schemeId });
         } else {
             // Create new order record (status: PENDING_PAYMENT)
@@ -92,8 +95,23 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
                 schemeId,
                 paymentAmount: scheme.serviceFee,
                 status: 'PENDING_PAYMENT',
+                applicationFormData: applicationFormData || {},
             }).returning();
             order = orderResult[0];
+        }
+
+        // Merge applicationFormData into user profileData
+        if (applicationFormData && Object.keys(applicationFormData).length > 0) {
+            const userResult = await db.select({ profileData: users.profileData })
+                .from(users)
+                .where(eq(users.id, userId));
+            if (userResult.length > 0) {
+                const currentProfileData = userResult[0].profileData || {};
+                const mergedProfileData = { ...currentProfileData, ...applicationFormData };
+                await db.update(users)
+                    .set({ profileData: mergedProfileData, updatedAt: new Date() })
+                    .where(eq(users.id, userId));
+            }
         }
 
         // Convert to paise (Razorpay uses smallest currency unit)
@@ -193,6 +211,26 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             );
         }
 
+        // Idempotency guard: if already PAID (e.g., webhook already processed it), return success immediately
+        if (order.status === 'PAID') {
+            logger.info('Payment already verified \u2014 returning success (idempotent)', { orderId });
+            return res.json(successResponse({
+                orderId,
+                status: 'PAID',
+                receiptKey: order.receiptKey || null,
+                message: 'Payment already verified. Your application is being processed.',
+            }));
+        }
+
+        if (order.status !== 'PENDING_PAYMENT') {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: `Cannot verify payment: order is in status '${order.status}'`,
+                })
+            );
+        }
+
         const paymentTimestamp = new Date();
 
         // Update order status to PAID
@@ -207,7 +245,7 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
 
         logger.info('Payment verified and order updated', { orderId, razorpayPaymentId });
 
-        // Link uploaded documents to the order
+        // Link uploaded documents to the order (only on first verify call, guarded by status check above)
         if (uploadedDocuments && uploadedDocuments.length > 0) {
             for (const doc of uploadedDocuments) {
                 await db.insert(documents).values({
@@ -344,70 +382,6 @@ router.delete('/cancel-order/:orderId', authMiddleware, async (req: Request, res
     }
 });
 
-/**
- * POST /api/payments/webhook
- * Handle Razorpay webhook events
- */
-router.post('/webhook', async (req: Request, res: Response) => {
-    try {
-        const signature = req.headers['x-razorpay-signature'] as string;
-        const body = JSON.stringify(req.body);
-
-        // Verify webhook signature
-        if (!verifyWebhookSignature(body, signature)) {
-            logger.warn('Invalid webhook signature');
-            return res.status(401).json({ error: 'Invalid signature' });
-        }
-
-        const event = req.body;
-        const eventType = event.event;
-
-        logger.info('Webhook received', { eventType });
-
-        switch (eventType) {
-            case 'payment.captured':
-                // Payment was successfully captured
-                const capturedPaymentId = event.payload.payment.entity.id;
-                const orderId = event.payload.payment.entity.notes?.orderId;
-
-                if (orderId) {
-                    await db.update(orders)
-                        .set({
-                            status: 'PAID',
-                            paymentId: capturedPaymentId,
-                            paymentTimestamp: new Date(),
-                            updatedAt: new Date(),
-                        })
-                        .where(eq(orders.id, orderId));
-
-                    logger.info('Payment captured via webhook', { orderId, paymentId: capturedPaymentId });
-                }
-                break;
-
-            case 'payment.failed':
-                // Payment failed
-                const failedOrderId = event.payload.payment.entity.notes?.orderId;
-                if (failedOrderId) {
-                    await db.update(orders)
-                        .set({
-                            status: 'PAYMENT_FAILED',
-                            updatedAt: new Date(),
-                        })
-                        .where(eq(orders.id, failedOrderId));
-
-                    logger.warn('Payment failed via webhook', { orderId: failedOrderId });
-                }
-                break;
-
-            default:
-                logger.info('Unhandled webhook event', { eventType });
-        }
-
-        return res.json({ received: true });
-    } catch (error) {
-        logger.error('Webhook processing error', error);
-        return res.status(500).json({ error: 'Internal error' });
-    }
-});
+// Webhook is handled in app.ts (before express.json()) to preserve raw body for HMAC verification
 
 export default router;

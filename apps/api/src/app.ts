@@ -6,6 +6,9 @@ import { errorHandler } from './middleware/validation.middleware.js';
 import { apiRateLimiter } from './middleware/rateLimit.middleware.js';
 import { env } from './config/env.js';
 import { logger } from './lib/utils.js';
+import { verifyWebhookSignature } from './services/razorpay.service.js';
+import { db, orders } from '@shasansetu/db';
+import { eq, and } from 'drizzle-orm';
 
 const app: Application = express();
 
@@ -20,7 +23,59 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Body parsing
+// Body parsing — express.json() is applied AFTER the raw webhook route below
+// The webhook route MUST receive raw bytes for Razorpay HMAC signature verification
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    try {
+        const signature = req.headers['x-razorpay-signature'] as string;
+        // req.body here is a Buffer (raw bytes) — exactly what Razorpay signed
+        const rawBody = (req.body as Buffer).toString('utf8');
+
+        if (!verifyWebhookSignature(rawBody, signature)) {
+            logger.warn('Invalid webhook signature — rejecting event');
+            return res.status(401).json({ error: 'Invalid signature' });
+        }
+
+        const event = JSON.parse(rawBody);
+        const eventType = event.event;
+        logger.info('Webhook received', { eventType });
+
+        switch (eventType) {
+            case 'payment.captured': {
+                const capturedPaymentId = event.payload?.payment?.entity?.id;
+                const orderId = event.payload?.payment?.entity?.notes?.orderId;
+                if (orderId) {
+                    // Guard: only update if still PENDING_PAYMENT (idempotency)
+                    await db.update(orders)
+                        .set({ status: 'PAID', paymentId: capturedPaymentId, paymentTimestamp: new Date(), updatedAt: new Date() })
+                        .where(and(eq(orders.id, orderId), eq(orders.status, 'PENDING_PAYMENT')));
+                    logger.info('Payment captured via webhook', { orderId, paymentId: capturedPaymentId });
+                }
+                break;
+            }
+            case 'payment.failed': {
+                const failedOrderId = event.payload?.payment?.entity?.notes?.orderId;
+                if (failedOrderId) {
+                    // Guard: only update if still PENDING_PAYMENT (never downgrade a PAID order)
+                    await db.update(orders)
+                        .set({ status: 'PAYMENT_FAILED', updatedAt: new Date() })
+                        .where(and(eq(orders.id, failedOrderId), eq(orders.status, 'PENDING_PAYMENT')));
+                    logger.warn('Payment failed via webhook', { orderId: failedOrderId });
+                }
+                break;
+            }
+            default:
+                logger.info('Unhandled webhook event', { eventType });
+        }
+
+        return res.json({ received: true });
+    } catch (error) {
+        logger.error('Webhook processing error', error);
+        return res.status(500).json({ error: 'Internal error' });
+    }
+});
+
+// All other routes use JSON body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 

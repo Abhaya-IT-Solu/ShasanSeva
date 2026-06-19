@@ -223,11 +223,7 @@ export async function generateReceipt(params: ReceiptParams): Promise<string> {
     // Upload to R2
     const receiptKey = `receipts/${orderId}/receipt.pdf`;
 
-    await uploadBuffer({
-        key: receiptKey,
-        buffer: pdfBuffer,
-        contentType: 'application/pdf',
-    });
+    await uploadBuffer(receiptKey, pdfBuffer, 'application/pdf');
 
     logger.info('Receipt generated and uploaded', {
         orderId,
