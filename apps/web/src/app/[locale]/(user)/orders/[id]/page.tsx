@@ -22,6 +22,21 @@ interface RequiredDoc {
     description?: string;
 }
 
+interface CustomField {
+    id: string;
+    type: 'text' | 'number' | 'date' | 'select' | 'textarea' | 'email' | 'phone';
+    label: string;
+    label_mr?: string;
+    required: boolean;
+    placeholder?: string;
+    placeholder_mr?: string;
+    options?: {
+        label: string;
+        label_mr?: string;
+        value: string;
+    }[];
+}
+
 interface Proof {
     id: string;
     orderId: string;
@@ -535,7 +550,7 @@ export default function OrderDetailPage() {
                                                 {locale === 'mr' && field.label_mr ? field.label_mr : field.label}
                                             </span>
                                             <span className={styles.cardRowValue} style={{ textAlign: 'right' }}>
-                                                {order.applicationFormData[field.id] || '-'}
+                                                {order.applicationFormData?.[field.id] || '-'}
                                             </span>
                                         </div>
                                     );

@@ -12,7 +12,6 @@ interface RequiredDoc {
     type: string;
     label: string;
     required: boolean;
-    required: boolean;
     description?: string;
 }
 

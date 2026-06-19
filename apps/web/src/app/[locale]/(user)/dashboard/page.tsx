@@ -25,7 +25,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function UserDashboard() {
-    const { user } = useAuth();
+    const {} = useAuth();
     const t = useTranslations('DashboardPage');
     const tStatus = useTranslations('Statuses');
     const locale = useLocale();
@@ -68,12 +68,6 @@ export default function UserDashboard() {
         return map[status] || styles.statusGray;
     };
 
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return t('goodMorning');
-        if (hour < 17) return t('goodAfternoon');
-        return t('goodEvening');
-    };
 
     return (
         <div className={styles.page}>
