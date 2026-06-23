@@ -1,0 +1,120 @@
+.main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-4);
+}
+
+.centered {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pageHeader {
+    margin-bottom: var(--space-6);
+}
+
+.title {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-gray-900);
+}
+
+.subtitle {
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+}
+
+.search {
+    margin-bottom: var(--space-6);
+}
+
+.error {
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: var(--color-error);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+}
+
+.empty {
+    text-align: center;
+    padding: var(--space-12);
+    color: var(--color-gray-500);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.row:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.rowMain {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.rowName {
+    font-weight: 600;
+    color: var(--color-gray-900);
+}
+
+.rowSlug {
+    font-size: var(--text-xs);
+    color: var(--color-gray-400);
+}
+
+.rowMeta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-shrink: 0;
+}
+
+.category {
+    font-size: var(--text-xs);
+    color: var(--color-gray-600);
+    text-transform: capitalize;
+}
+
+.fieldCount {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-primary);
+    min-width: 60px;
+    text-align: right;
+}
+
+@media (max-width: 560px) {
+    .row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .fieldCount {
+        text-align: left;
+    }
+}

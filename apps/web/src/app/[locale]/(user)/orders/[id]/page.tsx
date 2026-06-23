@@ -239,6 +239,16 @@ export default function OrderDetailPage() {
         }
     };
 
+    const readFileAsBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.includes(',') ? result.split(',')[1] : result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
     const handleAddDocument = async () => {
         if (!selectedFile || !selectedDocType || !order) return;
         setIsUploadingDoc(true);
@@ -246,29 +256,20 @@ export default function OrderDetailPage() {
         setSuccess('');
 
         try {
-            const urlResponse = await api.request('/api/documents/upload-url', {
+            const fileData = await readFileAsBase64(selectedFile);
+
+            // Proxy through backend to avoid R2 CORS issues with direct browser PUT
+            const uploadResponse = await api.request('/api/documents/upload', {
                 method: 'POST',
                 body: {
                     documentType: selectedDocType,
                     contentType: selectedFile.type,
+                    fileData,
                     orderId: order.id,
                 },
             });
 
-            if (!urlResponse.success) throw new Error('Failed to get upload URL');
-            const { uploadUrl, documentId } = urlResponse.data as any;
-
-            const uploadResponse = await fetch(uploadUrl, {
-                method: 'PUT',
-                body: selectedFile,
-                headers: { 'Content-Type': selectedFile.type },
-            });
-
-            if (!uploadResponse.ok) throw new Error('Upload failed');
-
-            if (documentId) {
-                await api.request(`/api/documents/${documentId}/confirm-upload`, { method: 'POST' });
-            }
+            if (!uploadResponse.success) throw new Error('Upload failed');
 
             setSuccess(t('documentUploaded') || 'Document uploaded successfully!');
             setSelectedFile(null);

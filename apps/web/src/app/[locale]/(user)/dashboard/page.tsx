@@ -135,7 +135,7 @@ export default function UserDashboard() {
                             <div className={styles.emptyState}>
                                 <span className={`material-icons ${styles.emptyIcon}`}>description</span>
                                 <p>{t('noApplications')}</p>
-                                <Link href="/schemes" className={styles.browseSchemesBtn}>
+                                <Link href="/#services" className={styles.browseSchemesBtn}>
                                     {t('browseSchemes')}
                                 </Link>
                             </div>

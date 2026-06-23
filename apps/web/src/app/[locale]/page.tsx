@@ -160,7 +160,7 @@ export default function HomePage() {
             </header>
 
             {/* Services Grid Section */}
-            <section className={styles.servicesSection}>
+            <section className={styles.servicesSection} id='services'>
                 <div className={styles.container}>
                     <div className={styles.sectionHeaderRow}>
                         <div>

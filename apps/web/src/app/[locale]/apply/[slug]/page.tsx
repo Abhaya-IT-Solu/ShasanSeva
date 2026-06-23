@@ -112,25 +112,34 @@ export default function ApplyPage() {
         return () => { document.body.removeChild(script); };
     }, []);
 
+    const readFileAsBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result as string;
+            // Strip the "data:<mime>;base64," prefix from the data URL
+            resolve(result.includes(',') ? result.split(',')[1] : result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+
     const handleFileUpload = async (docType: string, file: File) => {
         try {
             setUploadedDocs(prev => [
                 ...prev.filter(d => d.documentType !== docType),
                 { documentType: docType, documentId: '', fileKey: '', fileName: file.name, status: 'uploading' },
             ]);
-            const urlResponse = await api.request('/api/documents/upload-url', {
+
+            const fileData = await readFileAsBase64(file);
+
+            // Proxy through backend to avoid R2 CORS issues with direct browser PUT
+            const uploadResponse = await api.request('/api/documents/upload', {
                 method: 'POST',
-                body: { documentType: docType, contentType: file.type },
+                body: { documentType: docType, contentType: file.type, fileData },
             });
-            if (!urlResponse.success) throw new Error('Failed to get upload URL');
-            const { uploadUrl, documentId, key } = urlResponse.data as any;
-            const uploadResponse = await fetch(uploadUrl, {
-                method: 'PUT',
-                body: file,
-                headers: { 'Content-Type': file.type },
-            });
-            if (!uploadResponse.ok) throw new Error('Upload failed');
-            await api.request(`/api/documents/${documentId}/confirm-upload`, { method: 'POST' });
+            if (!uploadResponse.success) throw new Error('Upload failed');
+
+            const { documentId, key } = uploadResponse.data as { documentId: string | null; key: string };
             setUploadedDocs(prev =>
                 prev.map(d => d.documentType === docType
                     ? { ...d, documentId: documentId || '', fileKey: key, status: 'uploaded' }
