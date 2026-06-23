@@ -47,6 +47,7 @@ interface OrderDetail {
         name: string;
         category?: string;
         schemeType?: string;
+        customFields?: { id: string; label: string; label_mr?: string }[];
     } | null;
 }
 
@@ -553,12 +554,16 @@ export default function OrderDetailPage() {
                             <div className={styles.detailCard}>
                                 <h2>Application Form Details</h2>
                                 <div className={styles.infoGrid}>
-                                    {Object.entries(order.applicationFormData).map(([key, value]) => (
-                                        <div key={key} className={styles.infoItem}>
-                                            <span className={styles.infoLabel}>{key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                                            <span className={styles.infoValue}>{String(value)}</span>
-                                        </div>
-                                    ))}
+                                    {Object.entries(order.applicationFormData).map(([key, value]) => {
+                                        const fieldDef = order.scheme?.customFields?.find(f => f.id === key);
+                                        const label = fieldDef?.label || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                        return (
+                                            <div key={key} className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>{label}</span>
+                                                <span className={styles.infoValue}>{String(value)}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

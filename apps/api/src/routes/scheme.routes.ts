@@ -31,21 +31,8 @@ const createSchemeSchema = z.object({
         description: z.string().optional(),
         description_mr: z.string().optional(),
     })).default([]),
-    customFields: z.array(z.object({
-        id: z.string(),
-        type: z.enum(['text', 'number', 'date', 'select', 'textarea', 'email', 'phone']),
-        label: z.string(),
-        label_mr: z.string().optional(),
-        required: z.boolean(),
-        placeholder: z.string().optional(),
-        placeholder_mr: z.string().optional(),
-        options: z.array(z.object({
-            label: z.string(),
-            label_mr: z.string().optional(),
-            value: z.string(),
-        })).optional(),
-        validationRegex: z.string().optional(),
-    })).default([]).optional(),
+    // NOTE: customFields are intentionally NOT accepted here. Custom form fields
+    // are managed exclusively through the developer portal (/api/portal/*).
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid fee format'),
     averageCompletionDays: z.number().int().min(1).max(3650).optional(),
     logoUrl: z.string().optional().nullable(),
@@ -70,21 +57,8 @@ const updateSchemeSchema = z.object({
         description: z.string().optional(),
         description_mr: z.string().optional(),
     })).optional(),
-    customFields: z.array(z.object({
-        id: z.string(),
-        type: z.enum(['text', 'number', 'date', 'select', 'textarea', 'email', 'phone']),
-        label: z.string(),
-        label_mr: z.string().optional(),
-        required: z.boolean(),
-        placeholder: z.string().optional(),
-        placeholder_mr: z.string().optional(),
-        options: z.array(z.object({
-            label: z.string(),
-            label_mr: z.string().optional(),
-            value: z.string(),
-        })).optional(),
-        validationRegex: z.string().optional(),
-    })).optional(),
+    // NOTE: customFields are intentionally NOT accepted here. Custom form fields
+    // are managed exclusively through the developer portal (/api/portal/*).
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
     averageCompletionDays: z.number().int().min(1).max(3650).optional().nullable(),
     logoUrl: z.string().optional().nullable(),
@@ -430,7 +404,7 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
             eligibility: data.translations.en.eligibility,
             benefits: data.translations.en.benefits,
             requiredDocs: data.requiredDocs,
-            customFields: data.customFields,
+            // customFields default to [] (DB default); managed via the developer portal
             serviceFee: data.serviceFee,
             averageCompletionDays: data.averageCompletionDays?.toString(),
             logoUrl: data.logoUrl || null,
@@ -534,7 +508,7 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
         if (updates.category) schemeUpdates.category = updates.category;
         if (updates.schemeType) schemeUpdates.schemeType = updates.schemeType;
         if (updates.requiredDocs) schemeUpdates.requiredDocs = updates.requiredDocs;
-        if (updates.customFields) schemeUpdates.customFields = updates.customFields;
+        // customFields are intentionally not updated here; managed via the developer portal
         if (updates.serviceFee) schemeUpdates.serviceFee = updates.serviceFee;
         if (updates.status) schemeUpdates.status = updates.status;
         if (updates.averageCompletionDays !== undefined) {

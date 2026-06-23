@@ -42,6 +42,13 @@ const envSchema = z.object({
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
     JWT_EXPIRES_IN: z.string().default('7d'),
 
+    // Developer Portal (custom-forms management) — separate auth from users/admins
+    // PORTAL_USERS: comma-separated "username:bcryptHash" pairs (1-3 dev accounts)
+    PORTAL_USERS: z.string().optional(),
+    PORTAL_JWT_SECRET: z.string().optional(),
+    PORTAL_TOKEN_EXPIRES_IN: z.string().default('7d'),
+    PORTAL_URL: z.string().url().default('http://localhost:3002'),
+
     // Application
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     API_PORT: z.string().default('3001'),

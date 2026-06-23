@@ -60,7 +60,7 @@ export function Header() {
                         </Link>
                         <div className={styles.navLinks}>
                             <Link href="/" className={styles.navLink}>Home</Link>
-                            <Link href="/schemes" className={styles.navLink}>{t('schemes')}</Link>
+                            <Link href="/#services" className={styles.navLink}>{t('schemes')}</Link>
                             {isAuthenticated && (
                                 <>
                                     <Link href="/dashboard" className={styles.navLink}>{t('dashboard')}</Link>

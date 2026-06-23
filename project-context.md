@@ -6,6 +6,33 @@
 
 ---
 
+## Current Status & Recent Updates
+
+**Current Status**: We have recently completed the "Custom Application Forms" feature (users fill scheme-specific fields during application). **Custom-form authoring has now been moved out of the admin panel into a dedicated, standalone Developer Portal (`apps/portal`)** — regular admins no longer create/edit custom fields; they continue to manage everything else about a scheme (name, fee, docs, images, translations, status). Developers manage custom fields through the portal, which authenticates against env-configured bcrypt credentials and writes via `/api/portal/*`. We also fixed several critical bugs in the Razorpay payment flow (including webhook signature verification and idempotency) and resolved an issue with Google OAuth crashing for subsequent users due to a database unique constraint on empty phone numbers. Frontend TypeScript errors are fully resolved.
+
+### Last 3 Commits
+```text
+commit 9497ece0ed92f633aebca1b0e1de96469b08d23b
+Author: Nilesh Raju Ambekar <nileshambekar9281@gmail.com>
+Date:   Fri Jun 19 19:48:42 2026 +0530
+
+    fix: resolve frontend typescript errors
+
+commit 75f3d6ddec3ab7c1b14e7a2671bf01df36ca717d
+Author: Nilesh Raju Ambekar <nileshambekar9281@gmail.com>
+Date:   Fri Jun 19 12:57:34 2026 +0530
+
+    feat: custom application forms and razorpay payment flow fixes
+
+commit 60f683f597c91da94f4cd48ee133c41a5138ea36
+Author: Nilesh Raju Ambekar <nileshambekar9281@gmail.com>
+Date:   Wed May 6 16:38:03 2026 +0530
+
+    fix: proxy image uploads through backend to bypass R2 CORS
+```
+
+---
+
 ## Overview
 
 ShasanSeva is a **Government Scheme Assistance Platform** that connects Indian citizens with government and private schemes (certificates, loans, jobs, licenses, etc.). Users browse schemes, upload required documents, pay a service fee via Razorpay, and receive managed assistance through an admin-operated backend. The platform supports **English** and **Marathi** (मराठी) localization.
@@ -57,15 +84,20 @@ ShasanSeva/
 │   │       ├── services/       # Business logic (auth, r2, razorpay, receipt, notifications)
 │   │       ├── app.ts          # Express app setup
 │   │       └── index.ts        # Server entry point
-│   └── web/                    # @shasansetu/web — Next.js 14 frontend
-│       ├── messages/           # en.json, mr.json (i18n)
-│       ├── public/             # Static assets (logos, category GIFs)
-│       └── src/
-│           ├── app/            # App Router pages
-│           ├── components/     # Shared + admin components
-│           ├── i18n/           # next-intl config
-│           ├── images/         # Imported assets
-│           └── lib/            # API client, auth context, Firebase client
+│   ├── web/                    # @shasansetu/web — Next.js 14 frontend
+│   │   ├── messages/           # en.json, mr.json (i18n)
+│   │   ├── public/             # Static assets (logos, category GIFs)
+│   │   └── src/
+│   │       ├── app/            # App Router pages
+│   │       ├── components/     # Shared + admin components
+│   │       ├── i18n/           # next-intl config
+│   │       ├── images/         # Imported assets
+│   │       └── lib/            # API client, auth context, Firebase client
+│   └── portal/                 # @shasansetu/portal — Next.js 14 Developer Portal (port 3002)
+│       └── src/                # Custom-forms management (login, scheme list, field builder)
+│           ├── app/            # login, schemes list (/), schemes/[id] builder
+│           ├── components/     # PortalHeader
+│           └── lib/            # Portal API client + portal auth context
 ├── packages/
 │   ├── db/                     # @shasansetu/db — Drizzle ORM
 │   │   ├── drizzle/            # SQL migrations (0000–0010)
@@ -153,6 +185,7 @@ Tracks per-admin performance: total_orders_handled, orders_completed, orders_can
 | eligibility | text | |
 | benefits | text | |
 | required_docs | jsonb | `[{type, label, label_mr, required, description, description_mr}]` |
+| custom_fields | jsonb | `[{id, type, label, label_mr, required, options, placeholder, validationRegex}]` |
 | service_fee | decimal(10,2) | NOT NULL |
 | average_completion_days | decimal(5,0) | |
 | logo_url | text | R2 key (nullable) |
@@ -189,6 +222,7 @@ Tracks per-admin performance: total_orders_handled, orders_completed, orders_can
 | assigned_to | uuid | FK → admins(id) |
 | admin_notes | text | |
 | receipt_key | varchar(500) | R2 key for PDF receipt |
+| application_form_data | jsonb | Key-value mapping for scheme's custom fields |
 | **Indexes** | | user_id, status, created_at, assigned_to |
 
 **Order Lifecycle**:
@@ -253,10 +287,23 @@ Entity-based audit trail for all admin actions. Tracks old/new values, performer
 | GET | `/schemes` | — | List with filters (category, type, search, locale). Redis cached. |
 | GET | `/schemes/by-id/:id` | — | By UUID with translations (admin edit) |
 | GET | `/schemes/:slug` | — | By slug (public detail). Redis cached. |
-| POST | `/schemes` | Admin | Create with translations |
-| PATCH | `/schemes/:id` | Admin | Update |
+| POST | `/schemes` | Admin | Create with translations (custom fields NOT accepted here) |
+| PATCH | `/schemes/:id` | Admin | Update (custom fields NOT accepted here) |
 | DELETE | `/schemes/:id` | Admin | Soft delete (→ INACTIVE) |
 | POST | `/schemes/:id/upload-image` | Admin | Upload logo/reference as base64 → R2 |
+
+> **Note:** `schemes.custom_fields` is no longer writable through the admin scheme endpoints. The admin create/update Zod schemas reject `customFields`, and on update the column is left untouched (so portal-managed fields are preserved). Custom fields are managed exclusively through the Developer Portal endpoints below.
+
+### Developer Portal (`/api/portal/*`)
+Separate auth from users/admins — portal JWT signed with `PORTAL_JWT_SECRET`, credentials from env (`PORTAL_USERS`). This is the **only** write path for custom forms.
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/portal/auth/login` | — | Login with env-configured dev username/password (bcrypt). Returns portal JWT. Rate-limited. |
+| GET | `/portal/auth/me` | Portal | Verify token, return `{ username }` |
+| GET | `/portal/schemes` | Portal | List all schemes (incl. INACTIVE) with custom-field counts |
+| GET | `/portal/schemes/:id` | Portal | Scheme + its current custom fields |
+| PATCH | `/portal/schemes/:id/custom-fields` | Portal | Replace a scheme's custom fields (rejects duplicate IDs); invalidates scheme cache |
 
 ### Orders (`/api/orders/*`)
 | Method | Path | Auth | Description |
@@ -360,12 +407,19 @@ Entity-based audit trail for all admin actions. Tracks old/new values, performer
 | `/admin/orders` | Order queue with status tabs, actions |
 | `/admin/orders/:id` | Full order management (41KB) |
 | `/admin/schemes` | Scheme list |
-| `/admin/schemes/new` | Create scheme with image upload |
-| `/admin/schemes/:id/edit` | Edit scheme with image upload |
+| `/admin/schemes/new` | Create scheme with image upload (no custom-fields builder) |
+| `/admin/schemes/:id/edit` | Edit scheme with image upload (no custom-fields builder) |
 | `/admin/users` | User management |
 | `/admin/admins` | Admin management (SUPER_ADMIN only) |
 | `/admin/admins/new` | Create new admin |
 | `/admin/announcements` | Manage announcements (marquee, pills, tags, carousel) |
+
+### Developer Portal Pages (`apps/portal`, standalone on port 3002, no i18n)
+| Route | Description |
+|-------|-------------|
+| `/login` | Developer login (env-configured username/password) |
+| `/` | Scheme list with custom-field counts; search |
+| `/schemes/:id` | Custom-fields builder — add/edit/remove fields, en/mr labels, type, required, dropdown options; saves to `schemes.custom_fields` |
 
 ---
 
@@ -528,6 +582,10 @@ Common, Header, Footer, HomePage, Categories (10), Explore (4), LoginPage, Schem
 | `RAZORPAY_WEBHOOK_SECRET` | ❌ | Webhook verification |
 | `FIREBASE_*` | ❌ | Firebase Admin (project_id, client_email, private_key) |
 | `JWT_EXPIRES_IN` | ❌ | Default: `7d` |
+| `PORTAL_USERS` | ❌ | Developer-portal accounts: comma-separated `username:bcryptHash` (1-3) |
+| `PORTAL_JWT_SECRET` | ❌ | Signs portal JWTs (separate from `JWT_SECRET`) |
+| `PORTAL_TOKEN_EXPIRES_IN` | ❌ | Default: `7d` |
+| `PORTAL_URL` | ❌ | Portal origin for CORS. Default: `http://localhost:3002` |
 | `API_PORT` | ❌ | Default: `3001` |
 | `WEB_URL` | ❌ | Default: `http://localhost:3000` |
 
@@ -574,6 +632,8 @@ Common, Header, Footer, HomePage, Categories (10), Explore (4), LoginPage, Schem
 
 8. **Admin analytics tracking** — Dedicated `admin_analytics` table tracks per-admin performance metrics, updated atomically with order status changes.
 
+9. **Custom forms owned by a separate Developer Portal** — `schemes.custom_fields` is authored only by developers via the standalone `apps/portal` app and `/api/portal/*` (env-based bcrypt auth, dedicated portal JWT). Admins manage everything else about a scheme but cannot touch custom fields; the admin endpoints reject `customFields` and leave the column untouched on update. The data stays in the existing JSONB column (no migration); the public apply flow and `orders.application_form_data` are unchanged. Portal writes call `invalidateSchemeCache()` so changes go live immediately.
+
 ---
 
 ## Development Commands
@@ -582,8 +642,12 @@ Common, Header, Footer, HomePage, Categories (10), Explore (4), LoginPage, Schem
 # Install dependencies
 pnpm install
 
-# Start all services (API + Web)
+# Start all services (API + Web + Developer Portal)
+# Web → :3000, API → :3001, Portal → :3002
 pnpm run dev
+
+# Run just the Developer Portal
+pnpm --filter @shasansetu/portal dev
 
 # Database operations
 pnpm run db:generate     # Generate Drizzle migrations

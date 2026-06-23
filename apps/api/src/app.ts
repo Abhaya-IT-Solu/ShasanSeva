@@ -15,9 +15,13 @@ const app: Application = express();
 // Security middleware
 app.use(helmet());
 
-// CORS - Allow frontend
+// CORS - Allow the public web app and the developer portal
+const allowedOrigins = [
+    env.WEB_URL || 'http://localhost:3000',
+    env.PORTAL_URL || 'http://localhost:3002',
+];
 app.use(cors({
-    origin: env.WEB_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -76,7 +80,8 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
 });
 
 // All other routes use JSON body parsing
-app.use(express.json({ limit: '10mb' }));
+// 15mb to accommodate base64-encoded document uploads (10mb file → ~13.5mb base64)
+app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging

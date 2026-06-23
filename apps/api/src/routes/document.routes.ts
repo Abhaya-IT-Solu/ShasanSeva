@@ -8,6 +8,7 @@ import {
     getExtensionFromContentType,
     ALLOWED_CONTENT_TYPES,
     MAX_FILE_SIZE,
+    uploadBuffer,
 } from '../services/r2.service.js';
 
 import { db, documents } from '@shasansetu/db';
@@ -27,6 +28,70 @@ const uploadUrlSchema = z.object({
     orderId: z.string().uuid().optional(),
 }).refine(data => data.docType || data.documentType, {
     message: "Either docType or documentType is required",
+});
+
+const proxyUploadSchema = z.object({
+    documentType: z.string().min(1),
+    contentType: z.enum(ALLOWED_CONTENT_TYPES as [string, ...string[]]),
+    fileData: z.string().min(1), // base64-encoded file
+    orderId: z.string().uuid().optional(),
+});
+
+/**
+ * POST /api/documents/upload
+ * Proxy upload: accepts base64 file, uploads server-side to R2 (bypasses browser CORS).
+ * Same pattern as /api/schemes/:id/upload-image.
+ */
+router.post('/upload', validateBody(proxyUploadSchema), async (req: Request, res: Response) => {
+    try {
+        const userId = req.user!.userId;
+        const { documentType, contentType, fileData, orderId } = req.body;
+
+        const buffer = Buffer.from(fileData, 'base64');
+        if (buffer.length > MAX_FILE_SIZE) {
+            return res.status(413).json(
+                errorResponse({ code: ErrorCodes.VALIDATION_ERROR, message: 'File too large (max 10 MB)' })
+            );
+        }
+
+        const ext = getExtensionFromContentType(contentType);
+        const timestamp = Date.now();
+        const key = orderId
+            ? `users/${userId}/orders/${orderId}/${documentType}_${timestamp}.${ext}`
+            : `users/${userId}/documents/${documentType}_${timestamp}.${ext}`;
+
+        await uploadBuffer(key, buffer, contentType);
+
+        let documentId: string | null = null;
+        if (orderId) {
+            const existing = await db.select({ id: documents.id })
+                .from(documents)
+                .where(and(eq(documents.orderId, orderId), eq(documents.docType, documentType)))
+                .limit(1);
+
+            if (existing.length > 0) {
+                await db.delete(documents).where(eq(documents.id, existing[0].id));
+            }
+
+            const result = await db.insert(documents).values({
+                orderId,
+                docType: documentType,
+                fileKey: key,
+                fileUrl: '',
+                status: 'UPLOADED',
+            }).returning();
+            documentId = result[0].id;
+        }
+
+        logger.info('Document uploaded via server proxy', { userId, documentType, key });
+
+        return res.json(successResponse({ documentId, key }));
+    } catch (error) {
+        logger.error('Failed to proxy-upload document', error);
+        return res.status(500).json(
+            errorResponse({ code: ErrorCodes.INTERNAL_ERROR, message: 'Failed to upload document' })
+        );
+    }
 });
 
 /**
