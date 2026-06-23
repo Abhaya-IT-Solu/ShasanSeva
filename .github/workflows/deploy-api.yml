@@ -98,6 +98,10 @@ jobs:
             JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
             WEB_URL=${{ secrets.WEB_URL }}
             API_URL=${{ secrets.API_URL }}
+            PORTAL_USERS=${{ secrets.PORTAL_USERS }}
+            PORTAL_JWT_SECRET=${{ secrets.PORTAL_JWT_SECRET}}
+            PORTAL_TOKEN_EXPIRES_IN=${{ secrets.PORTAL_TOKEN_EXPIRES_IN }}
+            PORTAL_URL=${{ secrets.PORTAL_URL }}
             ENVEOF
 
             # ── Write FIREBASE_SERVICE_ACCOUNT_JSON separately ──
