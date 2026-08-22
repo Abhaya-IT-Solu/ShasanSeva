@@ -1,5 +1,5 @@
 import { db, notifications } from '@shasansetu/db';
-import { and, eq, desc } from 'drizzle-orm';
+import { and, eq, desc, count } from 'drizzle-orm';
 import { logger } from '../lib/utils.js';
 
 interface CreateNotificationParams {
@@ -36,12 +36,13 @@ export async function createNotification(params: CreateNotificationParams): Prom
 }
 
 /**
- * Get notifications for a recipient
+ * Get notifications for a recipient (paginated)
  */
 export async function getNotifications(
     recipientId: string,
     recipientType: 'USER' | 'ADMIN',
-    limit = 20
+    limit = 20,
+    offset = 0
 ) {
     try {
         const result = await db.select()
@@ -53,12 +54,37 @@ export async function getNotifications(
                 )
             )
             .orderBy(desc(notifications.createdAt))
-            .limit(limit);
+            .limit(limit)
+            .offset(offset);
 
         return result;
     } catch (error) {
         logger.error('Failed to fetch notifications', error);
         return [];
+    }
+}
+
+/**
+ * Get total notification count for a recipient (for pagination)
+ */
+export async function getNotificationCount(
+    recipientId: string,
+    recipientType: 'USER' | 'ADMIN'
+): Promise<number> {
+    try {
+        const result = await db.select({ count: count() })
+            .from(notifications)
+            .where(
+                and(
+                    eq(notifications.recipientId, recipientId),
+                    eq(notifications.recipientType, recipientType)
+                )
+            );
+
+        return result[0]?.count || 0;
+    } catch (error) {
+        logger.error('Failed to count notifications', error);
+        return 0;
     }
 }
 
@@ -70,7 +96,7 @@ export async function getUnreadCount(
     recipientType: 'USER' | 'ADMIN'
 ): Promise<number> {
     try {
-        const result = await db.select()
+        const result = await db.select({ count: count() })
             .from(notifications)
             .where(
                 and(
@@ -80,7 +106,7 @@ export async function getUnreadCount(
                 )
             );
 
-        return result.length;
+        return result[0]?.count || 0;
     } catch (error) {
         logger.error('Failed to count notifications', error);
         return 0;
@@ -88,18 +114,30 @@ export async function getUnreadCount(
 }
 
 /**
- * Mark a notification as read
+ * Mark a notification as read.
+ * The recipient must own the notification — returns 'not_found' otherwise.
  */
-export async function markAsRead(notificationId: string): Promise<boolean> {
+export async function markAsRead(
+    notificationId: string,
+    recipientId: string,
+    recipientType: 'USER' | 'ADMIN'
+): Promise<'ok' | 'not_found' | 'error'> {
     try {
-        await db.update(notifications)
+        const result = await db.update(notifications)
             .set({ read: true })
-            .where(eq(notifications.id, notificationId));
+            .where(
+                and(
+                    eq(notifications.id, notificationId),
+                    eq(notifications.recipientId, recipientId),
+                    eq(notifications.recipientType, recipientType)
+                )
+            )
+            .returning({ id: notifications.id });
 
-        return true;
+        return result.length > 0 ? 'ok' : 'not_found';
     } catch (error) {
         logger.error('Failed to mark notification as read', error);
-        return false;
+        return 'error';
     }
 }
 
@@ -127,13 +165,3 @@ export async function markAllAsRead(
         return false;
     }
 }
-
-// Notification type constants
-export const NotificationTypes = {
-    PAYMENT_SUCCESS: 'PAYMENT_SUCCESS',
-    ORDER_STATUS_CHANGE: 'ORDER_STATUS_CHANGE',
-    DOCUMENT_REJECTED: 'DOCUMENT_REJECTED',
-    PROOF_UPLOADED: 'PROOF_UPLOADED',
-    ORDER_COMPLETED: 'ORDER_COMPLETED',
-    NEW_ORDER_ASSIGNED: 'NEW_ORDER_ASSIGNED',
-} as const;

@@ -11,9 +11,10 @@ import {
     uploadBuffer,
 } from '../services/r2.service.js';
 
-import { db, documents } from '@shasansetu/db';
+import { db, documents, orders, NotificationType } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
+import { createNotification } from '../services/notification.service.js';
 
 const router: Router = Router();
 
@@ -382,6 +383,24 @@ router.patch('/:id/reject', adminMiddleware, validateBody(rejectDocumentSchema),
                 verifiedBy: adminId,
             })
             .where(eq(documents.id, id));
+
+        // Notify the order's owner about the rejection
+        const document = result[0];
+        if (document.orderId) {
+            const orderResult = await db.select({ userId: orders.userId })
+                .from(orders)
+                .where(eq(orders.id, document.orderId));
+            if (orderResult.length > 0) {
+                await createNotification({
+                    recipientId: orderResult[0].userId,
+                    recipientType: 'USER',
+                    type: NotificationType.DOCUMENT_REJECTED,
+                    title: 'Document Rejected',
+                    message: `Your ${document.docType} document was rejected: ${rejectionReason}`,
+                    relatedOrderId: document.orderId,
+                });
+            }
+        }
 
         logger.info('Document rejected', { documentId: id, adminId, reason: rejectionReason });
 

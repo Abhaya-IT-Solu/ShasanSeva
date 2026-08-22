@@ -2,10 +2,11 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
-import { db, orders, documents, schemes, users } from '@shasansetu/db';
+import { db, orders, documents, schemes, users, NotificationType } from '@shasansetu/db';
 import { eq, desc, count, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { getDownloadUrl } from '../services/r2.service.js';
+import { createNotification } from '../services/notification.service.js';
 
 const router: Router = Router();
 
@@ -298,6 +299,22 @@ router.patch('/:id/status', authMiddleware, adminMiddleware, validateBody(update
             .set(updateData)
             .where(eq(orders.id, id));
 
+        // Notify the user about the status change
+        const statusMessages: Record<string, string> = {
+            'IN_PROGRESS': 'An officer has started working on your application.',
+            'PROOF_UPLOADED': 'Proof of completion has been uploaded for your application.',
+            'COMPLETED': 'Your application has been processed and completed successfully.',
+            'CANCELLED': 'Your application has been cancelled. Please check the order details.',
+        };
+        await createNotification({
+            recipientId: order.userId,
+            recipientType: 'USER',
+            type: status === 'COMPLETED' ? NotificationType.ORDER_COMPLETED : NotificationType.ORDER_STATUS_CHANGE,
+            title: `Order ${status === 'COMPLETED' ? 'Completed' : 'Update'}`,
+            message: statusMessages[status] || `Your order status changed to ${status}.`,
+            relatedOrderId: id,
+        });
+
         logger.info('Order status updated', { orderId: id, status, adminId });
 
         return res.json(successResponse({
@@ -517,14 +534,11 @@ router.post('/:id/complete', authMiddleware, adminMiddleware, async (req: Reques
             })
             .where(eq(orders.id, id));
 
-        // Import notification service dynamically to avoid circular deps
-        const { createNotification, NotificationTypes } = await import('../services/notification.service');
-
         // Notify user about order completion
         await createNotification({
             recipientId: order.userId,
             recipientType: 'USER',
-            type: NotificationTypes.ORDER_COMPLETED,
+            type: NotificationType.ORDER_COMPLETED,
             title: 'Order Completed!',
             message: 'Your order has been processed and completed successfully.',
             relatedOrderId: id,

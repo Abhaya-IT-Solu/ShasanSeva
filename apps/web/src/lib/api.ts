@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@shasansetu/types';
+import type { ApiResponse, NotificationListResponse } from '@shasansetu/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -151,6 +151,21 @@ class ApiClient {
             method: 'PATCH',
             body: data,
         });
+    }
+
+    // Notification endpoints
+    async getNotifications(page = 1, limit = 20) {
+        return this.request<NotificationListResponse>(
+            `/api/notifications?page=${page}&limit=${limit}`
+        );
+    }
+
+    async markNotificationRead(id: string) {
+        return this.request(`/api/notifications/${id}/read`, { method: 'PATCH' });
+    }
+
+    async markAllNotificationsRead() {
+        return this.request('/api/notifications/mark-all-read', { method: 'POST' });
     }
 }
 

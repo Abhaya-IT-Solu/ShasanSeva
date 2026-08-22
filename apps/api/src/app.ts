@@ -7,8 +7,9 @@ import { apiRateLimiter } from './middleware/rateLimit.middleware.js';
 import { env } from './config/env.js';
 import { logger } from './lib/utils.js';
 import { verifyWebhookSignature } from './services/razorpay.service.js';
-import { db, orders } from '@shasansetu/db';
+import { db, orders, NotificationType } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
+import { createNotification } from './services/notification.service.js';
 
 const app: Application = express();
 
@@ -50,10 +51,24 @@ app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), asy
                 const orderId = event.payload?.payment?.entity?.notes?.orderId;
                 if (orderId) {
                     // Guard: only update if still PENDING_PAYMENT (idempotency)
-                    await db.update(orders)
+                    const updated = await db.update(orders)
                         .set({ status: 'PAID', paymentId: capturedPaymentId, paymentTimestamp: new Date(), updatedAt: new Date() })
-                        .where(and(eq(orders.id, orderId), eq(orders.status, 'PENDING_PAYMENT')));
+                        .where(and(eq(orders.id, orderId), eq(orders.status, 'PENDING_PAYMENT')))
+                        .returning({ userId: orders.userId });
                     logger.info('Payment captured via webhook', { orderId, paymentId: capturedPaymentId });
+
+                    // Only notify if THIS call performed the transition — if the
+                    // verify endpoint won the race, it already sent the notification
+                    if (updated.length > 0) {
+                        await createNotification({
+                            recipientId: updated[0].userId,
+                            recipientType: 'USER',
+                            type: NotificationType.PAYMENT_SUCCESS,
+                            title: 'Payment Successful',
+                            message: 'Your payment was received and your application is being processed.',
+                            relatedOrderId: orderId,
+                        });
+                    }
                 }
                 break;
             }

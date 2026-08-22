@@ -6,11 +6,12 @@ import {
     createRazorpayOrder,
     verifyPaymentSignature,
 } from '../services/razorpay.service.js';
-import { db, orders, schemes, documents, users } from '@shasansetu/db';
+import { db, orders, schemes, documents, users, NotificationType } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { env } from '../config/env.js';
 import { generateReceipt } from '../services/receipt.service.js';
+import { createNotification } from '../services/notification.service.js';
 
 const router: Router = Router();
 
@@ -244,6 +245,17 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             .where(eq(orders.id, orderId));
 
         logger.info('Payment verified and order updated', { orderId, razorpayPaymentId });
+
+        // Notify the user (fires once — the PENDING_PAYMENT guard above ensures
+        // the webhook-first path returns early before reaching here)
+        await createNotification({
+            recipientId: userId,
+            recipientType: 'USER',
+            type: NotificationType.PAYMENT_SUCCESS,
+            title: 'Payment Successful',
+            message: 'Your payment was received and your application is being processed.',
+            relatedOrderId: orderId,
+        });
 
         // Link uploaded documents to the order (only on first verify call, guarded by status check above)
         if (uploadedDocuments && uploadedDocuments.length > 0) {

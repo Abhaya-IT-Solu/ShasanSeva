@@ -24,6 +24,14 @@
         "logout": "Logout",
         "language": "Language"
     },
+    "Notifications": {
+        "title": "Notifications",
+        "markAllRead": "Mark all as read",
+        "viewAll": "View all notifications",
+        "empty": "No notifications yet",
+        "loading": "Loading notifications...",
+        "unreadSubtitle": "You have {count} unread notifications"
+    },
     "Footer": {
         "tagline": "Your trusted partner for government scheme assistance",
         "quickLinks": "Quick Links",

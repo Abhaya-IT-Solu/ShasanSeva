@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { useAuth } from '@/lib/auth';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
+import { NotificationBell } from '@/components/NotificationBell';
 import styles from './Header.module.css';
 
 export function Header() {
@@ -73,6 +74,8 @@ export function Header() {
                             {authLoading ? (
                                 <div className="spinner" style={{ width: 20, height: 20 }} />
                             ) : isAuthenticated ? (
+                                <>
+                                <NotificationBell />
                                 <div className={styles.userMenuWrapper}>
                                     <button
                                         className={styles.userBtn}
@@ -102,6 +105,7 @@ export function Header() {
                                         </div>
                                     )}
                                 </div>
+                                </>
                             ) : (
                                 <Link href="/login" className={styles.primaryBtn}>
                                     {t('login')}

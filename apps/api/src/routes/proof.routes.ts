@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
 import { validateBody } from '../middleware/validation.middleware.js';
-import { db, proofs, orders } from '@shasansetu/db';
+import { db, proofs, orders, NotificationType } from '@shasansetu/db';
 import { eq } from 'drizzle-orm';
 import {
     getUploadUrl,
@@ -10,7 +10,7 @@ import {
     getExtensionFromContentType,
     ALLOWED_CONTENT_TYPES,
 } from '../services/r2.service.js';
-import { createNotification, NotificationTypes } from '../services/notification.service.js';
+import { createNotification } from '../services/notification.service.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 
 const router: Router = Router();
@@ -145,7 +145,7 @@ router.post('/:id/confirm', adminMiddleware, async (req: Request, res: Response)
             await createNotification({
                 recipientId: orderResult[0].userId,
                 recipientType: 'USER',
-                type: NotificationTypes.PROOF_UPLOADED,
+                type: NotificationType.PROOF_UPLOADED,
                 title: 'Proof Uploaded',
                 message: 'Admin has uploaded proof for your order. Please check your dashboard.',
                 relatedOrderId: proof.orderId,

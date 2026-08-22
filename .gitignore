@@ -42,3 +42,6 @@ coverage/
 
 # Misc
 .vercel
+
+# Local database backups (contain user PII - never commit)
+backups/
