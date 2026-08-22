@@ -63,6 +63,7 @@ export default function TermsPage() {
                         <li>Refund requests must be raised within 7 days of payment</li>
                     </ul>
                     <p>Refunds are <strong>not available</strong> if your application is rejected by the government authority, as our fee is for the assistance service provided.</p>
+                    <p>For full details on cancellations, eligibility, and processing timelines, see our <Link href="/refund">Refund &amp; Cancellation Policy</Link>.</p>
                 </div>
 
                 <div className={styles.card}>

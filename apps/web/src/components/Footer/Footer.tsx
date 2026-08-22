@@ -83,6 +83,7 @@ export default function Footer() {
                     <div className={styles.legalLinks}>
                         <Link href="/privacy">{t('privacyPolicy')}</Link>
                         <Link href="/terms">{t('termsOfService')}</Link>
+                        <Link href="/refund">{t('refundPolicy')}</Link>
                         <Link href="/disclaimer">{t('disclaimerLink')}</Link>
                     </div>
                 </div>
