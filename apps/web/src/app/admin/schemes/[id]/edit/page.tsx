@@ -61,8 +61,6 @@ export default function EditSchemePage() {
         serviceFee: '',
         averageCompletionDays: '',
         status: 'ACTIVE',
-        logoUrl: '',
-        referenceImageUrl: '',
     });
 
     // Image upload states
@@ -70,6 +68,15 @@ export default function EditSchemePage() {
     const [refImagePreview, setRefImagePreview] = useState<string | null>(null);
     const [uploadingLogo, setUploadingLogo] = useState(false);
     const [uploadingRef, setUploadingRef] = useState(false);
+
+    // Pending image changes, written only when the form is saved.
+    //   undefined -> untouched, omit from the PATCH body
+    //   null      -> removal requested, send null
+    //   string    -> newly uploaded R2 key, send the key
+    // Never hold a resolved public URL here: the API writes whatever it receives
+    // straight into the column, which expects a key.
+    const [pendingLogoKey, setPendingLogoKey] = useState<string | null | undefined>(undefined);
+    const [pendingRefKey, setPendingRefKey] = useState<string | null | undefined>(undefined);
 
     // English translations
     const [englishData, setEnglishData] = useState({
@@ -104,8 +111,6 @@ export default function EditSchemePage() {
                         serviceFee: scheme.serviceFee || '',
                         averageCompletionDays: scheme.averageCompletionDays || '',
                         status: scheme.status || 'ACTIVE',
-                        logoUrl: '',
-                        referenceImageUrl: '',
                     });
 
                     // Set image previews from existing public URLs
@@ -187,8 +192,10 @@ export default function EditSchemePage() {
     const handleImageUpload = async (file: File, type: 'logo' | 'reference') => {
         const setUploading = type === 'logo' ? setUploadingLogo : setUploadingRef;
         const setPreview = type === 'logo' ? setLogoPreview : setRefImagePreview;
+        const setPendingKey = type === 'logo' ? setPendingLogoKey : setPendingRefKey;
 
         setUploading(true);
+        setError('');
         try {
             // Convert file to base64
             const fileData = await new Promise<string>((resolve, reject) => {
@@ -212,8 +219,20 @@ export default function EditSchemePage() {
                 throw new Error(response.error?.message || 'Failed to upload image');
             }
 
-            // Show preview using local blob URL
-            setPreview(URL.createObjectURL(file));
+            // The upload endpoint persists the key itself and returns it along with
+            // the resolved public URL. Track the key so a later save cannot clobber it.
+            const { key, publicUrl } = (response.data || {}) as { key?: string; publicUrl?: string | null };
+            if (key) setPendingKey(key);
+
+            // Prefer the real URL — it proves the image is actually reachable.
+            // A local blob would render fine even when the server cannot resolve a
+            // URL at all (e.g. R2_PUBLIC_URL unset), hiding a broken configuration.
+            if (publicUrl) {
+                setPreview(publicUrl);
+            } else {
+                setPreview(URL.createObjectURL(file));
+                setError('Image uploaded, but the server returned no public URL for it (R2_PUBLIC_URL may not be configured). It will not display to users.');
+            }
         } catch (err: any) {
             setError(err.message || `Failed to upload ${type} image`);
         } finally {
@@ -232,7 +251,6 @@ export default function EditSchemePage() {
             const response = await api.request(`/api/schemes/${schemeId}`, {
                 method: 'PATCH',
                 body: {
-                    
                     slug: formData.slug,
                     category: formData.category,
                     schemeType: formData.schemeType,
@@ -240,6 +258,10 @@ export default function EditSchemePage() {
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : null,
                     status: formData.status,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
+                    // Only sent when the admin actually changed an image. The API
+                    // ignores undefined, so an untouched image is left alone.
+                    ...(pendingLogoKey !== undefined && { logoUrl: pendingLogoKey }),
+                    ...(pendingRefKey !== undefined && { referenceImageUrl: pendingRefKey }),
                     translations: {
                         en: englishData,
                         mr: marathiData.name ? marathiData : undefined,
@@ -471,32 +493,31 @@ export default function EditSchemePage() {
                                         {logoPreview ? (
                                             <div className={formStyles.imagePreview}>
                                                 <img src={logoPreview} alt="Logo preview" />
-                                                <button type="button" className={formStyles.removeImageBtn} onClick={async () => {
+                                                {/* Removal is staged locally and applied on save, so
+                                                    navigating away without saving loses nothing. */}
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
                                                     setLogoPreview(null);
-                                                    try {
-                                                        await api.request(`/api/schemes/${schemeId}`, {
-                                                            method: 'PATCH',
-                                                            body: { logoUrl: null },
-                                                        });
-                                                    } catch (e) { /* silent */ }
+                                                    setPendingLogoKey(null);
                                                 }}>✕</button>
                                             </div>
-                                        ) : (
-                                            <label className={formStyles.uploadLabel}>
-                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
-                                                <span>{uploadingLogo ? 'Uploading...' : 'Upload Logo'}</span>
-                                                <input
-                                                    type="file"
-                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
-                                                    hidden
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleImageUpload(file, 'logo');
-                                                    }}
-                                                    disabled={uploadingLogo}
-                                                />
-                                            </label>
-                                        )}
+                                        ) : null}
+                                        {/* Always reachable, so replacing an image never requires
+                                            removing the existing one first. */}
+                                        <label className={formStyles.uploadLabel}>
+                                            <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                            <span>{uploadingLogo ? 'Uploading...' : logoPreview ? 'Replace Logo' : 'Upload Logo'}</span>
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                hidden
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImageUpload(file, 'logo');
+                                                    e.target.value = '';
+                                                }}
+                                                disabled={uploadingLogo}
+                                            />
+                                        </label>
                                     </div>
                                 </div>
                                 <div className="input-group">
@@ -505,32 +526,31 @@ export default function EditSchemePage() {
                                         {refImagePreview ? (
                                             <div className={formStyles.imagePreview}>
                                                 <img src={refImagePreview} alt="Reference preview" />
-                                                <button type="button" className={formStyles.removeImageBtn} onClick={async () => {
+                                                {/* Removal is staged locally and applied on save, so
+                                                    navigating away without saving loses nothing. */}
+                                                <button type="button" className={formStyles.removeImageBtn} onClick={() => {
                                                     setRefImagePreview(null);
-                                                    try {
-                                                        await api.request(`/api/schemes/${schemeId}`, {
-                                                            method: 'PATCH',
-                                                            body: { referenceImageUrl: null },
-                                                        });
-                                                    } catch (e) { /* silent */ }
+                                                    setPendingRefKey(null);
                                                 }}>✕</button>
                                             </div>
-                                        ) : (
-                                            <label className={formStyles.uploadLabel}>
-                                                <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
-                                                <span>{uploadingRef ? 'Uploading...' : 'Upload Reference Image'}</span>
-                                                <input
-                                                    type="file"
-                                                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
-                                                    hidden
-                                                    onChange={(e) => {
-                                                        const file = e.target.files?.[0];
-                                                        if (file) handleImageUpload(file, 'reference');
-                                                    }}
-                                                    disabled={uploadingRef}
-                                                />
-                                            </label>
-                                        )}
+                                        ) : null}
+                                        {/* Always reachable, so replacing an image never requires
+                                            removing the existing one first. */}
+                                        <label className={formStyles.uploadLabel}>
+                                            <span className="material-icons" style={{ fontSize: 32, color: 'var(--color-gray-400)' }}>add_photo_alternate</span>
+                                            <span>{uploadingRef ? 'Uploading...' : refImagePreview ? 'Replace Reference Image' : 'Upload Reference Image'}</span>
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                                hidden
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleImageUpload(file, 'reference');
+                                                    e.target.value = '';
+                                                }}
+                                                disabled={uploadingRef}
+                                            />
+                                        </label>
                                     </div>
                                 </div>
                             </div>

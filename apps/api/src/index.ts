@@ -9,6 +9,13 @@ const server = app.listen(PORT, () => {
     logger.info(`🚀 ShasanSetu API server running on port ${PORT}`);
     logger.info(`📍 Environment: ${env.NODE_ENV || 'development'}`);
     logger.info(`🌐 Web URL: ${env.WEB_URL || 'http://localhost:3000'}`);
+
+    // Not fatal — the API still serves fine without it — but every scheme logo,
+    // reference image and announcement image will come back as null, which looks
+    // like data loss rather than a config gap. Warn loudly instead.
+    if (!env.R2_PUBLIC_URL) {
+        logger.warn('⚠️  R2_PUBLIC_URL is not set — all image URLs will resolve to null');
+    }
 });
 
 // Graceful shutdown — close DB connections before exiting

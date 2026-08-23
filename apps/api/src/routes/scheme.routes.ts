@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db, schemes, schemeTranslations } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
-import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
+import { authMiddleware, adminMiddleware, resolveOptionalAdmin } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { redis, REDIS_KEYS, REDIS_TTL, invalidateSchemeCache } from '../lib/redis.js';
@@ -89,13 +89,9 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
         // Build conditions
         const conditions: any[] = [];
 
-        // For public access, only show active schemes unless admin
-        const authHeader = req.headers.authorization;
-        let isAdmin = false;
-
-        if (authHeader) {
-            isAdmin = true;
-        }
+        // For public access, only show active schemes unless admin.
+        // The token is actually verified — an invalid one is treated as public.
+        const isAdmin = await resolveOptionalAdmin(req);
 
         // Only use cache for non-admin public requests without search
         const useCache = !isAdmin && !search && !status;
@@ -247,7 +243,7 @@ router.get('/by-id/:id', async (req, res) => {
             status: scheme.status,
             requiredDocs: scheme.requiredDocs,
             customFields: scheme.customFields,
-            averageCompletionDays: scheme.average_completion_days,
+            averageCompletionDays: scheme.averageCompletionDays,
             logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
             referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
             translations,
@@ -271,8 +267,7 @@ router.get('/:slug', async (req, res) => {
     try {
         const { slug } = req.params;
         const locale = (req.query.locale as string) || 'en';
-        const authHeader = req.headers.authorization;
-        const isAdmin = !!authHeader;
+        const isAdmin = await resolveOptionalAdmin(req);
 
         // Try cache first for public requests
         if (!isAdmin) {

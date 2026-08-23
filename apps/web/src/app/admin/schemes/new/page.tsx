@@ -132,6 +132,7 @@ export default function NewSchemePage() {
                 const schemeId = createdScheme?.id;
 
                 // Upload images if files were selected
+                const failedUploads: string[] = [];
                 if (schemeId && (logoFile || refImageFile)) {
                     const uploadImage = async (file: File, type: 'logo' | 'reference') => {
                         try {
@@ -147,22 +148,32 @@ export default function NewSchemePage() {
                             });
 
                             // Upload via backend proxy (bypasses CORS)
-                            await api.request(`/api/schemes/${schemeId}/upload-image`, {
+                            const uploadResponse = await api.request(`/api/schemes/${schemeId}/upload-image`, {
                                 method: 'POST',
                                 body: { type, contentType: file.type, fileData },
                             });
+                            // A non-success response was previously ignored, so a failed
+                            // upload still reported "Scheme created successfully!"
+                            if (!uploadResponse.success) failedUploads.push(type);
                         } catch (err) {
                             console.error(`Failed to upload ${type} image`, err);
+                            failedUploads.push(type);
                         }
                     };
                     if (logoFile) await uploadImage(logoFile, 'logo');
                     if (refImageFile) await uploadImage(refImageFile, 'reference');
                 }
 
-                setSuccess('Scheme created successfully!');
+                if (failedUploads.length > 0) {
+                    // The scheme itself was created — say so, but don't claim the
+                    // images made it. They can be re-uploaded from the edit page.
+                    setSuccess(`Scheme created, but the ${failedUploads.join(' and ')} image failed to upload. Add it from the edit page.`);
+                } else {
+                    setSuccess('Scheme created successfully!');
+                }
                 setTimeout(() => {
                     router.push('/admin/schemes');
-                }, 1500);
+                }, failedUploads.length > 0 ? 3000 : 1500);
             } else {
                 setError(response.error?.message || 'Failed to create scheme');
             }

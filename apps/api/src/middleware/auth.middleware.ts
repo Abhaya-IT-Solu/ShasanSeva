@@ -139,3 +139,29 @@ export function userMiddleware(req: Request, res: Response, next: NextFunction) 
 
     next();
 }
+
+/**
+ * Resolve whether a request comes from an authenticated admin, without rejecting
+ * anonymous callers.
+ *
+ * For public routes that reveal extra data to admins (e.g. INACTIVE schemes).
+ * These previously trusted the mere presence of an Authorization header, so any
+ * garbage bearer token was enough to see unpublished content.
+ *
+ * Returns false — rather than throwing — for missing, malformed, unverifiable or
+ * expired credentials, so the caller falls through to the public path.
+ */
+export async function resolveOptionalAdmin(req: Request): Promise<boolean> {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
+
+        const payload = verifyToken(authHeader.split(' ')[1]);
+        if (!payload) return false;
+
+        const session = await validateSession(payload.userId);
+        return session?.userType === 'ADMIN';
+    } catch {
+        return false;
+    }
+}
