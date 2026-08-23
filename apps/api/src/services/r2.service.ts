@@ -13,7 +13,18 @@ const r2Client = new S3Client({
     },
 });
 
-const BUCKET_NAME = env.R2_BUCKET_NAME || 'shasansetu-documents';
+// No fallback bucket name on purpose. A default here is silently destructive:
+// if R2_BUCKET_NAME is unset or empty, every upload succeeds against a bucket
+// nobody is looking at, the DB records keys for it, and the loss only surfaces
+// much later as "object not found". Fail the request loudly instead.
+const BUCKET_NAME = env.R2_BUCKET_NAME || '';
+
+function requireBucket(): string {
+    if (!BUCKET_NAME) {
+        throw new Error('R2_BUCKET_NAME is not configured — refusing to read or write objects');
+    }
+    return BUCKET_NAME;
+}
 
 // URL expiration times (in seconds)
 const UPLOAD_URL_EXPIRY = 300; // 5 minutes
@@ -99,7 +110,7 @@ export async function getUploadUrl(params: UploadUrlParams): Promise<{
     const key = generateKey(params);
 
     const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: requireBucket(),
         Key: key,
         ContentType: params.contentType,
     });
@@ -132,7 +143,7 @@ export async function getUploadUrlForKey(key: string, contentType: string): Prom
     expiresIn: number;
 }> {
     const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: requireBucket(),
         Key: key,
         ContentType: contentType,
     });
@@ -161,7 +172,7 @@ export async function getUploadUrlForKey(key: string, contentType: string): Prom
  */
 export async function uploadBuffer(key: string, buffer: Buffer, contentType: string): Promise<void> {
     const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: requireBucket(),
         Key: key,
         Body: buffer,
         ContentType: contentType,
@@ -185,7 +196,7 @@ export async function getDownloadUrl(key: string): Promise<{
     expiresIn: number;
 }> {
     const command = new GetObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: requireBucket(),
         Key: key,
     });
 
@@ -211,7 +222,7 @@ export async function getDownloadUrl(key: string): Promise<{
  */
 export async function deleteDocument(key: string): Promise<void> {
     const command = new DeleteObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: requireBucket(),
         Key: key,
     });
 
