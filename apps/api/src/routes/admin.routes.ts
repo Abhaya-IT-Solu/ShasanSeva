@@ -5,6 +5,7 @@ import { eq, count, and, gte } from 'drizzle-orm';
 import { authMiddleware, adminMiddleware, superAdminMiddleware } from '../middleware/auth.middleware.js';
 import { validateBody } from '../middleware/validation.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
+import { reconcilePayments } from '../services/reconciliation.service.js';
 
 
 const router: Router = Router();
@@ -469,6 +470,59 @@ router.get('/admins/:id/analytics', superAdminMiddleware, async (req, res) => {
                 message: 'Failed to fetch analytics',
             })
         );
+    }
+});
+
+/**
+ * GET /api/admin/reconciliation?days=7  (or ?from=ISO&to=ISO)
+ * Compare Razorpay's ledger against our orders and report the differences.
+ *
+ * Read-only by design: every discrepancy means money and fulfilment disagree,
+ * and the correct response is a human decision. SUPER_ADMIN only — it exposes
+ * payment-level financial data and calls Razorpay's API repeatedly.
+ */
+router.get('/reconciliation', superAdminMiddleware, async (req, res) => {
+    try {
+        const MAX_DAYS = 90;
+        let from: Date;
+        let to: Date;
+
+        if (req.query.from || req.query.to) {
+            from = new Date(String(req.query.from));
+            to = req.query.to ? new Date(String(req.query.to)) : new Date();
+            if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+                return res.status(400).json(errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'Invalid from/to date',
+                }));
+            }
+        } else {
+            const days = Math.min(Math.max(parseInt(String(req.query.days)) || 7, 1), MAX_DAYS);
+            to = new Date();
+            from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+        }
+
+        if (from >= to) {
+            return res.status(400).json(errorResponse({
+                code: ErrorCodes.VALIDATION_ERROR,
+                message: '`from` must be earlier than `to`',
+            }));
+        }
+        if ((to.getTime() - from.getTime()) > MAX_DAYS * 24 * 60 * 60 * 1000) {
+            return res.status(400).json(errorResponse({
+                code: ErrorCodes.VALIDATION_ERROR,
+                message: `Window cannot exceed ${MAX_DAYS} days`,
+            }));
+        }
+
+        const report = await reconcilePayments(from, to);
+        return res.json(successResponse(report));
+    } catch (error) {
+        logger.error('Reconciliation failed', error);
+        return res.status(500).json(errorResponse({
+            code: ErrorCodes.INTERNAL_ERROR,
+            message: 'Failed to reconcile payments',
+        }));
     }
 });
 

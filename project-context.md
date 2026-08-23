@@ -28,9 +28,12 @@ The platform is **live in production** and processing real orders. The core loop
 
 Recent work (August 2026) has been corrective rather than feature-driven. The notification feature, previously an orphaned backend with no UI and only two of six event types wired, is now complete and user-visible. A cluster of silent data-loss defects in the scheme editor was found and fixed. Underlying several of these was a single recurring cause: **configuration that degrades silently instead of failing loudly** — three separate production incidents (`PORTAL_URL`, `R2_PUBLIC_URL`, `R2_BUCKET_NAME`) traced back to secrets that were missing or empty, where the code helpfully substituted a default and carried on. That class of bug is now guarded at boot; see **Known Issues & Traps**.
 
+Ahead of switching Razorpay to live keys, the payment path was audited and hardened. The most serious finding: `/verify` never checked that the payment being confirmed belonged to the order being settled, so a genuine cheap payment's signature could be replayed against an expensive order. That is closed, along with capture confirmation and an atomic settle. A read-only reconciliation endpoint now compares Razorpay's ledger against our orders — its first run surfaced two captured-but-unsettled orders. **Refunds remain unbuilt** despite a published refund policy; see Known Issues item 3.
+
 ### Recent commits
 
 ```text
+47bf385  2026-08-23  fix(payments): bind payment to its order, verify capture, make PAID atomic
 03758c1  2026-08-23  fix: remove silent R2 bucket fallback, warn on missing config at boot
 ebec32c  2026-08-23  fix: scheme images returning null, plus three related data-loss defects
 cdc8011  2026-08-22  feat: complete notification feature — fix IDOR, wire missing events, add web UI
@@ -101,7 +104,7 @@ ShasanSeva/
 │   │   ├── lib/               # redis, utils/logger, firebase-admin
 │   │   ├── middleware/        # auth, validation, rate limiting
 │   │   ├── routes/            # 13 route modules
-│   │   ├── services/          # auth, r2, razorpay, receipt, notification, portal
+│   │   ├── services/          # auth, r2, razorpay, receipt, notification, portal, reconciliation
 │   │   ├── app.ts             # express setup, CORS, Razorpay webhook (raw body)
 │   │   └── index.ts           # entry, graceful shutdown, boot config checks
 │   ├── web/
@@ -258,6 +261,18 @@ Separate auth — portal JWT signed with `PORTAL_JWT_SECRET`, credentials from `
 ### Proofs, Admin, Other
 `/api/proofs/*` — presigned upload, confirm (advances order), download
 `/api/admin/*` — `stats`, `users`, `users/:id`, `my-analytics`; `admins` CRUD + `toggle-active` (SUPER_ADMIN)
+
+**`GET /api/admin/reconciliation`** (SUPER_ADMIN) — compares Razorpay's ledger against `orders` and reports differences. `?days=N` (default 7, max 90) or `?from=ISO&to=ISO`.
+
+| Discrepancy | Severity | Meaning |
+|---|---|---|
+| `CAPTURED_WITHOUT_ORDER` | critical | Money captured, no order references it |
+| `CAPTURED_ORDER_NOT_SETTLED` | critical | Money captured, order still `PENDING_PAYMENT` — verify *and* webhook both missed |
+| `SETTLED_WITHOUT_CAPTURE` | critical | Order treated as paid with no captured payment — fulfilling for free |
+| `AMOUNT_MISMATCH` | critical | Captured amount ≠ recorded amount |
+| `REFUNDED_BUT_ACTIVE` | warning | Refunded at Razorpay, order still active |
+
+**Read-only by design.** Every discrepancy means money and fulfilment disagree, and the right response is a human decision — auto-repair would risk a second, wrong money movement. `truncated: true` in the response means the window held more than 5,000 payments and the result is incomplete; narrow the range.
 `/api/feedbacks` · `/api/announcements/*` (+ `/public`) · `/api/health` (DB probe, used by the Docker healthcheck)
 
 ---
@@ -317,6 +332,8 @@ Apply → upload documents → review
        └─ PAYMENT_SUCCESS notification
   → success page + receipt download
 ```
+
+`/verify` binds the submitted `razorpayOrderId` to the order's stored one before doing anything else — the signature alone proves only that Razorpay issued it for *some* order, not this one. It then confirms with Razorpay that the payment is `captured` and for the expected amount, and claims the `PENDING_PAYMENT` → `PAID` transition atomically so concurrent calls cannot double-run the side effects. On a Razorpay API error it fails closed with 503, which is safe because the webhook reaches PAID independently.
 
 The `payment.captured` **webhook** races `/verify` — either may land first. Both guard on `PENDING_PAYMENT` and the webhook uses `.returning()` to detect whether *it* performed the transition, so exactly one `PAYMENT_SUCCESS` notification is created. `/verify` is idempotent: an already-`PAID` order returns success rather than erroring, so a user mashing "Retry Payment" cannot create duplicates.
 
@@ -493,11 +510,25 @@ Dumps contain user PII — `backups/` is gitignored and must stay that way.
 
 2. **R2 bucket split.** Production spent months uploading to a different bucket than `R2_PUBLIC_URL` served, because `R2_BUCKET_NAME` was empty and the code silently defaulted to `shasansetu-documents`. ~36 DB-referenced objects live in the abandoned bucket and were consciously orphaned. Those rows still hold keys, so they render as **broken images** rather than empty slots — null the columns if that becomes annoying.
 
-3. **Migration history is not replayable** (above).
+3. **Refunds are entirely manual and are not written back.** ⚠️ **Deliberate gap — not yet built.**
 
-4. **Notification text is English-only** in the DB.
+   There is **no refund code anywhere in the API** — no endpoint, no service, no webhook handler for `refund.processed`. But `/refund` publishes a policy promising refunds within stated windows, so this is a commitment the system cannot currently honour on its own.
 
-5. **Auth guards are client-side.** No server-side middleware enforcement beyond i18n routing; the API is the real boundary.
+   Today a refund means: an operator issues it manually in the Razorpay dashboard, money returns to the customer, and **nothing in our database changes**. The order still reads `PAID`/`IN_PROGRESS`, still sits in the admin queue, and still looks fulfillable. Nobody is told.
+
+   The one guard rail: reconciliation flags these as `REFUNDED_BUT_ACTIVE`, so they are at least *discoverable* — run it after issuing any refund. That detects, it does not fix.
+
+   To close this properly:
+   - `POST /api/orders/:id/refund` (SUPER_ADMIN) calling Razorpay's refund API, writing a `REFUNDED` order status
+   - A `refund.processed` webhook case, so dashboard-issued refunds sync back
+   - A `REFUNDED` state in the order lifecycle and its status badges (currently the machine has no terminal refunded state — `CANCELLED` is the nearest and means something different)
+   - A refund notification type, and a decision on whether refunds are ever partial
+
+4. **Migration history is not replayable** (above).
+
+5. **Notification text is English-only** in the DB.
+
+6. **Auth guards are client-side.** No server-side middleware enforcement beyond i18n routing; the API is the real boundary.
 
 ### Lessons that cost real time
 
@@ -579,6 +610,8 @@ pnpm db:backup
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | Added payment reconciliation (`GET /api/admin/reconciliation`) — read-only comparison of Razorpay's ledger against `orders`. First run flagged 2 captured-but-unsettled orders |
+| 2026-08-23 | Hardened `/payments/verify`: bound payment to its order (was replayable across orders), added capture + amount confirmation, made the PAID transition atomic, unique index on `payment_id` |
 | 2026-08-23 | Removed silent R2 bucket fallback; boot-time config warnings. Discovered production had been uploading to a phantom bucket; orphaned those objects by decision |
 | 2026-08-23 | Fixed scheme images reading `null` (missing `R2_PUBLIC_URL`), the ✕-button image clobber, `averageCompletionDays` wipe, and an INACTIVE-scheme auth leak |
 | 2026-08-22 | Notification feature completed — IDOR fixed, four dead event types wired, bell + `/notifications` page, indexes added |

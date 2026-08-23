@@ -138,6 +138,62 @@ export async function fetchPayment(paymentId: string) {
     }
 }
 
+/** The payment fields reconciliation depends on. */
+export interface RazorpayPaymentRecord {
+    id: string;
+    order_id: string;
+    amount: number | string;
+    status: 'created' | 'authorized' | 'captured' | 'refunded' | 'failed';
+    refund_status?: 'null' | 'partial' | 'full';
+    amount_refunded?: number;
+    created_at: number;
+}
+
+const PAYMENTS_PAGE_SIZE = 100; // Razorpay's maximum
+const MAX_PAYMENT_PAGES = 50;   // 5,000 payments — bounds a runaway window
+
+/**
+ * List every payment Razorpay recorded in a time window, following pagination.
+ *
+ * `truncated` is true when the page cap was hit, meaning the window holds more
+ * payments than were fetched — callers should narrow the range rather than
+ * trust the result as complete.
+ */
+export async function listPayments(from: Date, to: Date): Promise<{
+    payments: RazorpayPaymentRecord[];
+    truncated: boolean;
+}> {
+    const fromTs = Math.floor(from.getTime() / 1000);
+    const toTs = Math.floor(to.getTime() / 1000);
+
+    const payments: RazorpayPaymentRecord[] = [];
+    let skip = 0;
+    let truncated = false;
+
+    for (let page = 0; page < MAX_PAYMENT_PAGES; page++) {
+        const result = await razorpay.payments.all({
+            from: fromTs,
+            to: toTs,
+            count: PAYMENTS_PAGE_SIZE,
+            skip,
+        });
+
+        const items = (result.items || []) as unknown as RazorpayPaymentRecord[];
+        payments.push(...items);
+
+        if (items.length < PAYMENTS_PAGE_SIZE) {
+            return { payments, truncated: false };
+        }
+        skip += PAYMENTS_PAGE_SIZE;
+        truncated = page === MAX_PAYMENT_PAGES - 1;
+    }
+
+    logger.warn('Payment listing hit the page cap — window may be incomplete', {
+        fetched: payments.length, from: from.toISOString(), to: to.toISOString(),
+    });
+    return { payments, truncated };
+}
+
 /**
  * Fetch order details from Razorpay
  */
