@@ -1,117 +1,125 @@
 # ShasanSeva — Project Context
 
-> **Last updated**: June 2026
-> **Status**: Active development · Pre-production
+> **Last updated**: 23 August 2026
+> **Status**: Active development · Live in production
 > **Organization**: Abhaya IT Solutions
+> **Repo**: `Abhaya-IT-Solu/ShasanSeva` · default branch `master`
 
 ---
 
-## Current Status & Recent Updates
+## How to maintain this document
 
-**Current Status**: We have recently completed the "Custom Application Forms" feature (users fill scheme-specific fields during application). **Custom-form authoring has now been moved out of the admin panel into a dedicated, standalone Developer Portal (`apps/portal`)** — regular admins no longer create/edit custom fields; they continue to manage everything else about a scheme (name, fee, docs, images, translations, status). Developers manage custom fields through the portal, which authenticates against env-configured bcrypt credentials and writes via `/api/portal/*`. We also fixed several critical bugs in the Razorpay payment flow (including webhook signature verification and idempotency) and resolved an issue with Google OAuth crashing for subsequent users due to a database unique constraint on empty phone numbers. Frontend TypeScript errors are fully resolved.
+This is a **living document**. It is the single place a newcomer (human or AI) should be able to read to understand the system without spelunking the codebase.
 
-### Last 3 Commits
+When you finish a piece of work, update:
+
+1. **Current Status** — one paragraph, what is true *now*
+2. **Changelog** (bottom) — one line, dated
+3. Any section the change invalidates — schema, routes, env vars, deployment
+4. **Known Issues & Traps** — add what bit you, remove what you fixed
+
+Rules of thumb: prefer deleting stale content over letting it rot; record *why* alongside *what*; when something costs more than an hour to debug, it belongs in **Known Issues & Traps** so it costs nobody an hour again.
+
+---
+
+## Current Status
+
+The platform is **live in production** and processing real orders. The core loop — browse scheme → upload documents → pay → admin fulfils → proof delivered — works end to end.
+
+Recent work (August 2026) has been corrective rather than feature-driven. The notification feature, previously an orphaned backend with no UI and only two of six event types wired, is now complete and user-visible. A cluster of silent data-loss defects in the scheme editor was found and fixed. Underlying several of these was a single recurring cause: **configuration that degrades silently instead of failing loudly** — three separate production incidents (`PORTAL_URL`, `R2_PUBLIC_URL`, `R2_BUCKET_NAME`) traced back to secrets that were missing or empty, where the code helpfully substituted a default and carried on. That class of bug is now guarded at boot; see **Known Issues & Traps**.
+
+### Recent commits
+
 ```text
-commit 9497ece0ed92f633aebca1b0e1de96469b08d23b
-Author: Nilesh Raju Ambekar <nileshambekar9281@gmail.com>
-Date:   Fri Jun 19 19:48:42 2026 +0530
-
-    fix: resolve frontend typescript errors
-
-commit 75f3d6ddec3ab7c1b14e7a2671bf01df36ca717d
-Author: Nilesh Raju Ambekar <nileshambekar9281@gmail.com>
-Date:   Fri Jun 19 12:57:34 2026 +0530
-
-    feat: custom application forms and razorpay payment flow fixes
-
-commit 60f683f597c91da94f4cd48ee133c41a5138ea36
-Author: Nilesh Raju Ambekar <nileshambekar9281@gmail.com>
-Date:   Wed May 6 16:38:03 2026 +0530
-
-    fix: proxy image uploads through backend to bypass R2 CORS
+03758c1  2026-08-23  fix: remove silent R2 bucket fallback, warn on missing config at boot
+ebec32c  2026-08-23  fix: scheme images returning null, plus three related data-loss defects
+cdc8011  2026-08-22  feat: complete notification feature — fix IDOR, wire missing events, add web UI
+57f52dc  2026-08-22  feat: add standalone Refund & Cancellation Policy page
+7a3d25c  2026-06-23  Add portal secrets to deploy API workflow
+89ddef5  2026-06-23  fix: correct Vercel build target for apps/portal
+f1ebe7d  2026-06-23  Merge PR #2 — feature/custom-forms (developer portal)
 ```
+
+81 commits total, effectively single-author (Nilesh Raju Ambekar). Work lands directly on `master` or via short-lived `feature/*` branches merged by PR. Pushes to `master` deploy automatically — see **Deployment**.
 
 ---
 
 ## Overview
 
-ShasanSeva is a **Government Scheme Assistance Platform** that connects Indian citizens with government and private schemes (certificates, loans, jobs, licenses, etc.). Users browse schemes, upload required documents, pay a service fee via Razorpay, and receive managed assistance through an admin-operated backend. The platform supports **English** and **Marathi** (मराठी) localization.
+ShasanSeva is a **Government Scheme Assistance Platform** connecting Indian citizens with government and private schemes (certificates, loans, jobs, licences, subsidies). Users browse schemes, fill scheme-specific application forms, upload required documents, pay a service fee via Razorpay, and receive managed assistance from human admins who do the actual government-facing legwork and return proof of completion.
+
+**It is a paid assistance service, not a government body.** Approval is never guaranteed — the fee buys document handling and application support. This distinction is legally load-bearing and is stated in the footer disclaimer, Terms, FAQ, and the Refund Policy; keep those four consistent when editing any of them.
+
+Bilingual throughout: **English** and **Marathi** (मराठी), with Marathi as the default locale.
 
 ---
 
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│                     MONOREPO (pnpm + Turborepo)            │
-│                                                            │
-│  ┌──────────────┐    ┌──────────────┐                      │
-│  │  apps/web     │    │  apps/api     │                      │
-│  │  Next.js 14   │───►│  Express.js   │                      │
-│  │  Port 3000    │    │  Port 3001    │                      │
-│  └──────┬───────┘    └──────┬───────┘                      │
-│         │                   │                              │
-│  ┌──────┴───────────────────┴───────────┐                  │
-│  │           packages/db                 │                  │
-│  │        Drizzle ORM + Schema           │                  │
-│  └──────────────┬────────────────────────┘                  │
-│  ┌──────────────┴────────────────────────┐                  │
-│  │          packages/types               │                  │
-│  │     Shared TypeScript interfaces      │                  │
-│  └───────────────────────────────────────┘                  │
-└────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                MONOREPO (pnpm workspaces + Turborepo)       │
+│                                                             │
+│  apps/web (Next.js 14)      apps/portal (Next.js 14)        │
+│  :3000 — public + admin     :3002 — developer portal        │
+│         │                          │                        │
+│         └──────────┬───────────────┘                        │
+│                    ▼                                        │
+│            apps/api (Express) :3001                         │
+│                    │                                        │
+│         ┌──────────┴──────────┐                             │
+│         │   packages/db       │  Drizzle ORM + schema       │
+│         │   packages/types    │  Shared TS interfaces       │
+│         └─────────────────────┘                             │
+└─────────────────────────────────────────────────────────────┘
 
-External Services:
-  ├── PostgreSQL (Supabase)          — Primary database
-  ├── Upstash Redis                  — Sessions, caching, rate limiting
-  ├── Cloudflare R2                  — Document & image storage (S3-compatible)
-  ├── Razorpay                       — Payment gateway (INR)
-  ├── Firebase                       — Phone OTP + Google OAuth
-  └── Google OAuth                   — Social login
+External services:
+  ├── PostgreSQL (Supabase)   — primary datastore
+  ├── Upstash Redis           — sessions, scheme cache, rate limiting
+  ├── Cloudflare R2           — documents, images, receipts (S3 API)
+  ├── Razorpay                — payments (INR)
+  └── Firebase                — phone OTP + Google OAuth
 ```
 
-### Monorepo Structure
+**Three frontends, three audiences:**
+
+| App | Port | Audience | Auth |
+|-----|------|----------|------|
+| `apps/web` `/[locale]/*` | 3000 | Citizens | User JWT (localStorage) |
+| `apps/web` `/admin/*` | 3000 | Staff | Same JWT, `userType=ADMIN`, no i18n |
+| `apps/portal` | 3002 | Developers | Separate portal JWT, env-configured bcrypt creds |
+
+The admin panel lives inside `apps/web` (not a separate app) but is excluded from i18n and is English-only. The developer portal is genuinely separate because it authors `schemes.custom_fields`, which admins deliberately cannot touch.
+
+### Directory layout
 
 ```
 ShasanSeva/
 ├── apps/
-│   ├── api/                    # @shasansetu/api — Express REST API
-│   │   └── src/
-│   │       ├── config/         # Environment validation (Zod)
-│   │       ├── lib/            # Redis, utils, Firebase Admin
-│   │       ├── middleware/     # Auth, validation, rate limiting
-│   │       ├── routes/         # All API route handlers
-│   │       ├── services/       # Business logic (auth, r2, razorpay, receipt, notifications)
-│   │       ├── app.ts          # Express app setup
-│   │       └── index.ts        # Server entry point
-│   ├── web/                    # @shasansetu/web — Next.js 14 frontend
-│   │   ├── messages/           # en.json, mr.json (i18n)
-│   │   ├── public/             # Static assets (logos, category GIFs)
-│   │   └── src/
-│   │       ├── app/            # App Router pages
-│   │       ├── components/     # Shared + admin components
-│   │       ├── i18n/           # next-intl config
-│   │       ├── images/         # Imported assets
-│   │       └── lib/            # API client, auth context, Firebase client
-│   └── portal/                 # @shasansetu/portal — Next.js 14 Developer Portal (port 3002)
-│       └── src/                # Custom-forms management (login, scheme list, field builder)
-│           ├── app/            # login, schemes list (/), schemes/[id] builder
-│           ├── components/     # PortalHeader
-│           └── lib/            # Portal API client + portal auth context
+│   ├── api/src/
+│   │   ├── config/env.ts      # Zod-validated env  ⚠ see Known Issues
+│   │   ├── lib/               # redis, utils/logger, firebase-admin
+│   │   ├── middleware/        # auth, validation, rate limiting
+│   │   ├── routes/            # 13 route modules
+│   │   ├── services/          # auth, r2, razorpay, receipt, notification, portal
+│   │   ├── app.ts             # express setup, CORS, Razorpay webhook (raw body)
+│   │   └── index.ts           # entry, graceful shutdown, boot config checks
+│   ├── web/
+│   │   ├── messages/          # en.json, mr.json
+│   │   └── src/{app,components,i18n,lib}
+│   └── portal/
+│       ├── vercel.json        # ⚠ required — see Deployment
+│       └── src/{app,components,lib}
 ├── packages/
-│   ├── db/                     # @shasansetu/db — Drizzle ORM
-│   │   ├── drizzle/            # SQL migrations (0000–0010)
-│   │   └── src/schema/         # Table definitions
-│   └── types/                  # @shasansetu/types — Shared interfaces
-├── pnpm-workspace.yaml
-├── turbo.json
-├── Dockerfile                  # Multi-stage production build
-└── .env                        # Environment variables
+│   ├── db/{drizzle,src/schema}
+│   └── types/src
+├── scripts/db-backup.ps1
+├── .github/workflows/deploy-api.yml
+├── Dockerfile                 # multi-stage, node:20-alpine
+└── project-context.md         # this file
 ```
 
-**Package Manager**: pnpm 9.0  
-**Build System**: Turborepo  
-**Runtime**: Node.js 22 (LTS)
+**Package manager**: pnpm 9 · **Build**: Turborepo · **Container runtime**: Node 20 (Dockerfile); local dev on Node 22.
 
 ---
 
@@ -119,341 +127,179 @@ ShasanSeva/
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| **Frontend** | Next.js (App Router) | 14.2 |
-| **UI** | React | 18.2 |
-| **Styling** | CSS Modules + Custom Design System | — |
-| **i18n** | next-intl | 4.8.2 |
-| **Backend** | Express.js | 4.x |
-| **ORM** | Drizzle ORM | 0.39 |
-| **Database** | PostgreSQL (Supabase) | 15+ |
-| **Cache** | Upstash Redis | — |
-| **Storage** | Cloudflare R2 (S3 API) | — |
-| **Payments** | Razorpay | — |
-| **Auth** | JWT + Firebase (OTP/OAuth) | — |
-| **Validation** | Zod | 3.23 |
-| **PDF** | PDFKit | — |
-| **Language** | TypeScript | 5.3 |
+| Frontend | Next.js (App Router) | 14.2 |
+| UI | React | 18.2 |
+| Styling | CSS Modules + design tokens | — |
+| i18n | next-intl | 4.8.2 |
+| Backend | Express.js | 4.x |
+| ORM | Drizzle ORM | 0.39 |
+| Database | PostgreSQL (Supabase) | 15+ |
+| Cache | Upstash Redis | — |
+| Storage | Cloudflare R2 (S3 API) | — |
+| Payments | Razorpay | — |
+| Auth | JWT + Firebase | — |
+| Validation | Zod | 3.x |
+| PDF | PDFKit | — |
+| Language | TypeScript | 5.3 |
+
+No Tailwind — some JSX carries Tailwind-*looking* class names, but they resolve to utility classes hand-defined in `globals.css`. SWR is installed but unused; all fetching is `useEffect` + `api.request()`.
 
 ---
 
-## Database Schema (13 Tables)
+## Database Schema (12 tables)
 
-### Core Tables
+### `users`
+`id` uuid PK · `phone` varchar(15) UNIQUE · `email` UNIQUE nullable · `name` · `category` (STUDENT/FARMER/LOAN_CANDIDATE/OTHER) · `google_id` · `password_hash` bcrypt(10) · `address` jsonb · `saved_documents` jsonb · `profile_data` jsonb · `profile_complete` bool
 
-#### `users`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| phone | varchar(15) | UNIQUE, NOT NULL — Indian format `^[6-9]\d{9}$` |
-| email | varchar(255) | UNIQUE, nullable |
-| name | varchar(255) | |
-| category | varchar(50) | STUDENT / FARMER / LOAN_CANDIDATE / OTHER |
-| google_id | varchar(255) | OAuth link |
-| password_hash | varchar(255) | bcrypt (10 rounds) |
-| address | jsonb | `{line1, line2, city, state, pincode}` |
-| saved_documents | jsonb | `[{type, label, fileUrl, fileKey, uploadedAt}]` |
-| profile_complete | boolean | default false |
-| created_at / updated_at | timestamp | |
+> ⚠ **Schema drift**: the Drizzle schema declares `phone` nullable ("Nullable for OAuth users"), but the **live database still has it `NOT NULL`**. Migration `0012` contains the `DROP NOT NULL` but has not been applied. Google signups without a phone number fail until it is. See **Known Issues**.
 
-#### `admins`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| phone | varchar(15) | UNIQUE |
-| email | varchar(255) | UNIQUE |
-| name | varchar(255) | NOT NULL |
-| role | varchar(20) | `ADMIN` / `SUPER_ADMIN` |
-| is_active | boolean | default true |
-| created_by | uuid | FK → admins(id) |
+### `admins`
+`id` · `phone` UNIQUE · `email` UNIQUE · `name` · `role` (`ADMIN` / `SUPER_ADMIN`) · `is_active` · `created_by` FK→admins
 
-#### `admin_analytics`
-Tracks per-admin performance: total_orders_handled, orders_completed, orders_cancelled, orders_in_progress, documents_verified, documents_rejected, avg_completion_time_hours, last_active_at. One row per admin (UNIQUE admin_id).
+### `admin_analytics`
+One row per admin (UNIQUE `admin_id`). Orders handled/completed/cancelled/in-progress, documents verified/rejected, `avg_completion_time_hours`, `last_active_at`.
 
----
+### `schemes`
+`id` · `name` · `slug` UNIQUE · `description` · `category` (STUDENT/FARMER/LOAN/CERTIFICATE/JOBS/HEALTH/GOVT_CARD/LICENCE/TAX/OTHER) · `scheme_type` (GOVERNMENT/PRIVATE) · `eligibility` · `benefits` · `required_docs` jsonb · `custom_fields` jsonb · `service_fee` decimal · `average_completion_days` · `logo_url` · `reference_image_url` · `status` (ACTIVE/INACTIVE) · `created_by`
+**Indexes**: category, status, scheme_type
 
-### Scheme Tables
+> `logo_url` and `reference_image_url` store **R2 object keys, not URLs**. Read paths convert key→URL via `getPublicUrl()`. Never write a resolved URL into these columns.
 
-#### `schemes`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| name | varchar(255) | Legacy English name |
-| slug | varchar(255) | UNIQUE, URL-friendly |
-| description | text | Legacy English |
-| category | varchar(50) | STUDENT / FARMER / LOAN / CERTIFICATE / JOBS / HEALTH / GOVT_CARD / LICENCE / TAX / OTHER |
-| scheme_type | varchar(50) | GOVERNMENT / PRIVATE |
-| eligibility | text | |
-| benefits | text | |
-| required_docs | jsonb | `[{type, label, label_mr, required, description, description_mr}]` |
-| custom_fields | jsonb | `[{id, type, label, label_mr, required, options, placeholder, validationRegex}]` |
-| service_fee | decimal(10,2) | NOT NULL |
-| average_completion_days | decimal(5,0) | |
-| logo_url | text | R2 key (nullable) |
-| reference_image_url | text | R2 key (nullable) |
-| status | varchar(20) | ACTIVE / INACTIVE |
-| created_by | uuid | FK → admins(id) |
-| **Indexes** | | category, status, scheme_type |
+### `scheme_translations`
+`scheme_id` FK · `locale` (`en`/`mr`) · `name` · `description` · `eligibility` · `benefits` · `translated_by` — UNIQUE(`scheme_id`, `locale`)
 
-#### `scheme_translations`
-| Column | Type | Notes |
-|--------|------|-------|
-| scheme_id | uuid | FK → schemes(id) |
-| locale | varchar(5) | `en` or `mr` |
-| name | varchar(255) | Translated scheme name |
-| description / eligibility / benefits | text | |
-| translated_by | uuid | FK → admins(id) |
-| **Indexes** | | UNIQUE(scheme_id, locale) |
+### `orders`
+`id` · `user_id` FK · `scheme_id` FK · `status` · `payment_id` · `razorpay_order_id` · `payment_amount` · `payment_timestamp` · `assigned_to` FK→admins · `admin_notes` · `receipt_key` · `application_form_data` jsonb
+**Indexes**: user_id, status, created_at, assigned_to
 
----
-
-### Order & Payment Tables
-
-#### `orders`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | PK |
-| user_id | uuid | FK → users(id) |
-| scheme_id | uuid | FK → schemes(id) |
-| status | varchar(30) | See lifecycle below |
-| payment_id | varchar(255) | Razorpay payment ID |
-| razorpay_order_id | varchar(255) | |
-| payment_amount | decimal(10,2) | |
-| payment_timestamp | timestamp | |
-| assigned_to | uuid | FK → admins(id) |
-| admin_notes | text | |
-| receipt_key | varchar(500) | R2 key for PDF receipt |
-| application_form_data | jsonb | Key-value mapping for scheme's custom fields |
-| **Indexes** | | user_id, status, created_at, assigned_to |
-
-**Order Lifecycle**:
 ```
 PENDING_PAYMENT → PAID → IN_PROGRESS → PROOF_UPLOADED → COMPLETED
-                                    ↘ CANCELLED (at any non-terminal stage)
+                            ↘ CANCELLED (any non-terminal stage)
 ```
+Transitions are validated server-side in `PATCH /api/orders/:id/status`. Any admin may pick up a `PAID` order (which assigns it to them); only the assigned admin — or a `SUPER_ADMIN` — may advance it further.
 
-#### `documents` — User-uploaded application documents
-| Column | Type | Notes |
-|--------|------|-------|
-| order_id | uuid | FK → orders(id) |
-| doc_type | varchar(100) | e.g., "AADHAAR_CARD", "PAN_CARD" |
-| file_url / file_key | text | R2 paths |
-| status | varchar(30) | UPLOADED / VERIFIED / REJECTED / RESUBMISSION_REQUIRED |
-| rejection_reason | text | |
-| verified_by | uuid | FK → admins(id) |
+### `documents`
+`order_id` FK · `doc_type` · `file_url` / `file_key` · `status` (UPLOADED/VERIFIED/REJECTED/RESUBMISSION_REQUIRED) · `rejection_reason` · `verified_by`
 
-#### `proofs` — Admin-uploaded completion proofs
-| Column | Type | Notes |
-|--------|------|-------|
-| order_id | uuid | FK → orders(id) |
-| file_url / file_key | text | R2 paths |
-| proof_type | varchar(100) | RECEIPT / SCREENSHOT / REFERENCE_ID / CONFIRMATION / OTHER |
-| uploaded_by | uuid | FK → admins(id) |
+### `proofs`
+`order_id` FK · `file_url` / `file_key` · `proof_type` (RECEIPT/SCREENSHOT/REFERENCE_ID/CONFIRMATION/OTHER) · `uploaded_by`
 
----
+### `notifications`
+`recipient_id` · `recipient_type` (USER/ADMIN) · `type` · `title` · `message` · `related_order_id` FK · `read`
+**Indexes**: (recipient_id, recipient_type, read), (recipient_id, recipient_type, created_at)
+Types: `PAYMENT_SUCCESS`, `ORDER_STATUS_CHANGE`, `DOCUMENT_REJECTED`, `PROOF_UPLOADED`, `ORDER_COMPLETED`, `NEW_ORDER_ASSIGNED`.
 
-### Supporting Tables
+> `NEW_ORDER_ASSIGNED` is defined but **deliberately never fired** — admins self-pick orders, so it would only notify an admin about their own click. Notifying *all* admins when a new paid order arrives is the sensible future use; it needs a fan-out over the `admins` table plus admin-side UI.
 
-#### `notifications`
-In-app notifications with SSE streaming. Types: PAYMENT_SUCCESS, ORDER_STATUS_CHANGE, DOCUMENT_REJECTED, PROOF_UPLOADED, ORDER_COMPLETED, NEW_ORDER_ASSIGNED.
+### `feedbacks`
+1–5 star rating per completed order, UNIQUE `order_id`.
 
-#### `feedbacks`
-1-5 star rating per completed order (UNIQUE order_id constraint).
+### `announcements`
+Four types: `MARQUEE` (ticker), `PILL` (hero badges), `POPULAR_TAG` (search tags), `CAROUSEL` (with R2 image). Drives both web and the mobile app.
 
-#### `announcements`
-4 types: MARQUEE (scrolling ticker), PILL (hero badges), POPULAR_TAG (search tags), CAROUSEL (with R2 image).
-
-#### `audit_logs`
-Entity-based audit trail for all admin actions. Tracks old/new values, performer, IP address.
+### `audit_logs`
+Entity-based trail of admin actions — old/new values, performer, IP.
 
 ---
 
-## API Routes (54+ endpoints)
+## API Routes
 
-### Authentication (`/api/auth/*`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/auth/register` | — | Phone + password registration |
-| POST | `/auth/login` | — | Login (users & admins) |
-| POST | `/auth/change-password` | ✅ | Change password |
-| POST | `/auth/reset-password` | — | Firebase OTP-based reset |
-| POST | `/auth/logout` | ✅ | Invalidate Redis session |
-| GET | `/auth/me` | ✅ | Current user profile |
-| GET | `/auth/google` | — | Google OAuth redirect |
-| GET | `/auth/google/callback` | — | OAuth callback handler |
+Mounted under `/api` — 13 modules: `auth`, `users`, `schemes`, `admin`, `documents`, `payments`, `orders`, `notifications`, `proofs`, `feedbacks`, `announcements`, `portal`, plus OAuth on `/auth/google`.
+
+### Auth (`/api/auth/*`)
+`POST /register` · `POST /login` · `POST /change-password` 🔒 · `POST /reset-password` (Firebase OTP) · `POST /logout` 🔒 · `GET /me` 🔒 · `GET /google` · `GET /google/callback`
 
 ### Schemes (`/api/schemes/*`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/schemes` | — | List with filters (category, type, search, locale). Redis cached. |
-| GET | `/schemes/by-id/:id` | — | By UUID with translations (admin edit) |
-| GET | `/schemes/:slug` | — | By slug (public detail). Redis cached. |
-| POST | `/schemes` | Admin | Create with translations (custom fields NOT accepted here) |
-| PATCH | `/schemes/:id` | Admin | Update (custom fields NOT accepted here) |
-| DELETE | `/schemes/:id` | Admin | Soft delete (→ INACTIVE) |
-| POST | `/schemes/:id/upload-image` | Admin | Upload logo/reference as base64 → R2 |
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| GET | `/schemes` | public | Filters + Redis cache. Admins additionally see INACTIVE. |
+| GET | `/schemes/by-id/:id` | public | With translations; used by admin edit |
+| GET | `/schemes/:slug` | public | Public detail, cached |
+| POST | `/schemes` | Admin | `customFields` rejected |
+| PATCH | `/schemes/:id` | Admin | `customFields` rejected; absent fields untouched |
+| DELETE | `/schemes/:id` | Admin | Soft delete → INACTIVE |
+| POST | `/schemes/:id/upload-image` | Admin | base64 → R2; returns `{ key, publicUrl }` |
 
-> **Note:** `schemes.custom_fields` is no longer writable through the admin scheme endpoints. The admin create/update Zod schemas reject `customFields`, and on update the column is left untouched (so portal-managed fields are preserved). Custom fields are managed exclusively through the Developer Portal endpoints below.
+> Admin visibility is resolved by `resolveOptionalAdmin()`, which **verifies the token and session**. It previously trusted the mere presence of an `Authorization` header, leaking INACTIVE schemes to anyone sending a garbage bearer token (fixed Aug 2026).
+
+> `PATCH` uses partial-update semantics: a field absent from the body is left alone; a field explicitly `null` is nulled. Clients must send image fields **only** when deliberately changing them.
 
 ### Developer Portal (`/api/portal/*`)
-Separate auth from users/admins — portal JWT signed with `PORTAL_JWT_SECRET`, credentials from env (`PORTAL_USERS`). This is the **only** write path for custom forms.
+Separate auth — portal JWT signed with `PORTAL_JWT_SECRET`, credentials from `PORTAL_USERS`. The **only** write path for custom forms.
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/portal/auth/login` | — | Login with env-configured dev username/password (bcrypt). Returns portal JWT. Rate-limited. |
-| GET | `/portal/auth/me` | Portal | Verify token, return `{ username }` |
-| GET | `/portal/schemes` | Portal | List all schemes (incl. INACTIVE) with custom-field counts |
-| GET | `/portal/schemes/:id` | Portal | Scheme + its current custom fields |
-| PATCH | `/portal/schemes/:id/custom-fields` | Portal | Replace a scheme's custom fields (rejects duplicate IDs); invalidates scheme cache |
+`POST /portal/auth/login` (rate-limited) · `GET /portal/auth/me` · `GET /portal/schemes` · `GET /portal/schemes/:id` · `PATCH /portal/schemes/:id/custom-fields` (rejects duplicate field IDs, invalidates scheme cache)
 
 ### Orders (`/api/orders/*`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/orders` | User | User's orders (paginated) |
-| GET | `/orders/:id` | User | Order detail with documents |
-| GET | `/orders/:id/receipt` | User | Signed download URL for receipt PDF |
-| PATCH | `/orders/:id/status` | Admin | Update status (with assignment rules) |
-| POST | `/orders/:id/resubmit` | User | Resubmit cancelled order |
-| GET | `/orders/admin/queue` | Admin | Admin order queue (filterable) |
-| POST | `/orders/:id/complete` | Admin | Mark completed + notify user |
-| PATCH | `/orders/:id/notes` | Admin | Save admin notes |
+`GET /orders` 🔒 · `GET /orders/:id` 🔒 · `GET /orders/:id/receipt` 🔒 · `PATCH /orders/:id/status` (Admin) · `POST /orders/:id/resubmit` 🔒 · `GET /orders/admin/queue` (Admin) · `POST /orders/:id/complete` (Admin) · `PATCH /orders/:id/notes` (Admin)
 
 ### Payments (`/api/payments/*`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/payments/create-order` | User | Create Razorpay order |
-| POST | `/payments/verify` | User | Verify payment → PAID + generate receipt |
-| DELETE | `/payments/cancel-order/:id` | User | Cancel pending payment |
-| POST | `/payments/webhook` | — | Razorpay webhook handler |
+`POST /create-order` 🔒 · `POST /verify` 🔒 · `DELETE /cancel-order/:id` 🔒 · `POST /webhook` (public, HMAC-verified)
+
+> The webhook is registered in `app.ts` **before** `express.json()` because signature verification needs the raw body. Do not move it below the JSON parser.
 
 ### Documents (`/api/documents/*`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/documents/upload-url` | User | Presigned R2 upload URL |
-| POST | `/documents/:id/confirm-upload` | User | Confirm upload |
-| GET | `/documents/:id/download-url` | ✅ | Presigned download URL |
-| PATCH | `/documents/:id/verify` | Admin | Verify document |
-| PATCH | `/documents/:id/reject` | Admin | Reject with reason |
-| GET | `/documents/order/:orderId` | Admin | All docs for an order |
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/documents/upload` | 🔒 | **Preferred.** base64 → server → R2 |
+| POST | `/documents/upload-url` | 🔒 | Legacy presigned URL |
+| POST | `/documents/:id/confirm-upload` | 🔒 | Pairs with the legacy flow |
+| GET | `/documents/:id/download-url` | 🔒 | Presigned, 15 min |
+| PATCH | `/documents/:id/verify` | Admin | |
+| PATCH | `/documents/:id/reject` | Admin | Notifies the user with the reason |
+| GET | `/documents/order/:orderId` | Admin | |
 
-### Proofs (`/api/proofs/*`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/proofs/upload-url` | Admin | Presigned R2 upload URL |
-| POST | `/proofs/:id/confirm` | Admin | Confirm + update order status |
-| GET | `/proofs/order/:orderId` | ✅ | Get proofs for order |
-| GET | `/proofs/:id/download-url` | ✅ | Download proof |
+> Web uses the **proxy** (`/documents/upload`). Direct browser→R2 PUTs need a CORS preflight that R2 rejects for non-simple content types; uploads failed silently and documents never linked to orders. Body limit is 15 MB to fit a 10 MB file base64-encoded (~13.3 MB). The presigned endpoints remain for the mobile app.
 
-### Admin (`/api/admin/*`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/admin/stats` | Admin | Dashboard stats |
-| GET | `/admin/users` | Admin | List all users |
-| GET | `/admin/users/:id` | Admin | User details |
-| GET | `/admin/my-analytics` | Admin | Current admin analytics |
-| GET | `/admin/admins` | Super | List all admins |
-| POST | `/admin/admins` | Super | Create admin |
-| PATCH | `/admin/admins/:id` | Super | Update admin |
-| PATCH | `/admin/admins/:id/toggle-active` | Super | Toggle active |
+### Notifications (`/api/notifications/*`)
+`GET /` 🔒 (paginated `?page=&limit=`; returns `{ notifications, unreadCount, pagination }`) · `PATCH /:id/read` 🔒 · `POST /mark-all-read` 🔒 · `GET /stream` 🔒 (SSE)
 
-### Other
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/notifications` | ✅ | Get notifications + unread count |
-| GET | `/notifications/stream` | ✅ | SSE stream (10s polling) |
-| POST/PATCH | `/notifications/*` | ✅ | Mark read |
-| POST | `/feedbacks` | User | Submit rating (1-5) |
-| GET/POST/PATCH/DELETE | `/announcements/*` | Admin | Manage announcements |
-| GET | `/announcements/public` | — | Public announcements by type |
-| GET | `/health` | — | DB health check |
+> The response keeps `{ notifications, unreadCount }` at the top level for mobile compatibility; `pagination` is purely additive. `PATCH /:id/read` **enforces ownership** and 404s on someone else's notification (was an IDOR). The SSE endpoint is unused by web — `EventSource` cannot send an `Authorization` header and the JWT lives in localStorage, so the bell polls every 60 s instead.
+
+### Proofs, Admin, Other
+`/api/proofs/*` — presigned upload, confirm (advances order), download
+`/api/admin/*` — `stats`, `users`, `users/:id`, `my-analytics`; `admins` CRUD + `toggle-active` (SUPER_ADMIN)
+`/api/feedbacks` · `/api/announcements/*` (+ `/public`) · `/api/health` (DB probe, used by the Docker healthcheck)
 
 ---
 
 ## Frontend Pages
 
-### Public Pages
-| Route | Description |
-|-------|-------------|
-| `/{locale}` | Homepage — hero, search, 10-category grid, mobile app showcase |
-| `/{locale}/schemes` | Browse/search schemes with category filters |
-| `/{locale}/schemes/:slug` | Scheme detail — eligibility, benefits, docs, logo, reference image |
-| `/{locale}/track` | Track application by order ID |
-| `/{locale}/contact` | Contact page |
-| `/{locale}/faq` | FAQ |
-| `/{locale}/help` | Help center |
-| `/{locale}/privacy` | Privacy policy |
-| `/{locale}/terms` | Terms of service |
-| `/{locale}/disclaimer` | Disclaimer |
+### Public — `/{locale}/…`
+`/` · `/schemes` · `/schemes/:slug` · `/track` · `/contact` · `/faq` · `/help` · `/privacy` · `/terms` · `/refund` · `/disclaimer`
 
-### Auth Pages
-| Route | Description |
-|-------|-------------|
-| `/{locale}/login` | Login/Register (phone+password, Google, forgot password with OTP) |
-| `/{locale}/auth/callback` | OAuth callback handler |
-| `/{locale}/complete-profile` | Post-registration profile completion |
+### Auth
+`/login` (phone+password, Google, forgot-password OTP) · `/auth/callback` · `/complete-profile`
 
-### User Pages (Protected)
-| Route | Description |
-|-------|-------------|
-| `/{locale}/dashboard` | Greeting, quick actions, recent applications |
-| `/{locale}/orders` | All applications with status badges |
-| `/{locale}/orders/:id` | Order detail — status, payment, documents, resubmit |
-| `/{locale}/profile` | View/edit profile, change password |
-| `/{locale}/apply/:slug` | 4-step apply wizard (Docs → Review → Payment → Success) |
+### User (protected, `(user)` route group)
+`/dashboard` · `/orders` · `/orders/:id` · `/notifications` · `/profile` · `/apply/:slug` (4-step wizard: Docs → Review → Payment → Success)
 
-### Admin Pages (Protected, no i18n)
-| Route | Description |
-|-------|-------------|
-| `/admin/dashboard` | Stats, recent orders, quick actions |
-| `/admin/orders` | Order queue with status tabs, actions |
-| `/admin/orders/:id` | Full order management (41KB) |
-| `/admin/schemes` | Scheme list |
-| `/admin/schemes/new` | Create scheme with image upload (no custom-fields builder) |
-| `/admin/schemes/:id/edit` | Edit scheme with image upload (no custom-fields builder) |
-| `/admin/users` | User management |
-| `/admin/admins` | Admin management (SUPER_ADMIN only) |
-| `/admin/admins/new` | Create new admin |
-| `/admin/announcements` | Manage announcements (marquee, pills, tags, carousel) |
+### Admin (protected, English only)
+`/admin/dashboard` · `/admin/orders` · `/admin/orders/:id` · `/admin/schemes` · `/admin/schemes/new` · `/admin/schemes/:id/edit` · `/admin/users` · `/admin/admins` · `/admin/admins/new` · `/admin/announcements`
 
-### Developer Portal Pages (`apps/portal`, standalone on port 3002, no i18n)
-| Route | Description |
-|-------|-------------|
-| `/login` | Developer login (env-configured username/password) |
-| `/` | Scheme list with custom-field counts; search |
-| `/schemes/:id` | Custom-fields builder — add/edit/remove fields, en/mr labels, type, required, dropdown options; saves to `schemes.custom_fields` |
+### Developer Portal (`apps/portal`)
+`/login` · `/` (scheme list + field counts) · `/schemes/:id` (custom-fields builder)
 
 ---
 
-## Authentication Flow
+## Authentication
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   AUTH ARCHITECTURE                  │
-│                                                     │
-│  Client (React Context)                             │
-│    ├── localStorage: auth_token                     │
-│    ├── AuthProvider wraps entire app                 │
-│    └── useAuth() → {user, token, login, logout}     │
-│                                                     │
-│  Login Methods:                                     │
-│    1. Phone + Password → POST /auth/login → JWT     │
-│    2. Google OAuth → Firebase → Backend → JWT       │
-│    3. Forgot Password → Firebase Phone OTP → Reset  │
-│                                                     │
-│  Session:                                           │
-│    ├── JWT (7-day expiry) carries userId/userType    │
-│    └── Redis stores full session (7-day TTL)        │
-│                                                     │
-│  Guards:                                            │
-│    ├── User layout: redirects unauth → /login       │
-│    ├── Admin layout: redirects non-admin → /dashboard│
-│    └── API middleware: JWT verify + Redis session    │
-│                                                     │
-│  Roles:                                             │
-│    ├── Public (no auth)                             │
-│    ├── USER (authenticated citizen)                 │
-│    ├── ADMIN (order processing, scheme management)  │
-│    └── SUPER_ADMIN (admin management)               │
-└─────────────────────────────────────────────────────┘
+Client: AuthProvider (React Context) → localStorage `auth_token` → useAuth()
+
+Login paths:
+  1. Phone + password  → POST /auth/login       → JWT
+  2. Google OAuth      → Firebase → backend     → JWT
+  3. Forgot password   → Firebase phone OTP     → reset → JWT
+
+Session: JWT (7d) carries userId + userType; Redis holds the full session (7d TTL),
+         enabling server-side invalidation on logout.
+
+Guards:  user layout redirects anon → /login
+         admin layout redirects non-admin → /dashboard
+         API: authMiddleware (JWT + Redis session) → adminMiddleware / superAdminMiddleware
+         Public-but-admin-aware routes: resolveOptionalAdmin()
+
+Roles:   Public · USER · ADMIN · SUPER_ADMIN   (+ portal developers, separate realm)
 ```
 
 ---
@@ -461,230 +307,284 @@ Separate auth from users/admins — portal JWT signed with `PORTAL_JWT_SECRET`, 
 ## Payment Flow
 
 ```
-User clicks "Apply" on scheme
-    → Uploads required documents (optional)
-    → Reviews application
-    → POST /payments/create-order (Razorpay order in INR, amount in paise)
-    → Razorpay checkout modal opens
-    → User pays
-    → POST /payments/verify (HMAC-SHA256 signature verification)
-        → Order status → PAID
-        → PDF receipt generated (PDFKit) → uploaded to R2
-        → Notification sent to user
-    → Success page with receipt download
+Apply → upload documents → review
+  → POST /payments/create-order       (Razorpay order, INR in paise)
+  → Razorpay checkout modal
+  → POST /payments/verify             (HMAC-SHA256 verification)
+       ├─ status → PAID  (guarded: only from PENDING_PAYMENT)
+       ├─ link uploaded documents to the order
+       ├─ generate PDF receipt (PDFKit) → R2
+       └─ PAYMENT_SUCCESS notification
+  → success page + receipt download
 ```
+
+The `payment.captured` **webhook** races `/verify` — either may land first. Both guard on `PENDING_PAYMENT` and the webhook uses `.returning()` to detect whether *it* performed the transition, so exactly one `PAYMENT_SUCCESS` notification is created. `/verify` is idempotent: an already-`PAID` order returns success rather than erroring, so a user mashing "Retry Payment" cannot create duplicates.
 
 ---
 
 ## File Storage (Cloudflare R2)
 
-**Key Patterns**:
+**Key patterns** — the DB stores these keys, never full URLs:
+
 ```
-users/{userId}/orders/{orderId}/{docType}_{timestamp}.{ext}   — User documents
-users/{userId}/documents/{docType}_{timestamp}.{ext}          — Saved documents
-schemes/{schemeId}/logo_{timestamp}.{ext}                     — Scheme logos
-schemes/{schemeId}/reference_{timestamp}.{ext}                — Reference images
-receipts/{orderId}/receipt.pdf                                — Payment receipts
-proofs/{orderId}/{proofType}_{timestamp}.{ext}                — Admin proofs
-announcements/{announcementId}/{timestamp}.{ext}              — Carousel images
+users/{userId}/orders/{orderId}/{docType}_{ts}.{ext}    user documents
+users/{userId}/documents/{docType}_{ts}.{ext}           saved documents
+schemes/{schemeId}/logo_{ts}.{ext}                      scheme logos
+schemes/{schemeId}/reference_{ts}.{ext}                 reference images
+receipts/{orderId}/receipt.pdf                          payment receipts
+proofs/{orderId}/{proofType}_{ts}.{ext}                 admin proofs
+announcements/{announcementId}/{ts}.{ext}               carousel images
 ```
 
-**Upload Methods**:
-- **Documents/Proofs**: Presigned URL → client uploads directly to R2
-- **Scheme Images**: Base64 via API → server uploads to R2 (bypasses CORS)
-- **Receipts**: Server-generated PDF → server uploads to R2
+**Upload methods**
+
+| Asset | Method | Why |
+|---|---|---|
+| User documents (web) | base64 → API → R2 | R2 rejects the CORS preflight for direct PUTs |
+| User documents (mobile) | presigned URL | No browser CORS involved |
+| Scheme / announcement images | base64 → API → R2 | Same CORS reason |
+| Receipts | server-generated → R2 | Never touches a client |
+
+**Reads**: private assets (documents, proofs, receipts) use 15-minute presigned URLs. Public assets (scheme logos, carousel images) resolve through `getPublicUrl()` against `R2_PUBLIC_URL`.
+
+> ⚠ `getPublicUrl()` returns `null` when `R2_PUBLIC_URL` is unset — so a perfectly intact image reads as `null` and looks exactly like data loss. `R2_PUBLIC_URL` must point at the public dev URL **of the same bucket** as `R2_BUCKET_NAME`. See **Known Issues**.
 
 ---
 
-## Caching Strategy
+## Caching & Rate Limiting
 
-| Cache Key | TTL | Invalidation |
-|-----------|-----|-------------|
-| `cache:schemes:{locale}:{category}` | 30 min | On admin create/update/delete |
-| `cache:scheme:{slug}:{locale}` | 1 hour | On admin create/update/delete |
-| `session:{userId}` | 7 days | On logout |
-| `otp:{phone}` | 5 min | Auto-expire |
-| `rate:{key}` | 10 min | Auto-expire |
+| Cache key | TTL | Invalidation |
+|---|---|---|
+| `cache:schemes:{locale}:{category}` | 30 min | any scheme write → `invalidateSchemeCache()` |
+| `cache:scheme:{slug}:{locale}` | 1 hour | same |
+| `session:{userId}` | 7 days | logout |
+| `otp:{phone}` | 5 min | auto-expire |
+| `rate:{key}` | 10 min | auto-expire |
 
----
+Only non-admin, non-search requests are cached. After changing anything that alters *rendering* of cached data (including config like `R2_PUBLIC_URL`), stale entries persist up to the TTL — editing any scheme flushes them immediately.
 
-## Rate Limiting
-
-| Limiter | Window | Max Requests |
-|---------|--------|-------------|
+| Limiter | Window | Max |
+|---|---|---|
 | Auth endpoints | 15 min | 10 |
 | General API | 1 min | 100 |
-| OTP endpoints | 10 min | 5 |
+| OTP | 10 min | 5 |
 
-Redis-based. **Fails open** if Redis is unreachable.
+Redis-backed and **fails open** — if Redis is unreachable, requests pass rather than 500.
 
 ---
 
 ## Design System
 
-**Font**: Public Sans (Google Fonts)  
-**Icons**: Material Icons + Material Symbols Outlined (CDN)  
-**Approach**: CSS Modules + global design tokens in `globals.css` (731 lines)
+**Font**: Public Sans · **Icons**: Material Icons / Symbols (CDN) · **Approach**: CSS Modules + tokens in `globals.css`
 
-### Color Palette
 | Token | Value | Usage |
-|-------|-------|-------|
+|---|---|---|
 | Primary | `#1B5E20` | Government green — headers, CTAs |
 | Secondary | `#FF9800` | Action orange — badges, highlights |
-| Student | `#00897B` | Category card |
-| Farmer | `#EF6C00` | Category card |
-| Loan | `#6A1B9A` | Category card |
-| Certificate | `#1E88E5` | Category card |
-| + 6 more | — | Category-specific colors |
-
-### Components (CSS)
-Buttons (`.btn-primary`, `.btn-secondary`, `.btn-outline`), cards, inputs, badges, spinners, utility classes (flex, gap, margin, text alignment).
-
-### CSS Modules (25 files)
-Each page/component has its own `.module.css` file. No Tailwind CSS installed.
+| Category colours | 10 values | Student `#00897B`, Farmer `#EF6C00`, Loan `#6A1B9A`, Certificate `#1E88E5`, … |
 
 ---
 
 ## Internationalization
 
-| Setting | Value |
-|---------|-------|
-| Library | next-intl 4.8.2 |
-| Locales | `en` (English), `mr` (Marathi) |
-| Default | `mr` (Marathi) |
-| Admin pages | English only (excluded from i18n) |
-| Message files | `apps/web/messages/{en,mr}.json` (~448 lines each) |
+next-intl 4.8.2 · locales `en` + `mr` · **default `mr`** · admin pages excluded · messages in `apps/web/messages/{en,mr}.json`.
 
-### Translation Scopes
-Common, Header, Footer, HomePage, Categories (10), Explore (4), LoginPage, SchemesPage, SchemePage, DashboardPage, OrdersPage, OrderPage, ProfilePage, Statuses (9), AuthCallback, CompleteProfilePage, ApplyPage.
+Every user-facing string added to `apps/web` needs a key in **both** files — a missing `mr` key throws at render, not at build.
+
+> Notification `title`/`message` are stored in the DB as **English only**. Marathi users see translated UI chrome around English notification text. Fixing this means rendering from `type` client-side rather than persisting prose.
 
 ---
 
 ## Environment Variables
 
-### Backend (`apps/api`)
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `JWT_SECRET` | ✅ | Min 32 chars |
-| `UPSTASH_REDIS_REST_URL` | ✅ | Redis REST URL |
-| `UPSTASH_REDIS_REST_TOKEN` | ✅ | Redis token |
-| `R2_ACCOUNT_ID` | ✅ | Cloudflare R2 account |
-| `R2_ACCESS_KEY_ID` | ✅ | R2 access key |
-| `R2_SECRET_ACCESS_KEY` | ✅ | R2 secret key |
-| `R2_BUCKET_NAME` | ❌ | Default: `shasansetu-documents` |
-| `R2_PUBLIC_URL` | ❌ | Public URL for R2 assets |
-| `GOOGLE_CLIENT_ID` | ✅ | Google OAuth |
-| `GOOGLE_CLIENT_SECRET` | ✅ | Google OAuth |
-| `GOOGLE_CALLBACK_URL` | ✅ | Google OAuth callback |
-| `RAZORPAY_KEY_ID` | ✅ | Razorpay key |
-| `RAZORPAY_KEY_SECRET` | ✅ | Razorpay secret |
-| `RAZORPAY_WEBHOOK_SECRET` | ❌ | Webhook verification |
-| `FIREBASE_*` | ❌ | Firebase Admin (project_id, client_email, private_key) |
-| `JWT_EXPIRES_IN` | ❌ | Default: `7d` |
-| `PORTAL_USERS` | ❌ | Developer-portal accounts: comma-separated `username:bcryptHash` (1-3) |
-| `PORTAL_JWT_SECRET` | ❌ | Signs portal JWTs (separate from `JWT_SECRET`) |
-| `PORTAL_TOKEN_EXPIRES_IN` | ❌ | Default: `7d` |
-| `PORTAL_URL` | ❌ | Portal origin for CORS. Default: `http://localhost:3002` |
-| `API_PORT` | ❌ | Default: `3001` |
-| `WEB_URL` | ❌ | Default: `http://localhost:3000` |
+### API (`apps/api`)
 
-### Frontend (`apps/web`)
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_API_URL` | Backend URL (proxied via Next.js rewrites) |
-| `NEXT_PUBLIC_FIREBASE_*` | Firebase client config (apiKey, authDomain, projectId, etc.) |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay public key for checkout |
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | ✅ | Postgres connection string |
+| `JWT_SECRET` | ✅ | Min 32 chars. Falls back to `'dev-secret'` if unset — never acceptable in production |
+| `UPSTASH_REDIS_REST_URL` / `_TOKEN` | ✅ | Sessions, cache, rate limits |
+| `R2_ACCOUNT_ID` | ✅ | R2 endpoint host |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | ✅ | Must have **Object Read & Write** on the bucket |
+| `R2_BUCKET_NAME` | ✅ | **No default since Aug 2026** — uploads now throw rather than guess |
+| `R2_PUBLIC_URL` | ✅ | Public dev URL of that same bucket. Without it every image URL is `null` |
+| `GOOGLE_CLIENT_ID` / `_SECRET` / `_CALLBACK_URL` | ✅ | OAuth |
+| `RAZORPAY_KEY_ID` / `_KEY_SECRET` | ✅ | Payments |
+| `RAZORPAY_WEBHOOK_SECRET` | ✅ | Webhook HMAC verification |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | ✅ | Admin SDK — OTP + Google token verification |
+| `WEB_URL` | ✅ | CORS origin. Defaults to `localhost:3000` |
+| `API_URL` | ✅ | Defaults to `localhost:3001` |
+| `PORTAL_URL` | ✅ | CORS origin for the portal. Defaults to `localhost:3002` |
+| `PORTAL_USERS` | ✅ | `username:bcryptHash`, comma-separated |
+| `PORTAL_JWT_SECRET` | ✅ | Separate from `JWT_SECRET` |
+| `JWT_EXPIRES_IN` / `PORTAL_TOKEN_EXPIRES_IN` | ❌ | Default `7d` |
+| `API_PORT` | ❌ | Default `3001` |
+| `DATABASE_BACKUP_URL` | ❌ | Local only — IPv4 pooler URL for `pnpm db:backup` |
+
+> Many of these are marked "required" here but are **optional in the Zod schema**, which is exactly how three production incidents happened. `apps/api/src/index.ts` now logs a named warning at boot for each missing R2 variable, and flags `WEB_URL`/`API_URL`/`PORTAL_URL` still pointing at localhost while `NODE_ENV=production`. Check the boot log after every deploy.
+
+### Web (`apps/web`) / Portal (`apps/portal`)
+`NEXT_PUBLIC_API_URL` · `NEXT_PUBLIC_FIREBASE_*` · `NEXT_PUBLIC_RAZORPAY_KEY_ID`
 
 ---
 
-## Migrations History
+## Deployment
 
-| # | Name | Changes |
-|---|------|---------|
-| 0000 | `tearful_blue_marvel` | **Initial schema** — 10 core tables |
-| 0001 | `worried_hellcat` | `documents.file_url` & `proofs.file_url` → text |
-| 0002 | `warm_network` | Add `receipt_key` to orders |
-| 0003 | `even_human_torch` | Add 14 indexes (schemes, translations, orders, documents) |
-| 0004 | `mixed_skrulls` | Create `feedbacks` table |
-| 0005 | `noisy_silvermane` | Create `announcements` table |
-| 0006 | `add_carousel_fields` | Add carousel support to announcements |
-| 0008 | `ambitious_shinko_yamashiro` | Add `average_completion_days` to schemes |
-| 0009 | `add_scheme_images` | Add `logo_url`, `reference_image_url` to schemes |
+### API → AWS EC2 (Docker)
+
+`.github/workflows/deploy-api.yml`, triggered by pushes to `master` touching `apps/api/**`, `packages/db/**`, `packages/types/**`, `Dockerfile`, `pnpm-lock.yaml`, or the workflow itself.
+
+```
+build multi-stage image → push to Docker Hub (:latest + :sha)
+  → SSH to EC2
+  → rewrite /home/ubuntu/shasansetu/.env from GitHub Secrets   ⚠
+  → docker stop/rm, docker run (port 3001, 768 MB, healthcheck)
+  → start autoheal sidecar (restarts unhealthy containers)
+  → docker image prune
+```
+
+⚠ **The `.env` is fully regenerated from GitHub Secrets on every deploy.** Editing it on the box is pointless — the next deploy overwrites it. A secret that does not exist expands to an *empty string*, which is indistinguishable from correct in the GitHub UI. `FIREBASE_SERVICE_ACCOUNT_JSON` is written separately via `printf` because its quotes and newlines would break the heredoc.
+
+Nginx sits in front (config in `docs/nginx-shasansetu-api.conf`); Docker healthcheck hits `/api/health`, which probes the DB.
+
+**No migrations run on deploy.** Schema changes are applied manually — see below.
+
+### Web + Portal → Vercel
+
+Both deploy from `master`. `apps/portal/vercel.json` is **required**: Vercel's Turborepo auto-detection otherwise builds `@shasansetu/web` into `apps/portal/.next` and fails. Its explicit `buildCommand` overrides that.
+
+### Post-deploy checklist
+
+```bash
+docker logs shasansetu-api | grep "Missing configuration" -A 5   # should be silent
+docker exec shasansetu-api env | grep R2_                        # all non-empty
+curl -s https://<api>/api/health
+```
+
+---
+
+## Database Operations & Backups
+
+```bash
+pnpm db:generate   # generate migration from schema diff
+pnpm db:push       # apply schema directly  ← used in practice
+pnpm db:studio     # Drizzle Studio
+pnpm db:backup     # pg_dump → backups/ (gitignored, keeps newest 10)
+```
+
+**Connectivity**: `db.<ref>.supabase.co:5432` (the direct host) resolves **IPv6-only** and is unreachable from many networks including the current dev machine. Use the **session pooler** (`aws-1-<region>.pooler.supabase.com:5432`, user `postgres.<project-ref>`) for local tooling. `DATABASE_BACKUP_URL` holds this; `scripts/db-backup.ps1` prefers it.
+
+**Migration state is drifted.** Past `db:push` usage means `db:migrate` fails replaying old migrations against the live DB ("column already exists"). Until reconciled, apply schema changes with `db:push` or hand-written SQL, and treat `packages/db/drizzle/*.sql` as a record of intent rather than a replayable history.
+
+Backups are `pg_dump -Fc` (custom format). Restore:
+```bash
+pg_restore -d "<connection-url>" --clean --if-exists backups/<file>.dump
+```
+Dumps contain user PII — `backups/` is gitignored and must stay that way.
+
+---
+
+## Known Issues & Traps
+
+### Open
+
+1. **`users.phone` is still `NOT NULL` in production.** The schema says nullable and migration `0012` carries the `ALTER`, but it has not been applied. Google signups without a phone number fail. One statement fixes it:
+   `ALTER TABLE public.users ALTER COLUMN phone DROP NOT NULL;`
+
+2. **R2 bucket split.** Production spent months uploading to a different bucket than `R2_PUBLIC_URL` served, because `R2_BUCKET_NAME` was empty and the code silently defaulted to `shasansetu-documents`. ~36 DB-referenced objects live in the abandoned bucket and were consciously orphaned. Those rows still hold keys, so they render as **broken images** rather than empty slots — null the columns if that becomes annoying.
+
+3. **Migration history is not replayable** (above).
+
+4. **Notification text is English-only** in the DB.
+
+5. **Auth guards are client-side.** No server-side middleware enforcement beyond i18n routing; the API is the real boundary.
+
+### Lessons that cost real time
+
+**Config that degrades silently is the recurring villain.** Three incidents, one shape: a secret is missing or empty, the code substitutes a plausible default, everything "works", and the damage surfaces weeks later somewhere unrelated.
+
+- `PORTAL_URL` missing → CORS defaulted to `localhost:3002` → portal login failed with no server-side log
+- `R2_PUBLIC_URL` missing → every image URL `null` → looked exactly like data loss
+- `R2_BUCKET_NAME` empty → uploads went to a phantom bucket → "object not found" months later
+
+Guard rails now in place: boot-time warnings naming each missing variable, `requireBucket()` throwing instead of guessing, and a production check for localhost URLs. **When adding config, prefer a loud failure over a helpful default** — and remember that a workflow line referencing a nonexistent secret writes an empty string, not nothing.
+
+**Other traps worth knowing:**
+
+- **A GitHub secret that "looks set" may be empty.** The UI cannot show you. Re-enter it to rule it out.
+- **R2 API tokens are bucket-scoped.** Repointing `R2_BUCKET_NAME` without updating the credentials yields `AccessDenied` — a valid token hitting a bucket outside its scope. Change the bucket and the keys together.
+- **Read-only R2 tokens pass every read check** and only fail at upload, which looks identical to a scoping problem. Verify with an actual write.
+- **`PATCH /api/schemes/:id` is a partial update.** Sending `logoUrl: null` to "clear the preview" writes NULL immediately. Stage removals in local state and apply on save.
+- **Drizzle returns camelCase properties.** `scheme.average_completion_days` is `undefined`, silently drops from the response, and round-trips back as `NULL` — wiping the column on every save. Watch for snake_case property reads.
+- **`packages/db` is consumed from `dist/`.** Rebuild it after schema edits or the API won't see them in dev.
+- **Turbo caches builds by env var.** `NEXT_PUBLIC_API_URL` is in `turbo.json`'s build env so a changed API URL invalidates the cache.
+
+---
+
+## Migration History
+
+| # | Name | Change |
+|---|---|---|
+| 0000 | tearful_blue_marvel | Initial schema — 10 core tables |
+| 0001 | worried_hellcat | `documents.file_url`, `proofs.file_url` → text |
+| 0002 | warm_network | `orders.receipt_key` |
+| 0003 | even_human_torch | 14 indexes |
+| 0004 | mixed_skrulls | `feedbacks` table |
+| 0005 | noisy_silvermane | `announcements` table |
+| 0006 | add_carousel_fields | Carousel support |
+| 0007 | stiff_corsair | `announcements`: description, image_key, image_url, scheme_id |
+| 0008 | ambitious_shinko_yamashiro | `schemes.average_completion_days` |
+| 0009 | add_scheme_images | (superseded by 0010) |
+| 0010 | striped_banshee | `schemes.logo_url`, `reference_image_url` |
+| 0011 | lazy_red_shift | `users.profile_data`, `schemes.custom_fields`, `orders.application_form_data` |
+| 0012 | rich_omega_sentinel | Notification indexes ✅ applied · `users.phone` DROP NOT NULL ❌ **not applied** |
 
 ---
 
 ## Key Architectural Decisions
 
-1. **Monorepo with shared packages** — DB schema and types are shared between API and web, ensuring type safety across the stack.
-
-2. **Server-side image proxy for scheme assets** — Scheme logo/reference uploads go through the backend as base64 (bypasses R2 CORS restrictions). User document uploads use presigned URLs (client → R2 direct).
-
-3. **Redis-backed session management** — JWT tokens carry minimal payload; full session data is in Redis with 7-day TTL, enabling server-side session invalidation.
-
-4. **Translation architecture** — Schemes have a dedicated `scheme_translations` table (not just JSON columns), supporting proper i18n queries with locale-filtered JOINs.
-
-5. **Soft deletes for schemes** — Schemes are set to INACTIVE rather than deleted, preserving referential integrity with existing orders.
-
-6. **PDF receipt generation** — Server-side PDFKit generates branded receipts on payment verification, uploaded to R2 with signed download URLs.
-
-7. **Rate limiting fails open** — If Redis is down, rate limiting is bypassed to avoid blocking legitimate users.
-
-8. **Admin analytics tracking** — Dedicated `admin_analytics` table tracks per-admin performance metrics, updated atomically with order status changes.
-
-9. **Custom forms owned by a separate Developer Portal** — `schemes.custom_fields` is authored only by developers via the standalone `apps/portal` app and `/api/portal/*` (env-based bcrypt auth, dedicated portal JWT). Admins manage everything else about a scheme but cannot touch custom fields; the admin endpoints reject `customFields` and leave the column untouched on update. The data stays in the existing JSONB column (no migration); the public apply flow and `orders.application_form_data` are unchanged. Portal writes call `invalidateSchemeCache()` so changes go live immediately.
+1. **Monorepo with shared packages** — schema and types shared across API and both frontends, so a column rename surfaces as a type error rather than a runtime bug.
+2. **Server-side upload proxy** — browser uploads go base64 → API → R2, because R2 rejects the CORS preflight for non-simple content types. Mobile keeps presigned URLs.
+3. **Keys in the DB, URLs at read time** — storage columns hold R2 keys; URLs are derived per-request, so the CDN domain can change without a migration. The cost is that a missing `R2_PUBLIC_URL` makes intact data look lost.
+4. **Redis-backed sessions** — JWTs stay minimal; Redis holds the session, enabling true server-side logout.
+5. **Dedicated translations table** — locale-filtered JOINs rather than JSON blobs.
+6. **Soft-deleted schemes** — INACTIVE, never removed, preserving referential integrity with historical orders.
+7. **Rate limiting fails open** — a Redis outage must not lock out real users.
+8. **Custom forms owned by a separate portal** — `schemes.custom_fields` is writable only through `/api/portal/*`; admin endpoints reject `customFields` and leave the column untouched, so admin edits cannot clobber developer-authored forms.
+9. **Idempotent payment confirmation** — `/verify` and the webhook both guard on `PENDING_PAYMENT`; whichever wins performs the transition exactly once.
+10. **Polling over SSE for notifications** — `EventSource` cannot carry an `Authorization` header and the JWT is in localStorage; a 60 s poll avoids putting tokens in query strings.
 
 ---
 
 ## Development Commands
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Start all services (API + Web + Developer Portal)
-# Web → :3000, API → :3001, Portal → :3002
-pnpm run dev
-
-# Run just the Developer Portal
-pnpm --filter @shasansetu/portal dev
-
-# Database operations
-pnpm run db:generate     # Generate Drizzle migrations
-pnpm run db:migrate      # Run migrations
-pnpm run db:push         # Push schema directly (dev)
-pnpm run db:studio        # Open Drizzle Studio
-
-# Build
+pnpm run dev        # web :3000 · api :3001 · portal :3002
 pnpm run build
+pnpm run lint
 
-# Clean
-pnpm run clean
+pnpm --filter @shasansetu/api dev
+pnpm --filter web build
+pnpm --filter @shasansetu/db build     # required after schema edits
+
+pnpm db:push
+pnpm db:studio
+pnpm db:backup
 ```
 
 ---
 
-## Current Status & Recent Changes
+## Changelog
 
-### Completed Features
-- ✅ Full user authentication (phone+password, Google OAuth, OTP reset)
-- ✅ Scheme CRUD with bilingual translations (EN/MR)
-- ✅ Scheme image management (logo + reference image via R2)
-- ✅ 4-step application wizard with document upload
-- ✅ Razorpay payment integration with PDF receipt generation
-- ✅ Admin order management (pick up, verify docs, upload proofs, complete)
-- ✅ Admin analytics dashboard
-- ✅ Notification system with SSE streaming
-- ✅ Announcement system (marquee, pills, popular tags, carousel)
-- ✅ 10 scheme categories (Student, Farmer, Loan, Certificate, Jobs, Health, Govt Card, Licence, Tax, Other)
-- ✅ Cookie consent banner
-- ✅ Info pages (FAQ, Help, Contact, Privacy, Terms, Disclaimer)
-- ✅ Application tracking (public)
-- ✅ Feedback/rating system
-- ✅ Responsive design
-
-### Known Considerations
-- SWR is installed but unused — all data fetching uses `useEffect` + `api.request()`
-- Some admin components use Tailwind-like class names in JSX but Tailwind is not installed (they rely on utility classes defined in `globals.css`)
-- Auth guards are client-side only (no server-side middleware auth beyond i18n)
-- R2 CORS for direct uploads requires bucket-level configuration for production domains
+| Date | Change |
+|---|---|
+| 2026-08-23 | Removed silent R2 bucket fallback; boot-time config warnings. Discovered production had been uploading to a phantom bucket; orphaned those objects by decision |
+| 2026-08-23 | Fixed scheme images reading `null` (missing `R2_PUBLIC_URL`), the ✕-button image clobber, `averageCompletionDays` wipe, and an INACTIVE-scheme auth leak |
+| 2026-08-22 | Notification feature completed — IDOR fixed, four dead event types wired, bell + `/notifications` page, indexes added |
+| 2026-08-22 | Standalone Refund & Cancellation Policy page (`/refund`) |
+| 2026-08-22 | Added `pnpm db:backup` (local `pg_dump` into gitignored `backups/`) |
+| 2026-06-23 | Portal secrets added to deploy workflow; `apps/portal/vercel.json` to fix Vercel's build target |
+| 2026-06-23 | Developer portal for custom forms; document-upload CORS fix |
+| 2026-06-19 | Custom application forms; Razorpay flow fixes |
+| 2026-05-06 | Scheme logo + reference images; image uploads proxied through the backend |
