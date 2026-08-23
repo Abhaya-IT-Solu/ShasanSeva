@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, decimal, timestamp, index, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, decimal, timestamp, index, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { schemes } from './schemes.js';
 import { admins } from './admins.js';
@@ -36,6 +36,10 @@ export const orders = pgTable('orders', {
     index('idx_orders_status').on(table.status),
     index('idx_orders_created_at').on(table.createdAt),
     index('idx_orders_assigned_to').on(table.assignedTo),
+    // One Razorpay payment can settle exactly one order. Defence in depth against
+    // replaying a genuine payment across several orders. NULLs are not conflicting
+    // in Postgres, so unpaid orders are unaffected.
+    uniqueIndex('uq_orders_payment_id').on(table.paymentId),
 ]);
 
 export type Order = typeof orders.$inferSelect;

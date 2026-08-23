@@ -5,6 +5,7 @@ import { validateBody } from '../middleware/validation.middleware.js';
 import {
     createRazorpayOrder,
     verifyPaymentSignature,
+    fetchPayment,
 } from '../services/razorpay.service.js';
 import { db, orders, schemes, documents, users, NotificationType } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
@@ -83,11 +84,23 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
         let order: typeof existingOrders[0];
 
         if (existingOrders.length > 0) {
-            // Reuse the existing PENDING_PAYMENT order
+            // Reuse the existing PENDING_PAYMENT order.
+            // Re-sync paymentAmount to the scheme's current fee: a fresh Razorpay order
+            // is created below at today's price, so leaving the original amount here
+            // would record one figure while charging another if the fee changed.
             order = existingOrders[0];
+            if (order.paymentAmount !== scheme.serviceFee) {
+                logger.info('Scheme fee changed since order was created — re-syncing amount', {
+                    orderId: order.id, was: order.paymentAmount, now: scheme.serviceFee,
+                });
+            }
             await db.update(orders)
-                .set({ applicationFormData: applicationFormData || {} })
+                .set({
+                    applicationFormData: applicationFormData || {},
+                    paymentAmount: scheme.serviceFee,
+                })
                 .where(eq(orders.id, order.id));
+            order = { ...order, paymentAmount: scheme.serviceFee };
             logger.info('Reusing existing PENDING_PAYMENT order', { orderId: order.id, userId, schemeId });
         } else {
             // Create new order record (status: PENDING_PAYMENT)
@@ -212,6 +225,26 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             );
         }
 
+        // Bind the Razorpay order to THIS order.
+        // The signature only proves Razorpay issued it for some (order, payment) pair —
+        // it says nothing about which of our orders it belongs to. Without this check a
+        // user could replay a genuine cheap payment's triple against an expensive
+        // PENDING_PAYMENT order they also own and have it marked PAID.
+        if (!order.razorpayOrderId || order.razorpayOrderId !== razorpayOrderId) {
+            logger.warn('Payment verification failed — razorpay order does not belong to this order', {
+                orderId,
+                submitted: razorpayOrderId,
+                expected: order.razorpayOrderId,
+                userId,
+            });
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'Payment verification failed',
+                })
+            );
+        }
+
         // Idempotency guard: if already PAID (e.g., webhook already processed it), return success immediately
         if (order.status === 'PAID') {
             logger.info('Payment already verified \u2014 returning success (idempotent)', { orderId });
@@ -232,22 +265,89 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
             );
         }
 
+        // Confirm with Razorpay that the money was actually captured, and for the
+        // expected amount. A signature is valid for an `authorized` payment too —
+        // funds held but never settled, auto-released after ~5 days — so signature
+        // alone is not proof of payment.
+        const expectedPaise = Math.round(parseFloat(order.paymentAmount) * 100);
+        try {
+            const payment = await fetchPayment(razorpayPaymentId);
+
+            if (payment.order_id !== razorpayOrderId) {
+                logger.error('Payment/order mismatch reported by Razorpay', {
+                    orderId, razorpayPaymentId, expected: razorpayOrderId, actual: payment.order_id,
+                });
+                return res.status(400).json(
+                    errorResponse({ code: ErrorCodes.VALIDATION_ERROR, message: 'Payment verification failed' })
+                );
+            }
+
+            if (payment.status !== 'captured') {
+                logger.warn('Payment not captured — refusing to mark order PAID', {
+                    orderId, razorpayPaymentId, status: payment.status,
+                });
+                return res.status(400).json(
+                    errorResponse({
+                        code: ErrorCodes.VALIDATION_ERROR,
+                        message: 'Payment has not been captured yet. If money was debited it will be confirmed shortly.',
+                    })
+                );
+            }
+
+            if (Number(payment.amount) !== expectedPaise) {
+                logger.error('Payment amount mismatch', {
+                    orderId, razorpayPaymentId, expectedPaise, actualPaise: payment.amount,
+                });
+                return res.status(400).json(
+                    errorResponse({ code: ErrorCodes.VALIDATION_ERROR, message: 'Payment amount mismatch' })
+                );
+            }
+        } catch (fetchError) {
+            // Fail closed. This is safe to reject: the payment.captured webhook is an
+            // independent path to PAID, so a Razorpay API blip delays confirmation
+            // rather than losing it.
+            logger.error('Could not confirm payment with Razorpay — deferring to webhook', fetchError);
+            return res.status(503).json(
+                errorResponse({
+                    code: ErrorCodes.INTERNAL_ERROR,
+                    message: 'Could not confirm payment right now. If money was debited, your order will update shortly.',
+                })
+            );
+        }
+
         const paymentTimestamp = new Date();
 
-        // Update order status to PAID
-        await db.update(orders)
+        // Claim the transition atomically. Checking status and then updating is a
+        // race: two concurrent verifies (double-click, retry) could both pass the
+        // check above and both run the side effects below — duplicate documents,
+        // duplicate receipt, duplicate notification. Only the winner proceeds.
+        const claimed = await db.update(orders)
             .set({
                 status: 'PAID',
                 paymentId: razorpayPaymentId,
                 paymentTimestamp,
                 updatedAt: new Date(),
             })
-            .where(eq(orders.id, orderId));
+            .where(and(eq(orders.id, orderId), eq(orders.status, 'PENDING_PAYMENT')))
+            .returning({ id: orders.id });
+
+        if (claimed.length === 0) {
+            // Lost the race — another verify or the webhook already marked it PAID.
+            const [current] = await db.select({ receiptKey: orders.receiptKey })
+                .from(orders).where(eq(orders.id, orderId));
+            logger.info('Payment already confirmed by a concurrent request (idempotent)', { orderId });
+            return res.json(successResponse({
+                orderId,
+                status: 'PAID',
+                receiptKey: current?.receiptKey || null,
+                message: 'Payment already verified. Your application is being processed.',
+            }));
+        }
 
         logger.info('Payment verified and order updated', { orderId, razorpayPaymentId });
 
-        // Notify the user (fires once — the PENDING_PAYMENT guard above ensures
-        // the webhook-first path returns early before reaching here)
+        // Notify the user. Safe to fire unconditionally now — only the request that
+        // won the atomic claim above reaches this point.
         await createNotification({
             recipientId: userId,
             recipientType: 'USER',
