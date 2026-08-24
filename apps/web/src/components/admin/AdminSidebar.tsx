@@ -119,6 +119,14 @@ export default function AdminSidebar({ activePage }: AdminSidebarProps) {
                     <button onClick={logout} className="btn btn-secondary btn-full">
                         Logout
                     </button>
+                    {/* Hardcoded rather than translated: /admin is outside
+                        NextIntlClientProvider, so useTranslations throws here. */}
+                    <p className={styles.builtBy}>
+                        Built by{' '}
+                        <a href="https://gravincy.com" target="_blank" rel="noopener noreferrer">
+                            Gravincy
+                        </a>
+                    </p>
                 </div>
             </aside>
         </>

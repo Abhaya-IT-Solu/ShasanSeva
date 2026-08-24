@@ -50,7 +50,8 @@
         "termsOfService": "Terms of Service",
         "refundPolicy": "Refund Policy",
         "disclaimerLink": "Disclaimer",
-        "disclaimer": "Disclaimer: ShasanSeva is a paid assistance platform. We do not guarantee approval of any scheme. We provide professional assistance with document handling and application support."
+        "disclaimer": "Disclaimer: ShasanSeva is a paid assistance platform. We do not guarantee approval of any scheme. We provide professional assistance with document handling and application support.",
+        "builtBy": "Built by <link>Gravincy</link>"
     },
     "HomePage": {
         "heroTitle": "Government Services,",
@@ -462,5 +463,9 @@
         "notesTitle": "Anything we should know?",
         "notesPlaceholder": "Optional — add any details that might help us process your application",
         "notesHint": "Visible to the officer handling your application."
+    },
+    "Poster": {
+        "close": "Close",
+        "viewScheme": "View scheme"
     }
 }

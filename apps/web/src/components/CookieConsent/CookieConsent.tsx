@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 
 const COOKIE_CONSENT_KEY = 'shasanseva_cookie_consent';
 
+/**
+ * Broadcast so the opening poster knows it can appear. A centre modal and a
+ * bottom sheet arriving together is a double-nag, so the poster waits for this.
+ */
+export const COOKIE_CONSENT_EVENT = 'shasanseva:cookie-consent';
+
 export default function CookieConsent() {
     const [show, setShow] = useState(false);
 
@@ -19,11 +25,13 @@ export default function CookieConsent() {
     const accept = () => {
         localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
         setShow(false);
+        window.dispatchEvent(new Event(COOKIE_CONSENT_EVENT));
     };
 
     const decline = () => {
         localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
         setShow(false);
+        window.dispatchEvent(new Event(COOKIE_CONSENT_EVENT));
     };
 
     if (!show) return null;

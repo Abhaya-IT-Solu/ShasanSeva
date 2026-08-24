@@ -177,3 +177,20 @@
         padding-top: var(--space-6);
     }
 }
+
+.builtBy {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.builtBy a {
+    color: #64748b;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.builtBy a:hover {
+    text-decoration: underline;
+}

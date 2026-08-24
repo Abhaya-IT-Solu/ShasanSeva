@@ -86,6 +86,17 @@ export default function Footer() {
                         <Link href="/refund">{t('refundPolicy')}</Link>
                         <Link href="/disclaimer">{t('disclaimerLink')}</Link>
                     </div>
+                    {/* Rich text so the brand sits inside the translated string —
+                        Marathi word order puts it elsewhere in the sentence. */}
+                    <p className={styles.credit}>
+                        {t.rich('builtBy', {
+                            link: (chunks) => (
+                                <a href="https://gravincy.com" target="_blank" rel="noopener noreferrer">
+                                    {chunks}
+                                </a>
+                            ),
+                        })}
+                    </p>
                 </div>
 
                 {/* Disclaimer */}

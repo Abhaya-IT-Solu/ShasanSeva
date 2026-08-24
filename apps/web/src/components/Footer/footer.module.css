@@ -153,3 +153,18 @@
     text-align: center;
     line-height: 1.6;
 }
+.credit {
+    font-size: var(--text-sm);
+    color: #6b7280;
+}
+
+.credit a {
+    color: #9ca3af;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.credit a:hover {
+    color: var(--color-secondary);
+    text-decoration: underline;
+}
