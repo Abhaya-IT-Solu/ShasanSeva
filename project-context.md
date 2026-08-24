@@ -1,6 +1,6 @@
 # ShasanSeva — Project Context
 
-> **Last updated**: 23 August 2026
+> **Last updated**: 24 August 2026
 > **Status**: Active development · Live in production
 > **Organization**: Abhaya IT Solutions
 > **Repo**: `Abhaya-IT-Solu/ShasanSeva` · default branch `master`
@@ -30,7 +30,7 @@ Recent work (August 2026) has been corrective rather than feature-driven. The no
 
 Ahead of switching Razorpay to live keys, the payment path was audited and hardened. The most serious finding: `/verify` never checked that the payment being confirmed belonged to the order being settled, so a genuine cheap payment's signature could be replayed against an expensive order. That is closed, along with capture confirmation and an atomic settle. A read-only reconciliation endpoint now compares Razorpay's ledger against our orders — its first run surfaced two captured-but-unsettled orders. **Refunds remain unbuilt** despite a published refund policy; see Known Issues item 3.
 
-**Planned before launch** (see `Capacity & Scaling` for the infrastructure half): admin-controlled scheme ordering; search and filters on the admin scheme and order lists; custom-form authoring moved from the developer portal into the admin panel; a `PENDING_PAYMENT` filter on the order queue; an `order_events` timeline so cancellation reasons survive resubmission and resubmissions are countable; user-authored notes on an order; a Gravincy credit in the footer; and an opening poster on the homepage driven by the existing CAROUSEL announcement.
+**Pre-launch feature work is complete** (24 August): admin-controlled scheme ordering, search and filters on the admin scheme and order lists, custom-form authoring moved into the admin panel, `PENDING_PAYMENT`/`PAYMENT_FAILED` filters plus search on the order queue, an `order_events` timeline, two-sided notes with visibility, user-authored notes, the Gravincy credit, and an opening poster driven by the existing CAROUSEL announcement. The infrastructure half is still outstanding — see `Capacity & Scaling`.
 
 ### Recent commits
 
@@ -94,7 +94,7 @@ External services:
 | `apps/web` `/admin/*` | 3000 | Staff | Same JWT, `userType=ADMIN`, no i18n |
 | `apps/portal` | 3002 | Developers | Separate portal JWT, env-configured bcrypt creds |
 
-The admin panel lives inside `apps/web` (not a separate app) but is excluded from i18n and is English-only. The developer portal is genuinely separate because it authors `schemes.custom_fields`, which admins deliberately cannot touch.
+The admin panel lives inside `apps/web` (not a separate app) but is excluded from i18n and is English-only. The developer portal was the sole author of `schemes.custom_fields` until August 2026; the admin panel can now do it too, and the portal is retained but unused.
 
 ### Directory layout
 
@@ -106,7 +106,7 @@ ShasanSeva/
 │   │   ├── lib/               # redis, utils/logger, firebase-admin
 │   │   ├── middleware/        # auth, validation, rate limiting
 │   │   ├── routes/            # 13 route modules
-│   │   ├── services/          # auth, r2, razorpay, receipt, notification, portal, reconciliation
+│   │   ├── services/          # auth, r2, razorpay, receipt, notification, portal, reconciliation, orderEvent
 │   │   ├── app.ts             # express setup, CORS, Razorpay webhook (raw body)
 │   │   └── index.ts           # entry, graceful shutdown, boot config checks
 │   ├── web/
@@ -151,7 +151,7 @@ No Tailwind — some JSX carries Tailwind-*looking* class names, but they resolv
 
 ---
 
-## Database Schema (12 tables)
+## Database Schema (13 tables)
 
 ### `users`
 `id` uuid PK · `phone` varchar(15) UNIQUE · `email` UNIQUE nullable · `name` · `category` (STUDENT/FARMER/LOAN_CANDIDATE/OTHER) · `google_id` · `password_hash` bcrypt(10) · `address` jsonb · `saved_documents` jsonb · `profile_data` jsonb · `profile_complete` bool
@@ -570,6 +570,8 @@ Dumps contain user PII — `backups/` is gitignored and must stay that way.
 
 ### Open
 
+0. **Two write paths for `schemes.custom_fields`.** The admin panel and the developer portal both replace the whole array with no locking, so simultaneous edits are last-write-wins. The portal is retained but no longer used; both paths share one validator and log the writer's identity, which is how you would find out. Add optimistic concurrency (`updatedAt` → 409) if the portal ever comes back into regular use.
+
 1. **`users.phone` is still `NOT NULL` in production.** The schema says nullable and migration `0012` carries the `ALTER`, but it has not been applied. Google signups without a phone number fail. One statement fixes it:
    `ALTER TABLE public.users ALTER COLUMN phone DROP NOT NULL;`
 
@@ -675,6 +677,12 @@ pnpm db:backup
 
 | Date | Change |
 |---|---|
+| 2026-08-24 | Mobile admin integration guide for the order changes (`docs/MOBILE_ADMIN_PANEL_GUIDE.md`) |
+| 2026-08-24 | Gravincy footer credit; opening poster on the homepage, driven by the existing CAROUSEL announcement |
+| 2026-08-24 | Order queue filters and search; `order_events` timeline; two-sided notes with visibility; cancellation now requires a reason; user-authored notes; `completed_at`/`cancelled_at` populated |
+| 2026-08-24 | Custom form builder moved into the admin panel; shared field validation; server-side validation of submitted form data at payment time |
+| 2026-08-24 | Admin-controlled scheme ordering; admin scheme list search and filters; fixed a `schemeType` cache-key bug that poisoned the public scheme list |
+| 2026-08-24 | `order_events` table, `display_order`, `user_notes`, `completed_at`, `cancelled_at` |
 | 2026-08-24 | Documented capacity and scaling for the expected launch load (10K DAU / 100 orders): one EC2 is correct, bottleneck order, config targets, and the thresholds at which a load balancer becomes the right answer |
 | 2026-08-23 | Added payment reconciliation (`GET /api/admin/reconciliation`) — read-only comparison of Razorpay's ledger against `orders`. First run flagged 2 captured-but-unsettled orders |
 | 2026-08-23 | Hardened `/payments/verify`: bound payment to its order (was replayable across orders), added capture + amount confirmation, made the PAID transition atomic, unique index on `payment_id` |
