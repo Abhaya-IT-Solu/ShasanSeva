@@ -14,8 +14,11 @@ export const REDIS_KEYS = {
     SESSION: (userId: string) => `session:${userId}`,
     RATE_LIMIT: (key: string) => `rate:${key}`,
     // Cache keys
-    SCHEMES_LIST: (locale: string, category?: string) =>
-        `cache:schemes:${locale}:${category || 'all'}`,
+    // schemeType is part of the key because it is a real public filter: without it
+    // a request for ?schemeType=PRIVATE wrote its filtered result under the
+    // unfiltered key and poisoned the full list for the whole 30-minute TTL.
+    SCHEMES_LIST: (locale: string, category?: string, schemeType?: string) =>
+        `cache:schemes:${locale}:${category || 'all'}:${schemeType || 'all'}`,
     SCHEME_DETAIL: (slug: string, locale: string) =>
         `cache:scheme:${slug}:${locale}`,
 } as const;

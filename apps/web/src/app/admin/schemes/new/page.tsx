@@ -37,6 +37,7 @@ export default function NewSchemePage() {
         serviceFee: '',
         status: 'ACTIVE',
         averageCompletionDays: '',
+        displayOrder: '',
         logoUrl: '',
         referenceImageUrl: '',
     });
@@ -110,6 +111,7 @@ export default function NewSchemePage() {
                     status: formData.status,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : undefined,
+                    displayOrder: formData.displayOrder ? Number(formData.displayOrder) : 0,
                     translations: {
                         en: {
                             name: formData.name,
@@ -327,6 +329,22 @@ export default function NewSchemePage() {
                                         max="3650"
                                         placeholder="e.g. 30"
                                     />
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label">Display Order</label>
+                                    <input
+                                        type="number"
+                                        name="displayOrder"
+                                        className="input"
+                                        value={formData.displayOrder}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        max="9999"
+                                        placeholder="Leave blank for A-Z"
+                                    />
+                                    <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                                        Lower numbers appear first. Blank = sort alphabetically, after the numbered ones.
+                                    </span>
                                 </div>
 
                             </div>

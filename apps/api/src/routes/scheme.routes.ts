@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db, schemes, schemeTranslations } from '@shasansetu/db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { authMiddleware, adminMiddleware, resolveOptionalAdmin } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
@@ -38,6 +38,8 @@ const createSchemeSchema = z.object({
     logoUrl: z.string().optional().nullable(),
     referenceImageUrl: z.string().optional().nullable(),
     status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+    // 0 = no preference (sorts last, alphabetically). 1+ = explicit priority.
+    displayOrder: z.number().int().min(0).max(9999).default(0),
     // Translations
     translations: z.object({
         en: translationSchema,
@@ -64,6 +66,7 @@ const updateSchemeSchema = z.object({
     logoUrl: z.string().optional().nullable(),
     referenceImageUrl: z.string().optional().nullable(),
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
+    displayOrder: z.number().int().min(0).max(9999).optional(),
     translations: z.object({
         en: translationSchema.optional(),
         mr: translationSchema.optional(),
@@ -97,7 +100,7 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
         const useCache = !isAdmin && !search && !status;
 
         if (useCache) {
-            const cacheKey = REDIS_KEYS.SCHEMES_LIST(locale || 'en', category);
+            const cacheKey = REDIS_KEYS.SCHEMES_LIST(locale || 'en', category, schemeType);
             try {
                 const cached = await redis.get(cacheKey);
                 if (cached) {
@@ -133,6 +136,7 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
             averageCompletionDays: schemes.averageCompletionDays,
             logoUrl: schemes.logoUrl,
             status: schemes.status,
+            displayOrder: schemes.displayOrder,
             // Translation fields
             name: schemeTranslations.name,
             description: schemeTranslations.description,
@@ -143,7 +147,13 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
                 eq(schemeTranslations.locale, locale || 'en')
             ))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
-            .orderBy(schemeTranslations.name);
+            // display_order 0 means "no preference" and sorts last, so the default
+            // for every scheme is the previous behaviour: alphabetical by translated
+            // name. An admin promotes a scheme by giving it 1, 2, 3 — without having
+            // to number every other scheme. The name tiebreaker is load-bearing:
+            // without it the equal-ranked rows come back in planner order, which
+            // varies between requests and reads as a bug.
+            .orderBy(sql`NULLIF(${schemes.displayOrder}, 0) ASC NULLS LAST`, schemeTranslations.name);
 
         // Filter by search on translated name/description
         let filteredResult = result;
@@ -163,7 +173,7 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
 
         // Cache the result for public requests
         if (useCache && resolvedResult.length > 0) {
-            const cacheKey = REDIS_KEYS.SCHEMES_LIST(locale || 'en', category);
+            const cacheKey = REDIS_KEYS.SCHEMES_LIST(locale || 'en', category, schemeType);
             try {
                 await redis.set(cacheKey, JSON.stringify(resolvedResult), { ex: REDIS_TTL.SCHEMES_LIST });
                 logger.info('Cached schemes list', { locale, category, count: resolvedResult.length });
@@ -244,6 +254,7 @@ router.get('/by-id/:id', async (req, res) => {
             requiredDocs: scheme.requiredDocs,
             customFields: scheme.customFields,
             averageCompletionDays: scheme.averageCompletionDays,
+            displayOrder: scheme.displayOrder,
             logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
             referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
             translations,
@@ -405,6 +416,7 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
             logoUrl: data.logoUrl || null,
             referenceImageUrl: data.referenceImageUrl || null,
             status: data.status,
+            displayOrder: data.displayOrder,
             createdBy: adminId,
         }).returning();
 
@@ -506,6 +518,10 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
         // customFields are intentionally not updated here; managed via the developer portal
         if (updates.serviceFee) schemeUpdates.serviceFee = updates.serviceFee;
         if (updates.status) schemeUpdates.status = updates.status;
+        // Deliberately !== undefined, unlike the truthiness checks above: 0 is the
+        // legal "no preference" value and a truthiness test would silently discard
+        // an admin clearing a scheme's priority.
+        if (updates.displayOrder !== undefined) schemeUpdates.displayOrder = updates.displayOrder;
         if (updates.averageCompletionDays !== undefined) {
             schemeUpdates.averageCompletionDays = updates.averageCompletionDays?.toString() ?? null;
         }

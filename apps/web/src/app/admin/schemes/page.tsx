@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import styles from '../admin.module.css';
@@ -14,12 +14,23 @@ interface Scheme {
     schemeType?: string;
     serviceFee: string;
     status: string;
+    displayOrder?: number;
 }
+
+const CATEGORIES = [
+    'STUDENT', 'FARMER', 'LOAN', 'CERTIFICATE', 'JOBS',
+    'HEALTH', 'GOVT_CARD', 'LICENCE', 'TAX', 'OTHER',
+];
 
 export default function AdminSchemesPage() {
     const [schemes, setSchemes] = useState<Scheme[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+
+    const [search, setSearch] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('ALL');
+    const [typeFilter, setTypeFilter] = useState('ALL');
+    const [statusFilter, setStatusFilter] = useState('ALL');
 
     useEffect(() => {
         fetchSchemes();
@@ -27,6 +38,9 @@ export default function AdminSchemesPage() {
 
     const fetchSchemes = async () => {
         try {
+            // No query params: the endpoint is unpaginated and the admin token makes
+            // it return INACTIVE schemes too, so the whole set is already in hand and
+            // every filter below can run client-side with no extra round trips.
             const response = await api.request('/api/schemes');
             if (response.success) {
                 setSchemes(response.data as Scheme[]);
@@ -38,6 +52,29 @@ export default function AdminSchemesPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const filteredSchemes = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        return schemes.filter((s) => {
+            const matchesSearch = term === ''
+                || (s.name || '').toLowerCase().includes(term)
+                || (s.slug || '').toLowerCase().includes(term);
+            const matchesCategory = categoryFilter === 'ALL' || s.category === categoryFilter;
+            const matchesType = typeFilter === 'ALL' || s.schemeType === typeFilter;
+            const matchesStatus = statusFilter === 'ALL' || s.status === statusFilter;
+            return matchesSearch && matchesCategory && matchesType && matchesStatus;
+        });
+    }, [schemes, search, categoryFilter, typeFilter, statusFilter]);
+
+    const hasFilters = search.trim() !== '' || categoryFilter !== 'ALL'
+        || typeFilter !== 'ALL' || statusFilter !== 'ALL';
+
+    const clearFilters = () => {
+        setSearch('');
+        setCategoryFilter('ALL');
+        setTypeFilter('ALL');
+        setStatusFilter('ALL');
     };
 
     const toggleStatus = async (schemeId: string, currentStatus: string) => {
@@ -63,10 +100,62 @@ export default function AdminSchemesPage() {
         <>
             <header className={styles.pageHeader}>
                 <h1>Manage Schemes</h1>
-                <Link href="/admin/schemes/new" className="btn btn-primary">
-                    + Add Scheme
-                </Link>
+                <div className={schemeStyles.headerActions}>
+                    <input
+                        type="search"
+                        className={schemeStyles.searchInput}
+                        placeholder="Search name or slug..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <Link href="/admin/schemes/new" className="btn btn-primary">
+                        + Add Scheme
+                    </Link>
+                </div>
             </header>
+
+            <div className={schemeStyles.filterBar}>
+                <select
+                    className={schemeStyles.filterSelect}
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                    <option value="ALL">All categories</option>
+                    {CATEGORIES.map((c) => (
+                        <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
+                    ))}
+                </select>
+
+                <select
+                    className={schemeStyles.filterSelect}
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                >
+                    <option value="ALL">All types</option>
+                    <option value="GOVERNMENT">Government</option>
+                    <option value="PRIVATE">Private</option>
+                </select>
+
+                <select
+                    className={schemeStyles.filterSelect}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                    <option value="ALL">All statuses</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                </select>
+
+                <span className={schemeStyles.resultCount}>
+                    {filteredSchemes.length} of {schemes.length}
+                </span>
+
+                {hasFilters && (
+                    <button type="button" className={schemeStyles.clearBtn} onClick={clearFilters}>
+                        Clear
+                    </button>
+                )}
+            </div>
 
             {error && (
                 <div className={schemeStyles.error}>{error}</div>
@@ -83,21 +172,29 @@ export default function AdminSchemesPage() {
                         <span>Category</span>
                         <span>Type</span>
                         <span>Fee</span>
+                        <span>Order</span>
                         <span>Status</span>
                         <span>Actions</span>
                     </div>
 
-                    {schemes.length === 0 ? (
+                    {filteredSchemes.length === 0 ? (
                         <div className={schemeStyles.emptyRow}>
-                            No schemes found. Add your first scheme!
+                            {schemes.length === 0
+                                ? 'No schemes found. Add your first scheme!'
+                                : 'No schemes match these filters.'}
                         </div>
                     ) : (
-                        schemes.map((scheme) => (
+                        filteredSchemes.map((scheme) => (
                             <div key={scheme.id} className={schemeStyles.tableRow}>
                                 <span className={schemeStyles.name}>{scheme.name}</span>
                                 <span className={schemeStyles.category}>{scheme.category}</span>
                                 <span>{scheme.schemeType}</span>
                                 <span>₹{scheme.serviceFee}</span>
+                                <span className={schemeStyles.order}>
+                                    {/* 0 means "no preference" — show a dash rather than a
+                                        misleading rank the admin never set. */}
+                                    {scheme.displayOrder ? scheme.displayOrder : '—'}
+                                </span>
                                 <span>
                                     <button
                                         onClick={() => toggleStatus(scheme.id, scheme.status)}

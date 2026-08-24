@@ -36,6 +36,7 @@ interface SchemeData {
         mr?: Translation;
     };
     averageCompletionDays?: string | null;
+    displayOrder?: number;
     logoUrl?: string | null;
     referenceImageUrl?: string | null;
 }
@@ -60,6 +61,7 @@ export default function EditSchemePage() {
         schemeType: 'GOVERNMENT',
         serviceFee: '',
         averageCompletionDays: '',
+        displayOrder: '',
         status: 'ACTIVE',
     });
 
@@ -110,6 +112,8 @@ export default function EditSchemePage() {
                         schemeType: scheme.schemeType || 'GOVERNMENT',
                         serviceFee: scheme.serviceFee || '',
                         averageCompletionDays: scheme.averageCompletionDays || '',
+                        // 0 is the "no preference" default — show it as blank, not "0"
+                        displayOrder: scheme.displayOrder ? String(scheme.displayOrder) : '',
                         status: scheme.status || 'ACTIVE',
                     });
 
@@ -256,6 +260,7 @@ export default function EditSchemePage() {
                     schemeType: formData.schemeType,
                     serviceFee: formData.serviceFee,
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : null,
+                    displayOrder: formData.displayOrder ? Number(formData.displayOrder) : 0,
                     status: formData.status,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
                     // Only sent when the admin actually changed an image. The API
@@ -436,6 +441,22 @@ export default function EditSchemePage() {
                                         max="3650"
                                         placeholder="e.g. 30"
                                     />
+                                  </div>
+                                <div className="input-group">
+                                    <label className="input-label">Display Order</label>
+                                    <input
+                                        type="number"
+                                        name="displayOrder"
+                                        className="input"
+                                        value={formData.displayOrder}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        max="9999"
+                                        placeholder="Leave blank for A-Z"
+                                    />
+                                    <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                                        Lower numbers appear first. Blank = sort alphabetically, after the numbered ones.
+                                    </span>
                                   </div>
                                 
                             </div>
