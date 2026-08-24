@@ -11,3 +11,4 @@ export * from './audit-logs.js';
 export * from './notifications.js';
 export * from './feedbacks.js';
 export * from './announcements.js';
+export * from './order-events.js';

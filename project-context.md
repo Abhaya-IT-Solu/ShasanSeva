@@ -30,6 +30,8 @@ Recent work (August 2026) has been corrective rather than feature-driven. The no
 
 Ahead of switching Razorpay to live keys, the payment path was audited and hardened. The most serious finding: `/verify` never checked that the payment being confirmed belonged to the order being settled, so a genuine cheap payment's signature could be replayed against an expensive order. That is closed, along with capture confirmation and an atomic settle. A read-only reconciliation endpoint now compares Razorpay's ledger against our orders — its first run surfaced two captured-but-unsettled orders. **Refunds remain unbuilt** despite a published refund policy; see Known Issues item 3.
 
+**Planned before launch** (see `Capacity & Scaling` for the infrastructure half): admin-controlled scheme ordering; search and filters on the admin scheme and order lists; custom-form authoring moved from the developer portal into the admin panel; a `PENDING_PAYMENT` filter on the order queue; an `order_events` timeline so cancellation reasons survive resubmission and resubmissions are countable; user-authored notes on an order; a Gravincy credit in the footer; and an opening poster on the homepage driven by the existing CAROUSEL announcement.
+
 ### Recent commits
 
 ```text
@@ -480,6 +482,69 @@ curl -s https://<api>/api/health
 
 ---
 
+## Capacity & Scaling
+
+Sizing for the expected launch load: **~10,000 daily active users, ~100 orders/day**.
+
+### What that actually means
+
+| | |
+|---|---|
+| Estimated requests | ~135–200K/day |
+| Average | ~2 req/s (irrelevant) |
+| Peak hour (~20% of daily) | **~8 req/s** |
+| Minute-level bursts | **~25 req/s** |
+| Current ceiling | ~100–150 req/s |
+
+So peak load is roughly **20% of one instance**. **One EC2 instance is correct at launch** — a load balancer would add cost and complexity for a problem that doesn't exist yet.
+
+### Bottleneck order
+
+Capacity fails in this order, and note that **a load balancer only addresses #4**:
+
+1. **DB connection pool, `max: 7`** ([client.ts:22](packages/db/src/client.ts)) — the hard ceiling. ~100–150 req/s sustained.
+2. **Redis round trips** — the rate limiter runs `redis.incr` on *every* `/api` request; authed requests add a session `get`. Upstash is a **REST API**, so each is an HTTP call. If the Upstash region isn't co-located with EC2 this dominates latency before CPU ever does.
+3. **Memory, 768MB** — the 15MB body limit means ~26MB transient per concurrent upload (base64 string + decoded Buffer). Roughly 5 simultaneous uploads is 130MB+. **This one bites at any traffic level**, and an OOM kill takes the container down.
+4. **CPU** — single Node process, one core. Cluster mode fixes this long before a second machine is needed.
+
+### Recommended config for launch
+
+| Setting | Current | Target | Why |
+|---|---|---|---|
+| Instance | — | **t3.medium** (2 vCPU, 4GB) | ~$30/mo on-demand; t4g.medium is ~20% cheaper on ARM |
+| DB pool | 7 | **20** | Covers bursts and slow queries |
+| Container memory | 768MB | **2GB** | Concurrent uploads + PDFKit |
+| Node process | single | **cluster, 2 workers** | Two vCPUs are available; use both |
+| Rate limiter | all `/api` | skip cached public reads | Halves Redis traffic and latency |
+
+### Scale-up thresholds
+
+| Sustained peak | Action |
+|---|---|
+| < 50 req/s | Current setup with the changes above. No LB. |
+| 50–200 req/s | Cluster mode, pool 20–30, Supabase **transaction pooler**, CDN for static |
+| 200–1,000 req/s | 2–3 instances + ALB, multi-AZ |
+| 1,000+ / spiky | Autoscaling group, edge caching, decouple the payment path |
+
+### Things that will surprise you
+
+- **Announcement spikes.** Government scheme platforms are exceptionally spiky — a scheme announcement or news mention can produce 10× for twenty minutes, faster than autoscaling reacts. The saving grace is that the spike is almost entirely *reads*, which the 30-minute Redis cache already absorbs. **Cloudflare in front of the public scheme endpoints** buys more headroom than a second instance would.
+- **Notification polling inflates traffic.** The bell polls every 60s per logged-in tab. At ~2,900 logged-in users that is a meaningful share of total requests, each costing a Redis `incr` plus a DB query. Gate on `visibilitychange` or back off to 5 minutes.
+- **Vercel function invocations.** Every page renders `ƒ (Dynamic) — server-rendered on demand`, so ~10K DAU × ~5 views ≈ **1.5M invocations/month**, likely past the Pro allowance. ISR or static generation for scheme pages would cut this sharply; the data is already cached API-side.
+- **Upstash cost scales linearly** — ~$18/mo at 100K req/day, but **~$120–180/mo at 1M**. At that point a fixed plan or Redis on the EC2 box is dramatically cheaper and removes the HTTP round trips.
+
+### Estimated monthly infrastructure
+
+EC2 t3.medium + EBS ~$32 · Supabase Pro $25 · Upstash ~$18 · R2 ~$3 · Vercel Pro $20 · Firebase ~$10 · Sentry $0–26 · domain ~$2 → **~$110–135/mo (₹9,000–11,500)**. Razorpay adds ~2.36% of revenue, which at 100 orders/day is the largest single line item.
+
+### Ready for horizontal scaling when needed
+
+Verified: **no local disk writes** (receipts are generated in memory and streamed to R2), **no shared in-memory state** (the only `Map`/`Set` are request-scoped), sessions and rate limiting in Redis. The app is genuinely stateless, so scaling out is straightforward. Two caveats for that day: `max: 7` × N instances against Supabase's connection ceiling (use the transaction pooler), and any scheduled job — reconciliation especially — must run on **exactly one** instance or it will hammer Razorpay and duplicate alerts.
+
+> **Before launch, regardless of scale:** fix the upload memory risk, raise the DB pool, get zero-downtime deploys (`docker stop`/`run` currently drops in-flight payments), and **add monitoring** — there is none today, no Sentry, no APM, no metrics. Load test with k6 or Artillery to replace these estimates with measurements.
+
+---
+
 ## Database Operations & Backups
 
 ```bash
@@ -610,6 +675,7 @@ pnpm db:backup
 
 | Date | Change |
 |---|---|
+| 2026-08-24 | Documented capacity and scaling for the expected launch load (10K DAU / 100 orders): one EC2 is correct, bottleneck order, config targets, and the thresholds at which a load balancer becomes the right answer |
 | 2026-08-23 | Added payment reconciliation (`GET /api/admin/reconciliation`) — read-only comparison of Razorpay's ledger against `orders`. First run flagged 2 captured-but-unsettled orders |
 | 2026-08-23 | Hardened `/payments/verify`: bound payment to its order (was replayable across orders), added capture + amount confirmation, made the PAID transition atomic, unique index on `payment_id` |
 | 2026-08-23 | Removed silent R2 bucket fallback; boot-time config warnings. Discovered production had been uploading to a phantom bucket; orphaned those objects by decision |

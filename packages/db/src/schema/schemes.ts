@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, decimal, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, decimal, integer, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
 import { admins } from './admins.js';
 
 // Required Document definition
@@ -37,6 +37,10 @@ export const schemes = pgTable('schemes', {
     logoUrl: text('logo_url'),                     // Optional: R2 key for scheme logo
     referenceImageUrl: text('reference_image_url'), // Optional: R2 key for reference/sample image
     status: varchar('status', { length: 20 }).default('ACTIVE'), // ACTIVE, INACTIVE
+    // Admin-controlled ordering within a category. Lower sorts first; ties fall back
+    // to translated name. Seeded in steps of 10 so schemes can be inserted between
+    // existing ones without renumbering. Mirrors announcements.sortOrder.
+    displayOrder: integer('display_order').default(0).notNull(),
 
     createdBy: uuid('created_by').references(() => admins.id),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -45,6 +49,7 @@ export const schemes = pgTable('schemes', {
     index('idx_schemes_category').on(table.category),
     index('idx_schemes_status').on(table.status),
     index('idx_schemes_type').on(table.schemeType),
+    index('idx_schemes_display_order').on(table.displayOrder),
 ]);
 
 export type Scheme = typeof schemes.$inferSelect;

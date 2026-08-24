@@ -24,7 +24,17 @@ export const orders = pgTable('orders', {
 
     // Admin Assignment
     assignedTo: uuid('assigned_to').references(() => admins.id),
+    // Denormalised "latest USER_VISIBLE admin note". order_events is the source of
+    // truth; this column exists because the user-facing pages render it directly.
+    // An ADMIN_ONLY note must never be written here — it would leak.
     adminNotes: text('admin_notes'),
+    // Denormalised "latest user note", same relationship to order_events.
+    userNotes: text('user_notes'),
+
+    // Terminal timestamps. completedAt was referenced by the user UI long before it
+    // existed, so that timeline row has always rendered blank.
+    completedAt: timestamp('completed_at'),
+    cancelledAt: timestamp('cancelled_at'),
 
     // Receipt (generated on PAID, stored in R2)
     receiptKey: varchar('receipt_key', { length: 500 }),
@@ -47,6 +57,11 @@ export type NewOrder = typeof orders.$inferInsert;
 
 // Order status enum
 export const OrderStatus = {
+    // Both of these are real persisted values that were missing here:
+    // PENDING_PAYMENT is the column default, and PAYMENT_FAILED is set by the
+    // Razorpay webhook. Their absence is why the admin queue rejected them.
+    PENDING_PAYMENT: 'PENDING_PAYMENT',
+    PAYMENT_FAILED: 'PAYMENT_FAILED',
     PAID: 'PAID',
     IN_PROGRESS: 'IN_PROGRESS',
     PROOF_UPLOADED: 'PROOF_UPLOADED',
