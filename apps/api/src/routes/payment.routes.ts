@@ -13,6 +13,7 @@ import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils
 import { env } from '../config/env.js';
 import { generateReceipt } from '../services/receipt.service.js';
 import { createNotification } from '../services/notification.service.js';
+import { validateFormDataAgainstFields } from '../lib/customFields.js';
 
 const router: Router = Router();
 
@@ -70,6 +71,25 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
             );
         }
 
+        // Validate the submitted answers against the scheme's field definitions.
+        // Until now this payload was z.record(z.any()) — arbitrary JSON attached to a
+        // paid order, with `required` enforced only by a client-side alert(). Unknown
+        // keys are dropped rather than rejected so that an admin renaming a field
+        // mid-application does not hard-fail someone's payment.
+        const { cleaned: cleanFormData, errors: formErrors } = validateFormDataAgainstFields(
+            scheme.customFields || [],
+            applicationFormData,
+        );
+        if (formErrors.length > 0) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: formErrors[0].message,
+                    details: { errors: formErrors },
+                })
+            );
+        }
+
         // BUG 4 FIX: Check for existing PENDING_PAYMENT order for this user+scheme
         const existingOrders = await db.select()
             .from(orders)
@@ -96,7 +116,7 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
             }
             await db.update(orders)
                 .set({
-                    applicationFormData: applicationFormData || {},
+                    applicationFormData: cleanFormData,
                     paymentAmount: scheme.serviceFee,
                 })
                 .where(eq(orders.id, order.id));
@@ -109,19 +129,19 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
                 schemeId,
                 paymentAmount: scheme.serviceFee,
                 status: 'PENDING_PAYMENT',
-                applicationFormData: applicationFormData || {},
+                applicationFormData: cleanFormData,
             }).returning();
             order = orderResult[0];
         }
 
         // Merge applicationFormData into user profileData
-        if (applicationFormData && Object.keys(applicationFormData).length > 0) {
+        if (Object.keys(cleanFormData).length > 0) {
             const userResult = await db.select({ profileData: users.profileData })
                 .from(users)
                 .where(eq(users.id, userId));
             if (userResult.length > 0) {
                 const currentProfileData = userResult[0].profileData || {};
-                const mergedProfileData = { ...currentProfileData, ...applicationFormData };
+                const mergedProfileData = { ...currentProfileData, ...cleanFormData };
                 await db.update(users)
                     .set({ profileData: mergedProfileData, updatedAt: new Date() })
                     .where(eq(users.id, userId));

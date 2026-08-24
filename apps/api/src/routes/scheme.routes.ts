@@ -7,6 +7,7 @@ import { validateBody, validateQuery } from '../middleware/validation.middleware
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { redis, REDIS_KEYS, REDIS_TTL, invalidateSchemeCache } from '../lib/redis.js';
 import { uploadBuffer, getPublicUrl, generateSchemeKey, getExtensionFromContentType } from '../services/r2.service.js';
+import { updateCustomFieldsSchema, validateCustomFieldSet } from '../lib/customFields.js';
 
 const router: Router = Router();
 
@@ -31,8 +32,9 @@ const createSchemeSchema = z.object({
         description: z.string().optional(),
         description_mr: z.string().optional(),
     })).default([]),
-    // NOTE: customFields are intentionally NOT accepted here. Custom form fields
-    // are managed exclusively through the developer portal (/api/portal/*).
+    // customFields are deliberately not part of this schema. They are replaced
+    // wholesale via PATCH /:id/custom-fields, which keeps a general scheme save
+    // physically unable to wipe the column if the form loads without them.
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Invalid fee format'),
     averageCompletionDays: z.number().int().min(1).max(3650).optional(),
     logoUrl: z.string().optional().nullable(),
@@ -59,8 +61,9 @@ const updateSchemeSchema = z.object({
         description: z.string().optional(),
         description_mr: z.string().optional(),
     })).optional(),
-    // NOTE: customFields are intentionally NOT accepted here. Custom form fields
-    // are managed exclusively through the developer portal (/api/portal/*).
+    // customFields are deliberately not part of this schema. They are replaced
+    // wholesale via PATCH /:id/custom-fields, which keeps a general scheme save
+    // physically unable to wipe the column if the form loads without them.
     serviceFee: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
     averageCompletionDays: z.number().int().min(1).max(3650).optional().nullable(),
     logoUrl: z.string().optional().nullable(),
@@ -410,7 +413,7 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
             eligibility: data.translations.en.eligibility,
             benefits: data.translations.en.benefits,
             requiredDocs: data.requiredDocs,
-            // customFields default to [] (DB default); managed via the developer portal
+            // customFields default to [] (DB default); set via PATCH /:id/custom-fields
             serviceFee: data.serviceFee,
             averageCompletionDays: data.averageCompletionDays?.toString(),
             logoUrl: data.logoUrl || null,
@@ -515,7 +518,7 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
         if (updates.category) schemeUpdates.category = updates.category;
         if (updates.schemeType) schemeUpdates.schemeType = updates.schemeType;
         if (updates.requiredDocs) schemeUpdates.requiredDocs = updates.requiredDocs;
-        // customFields are intentionally not updated here; managed via the developer portal
+        // customFields are intentionally not updated here — see PATCH /:id/custom-fields
         if (updates.serviceFee) schemeUpdates.serviceFee = updates.serviceFee;
         if (updates.status) schemeUpdates.status = updates.status;
         // Deliberately !== undefined, unlike the truthiness checks above: 0 is the
@@ -724,6 +727,65 @@ router.post('/:id/upload-image', authMiddleware, adminMiddleware, validateBody(u
                 code: ErrorCodes.INTERNAL_ERROR,
                 message: 'Failed to upload image',
             })
+        );
+    }
+});
+
+/**
+ * PATCH /api/schemes/:id/custom-fields
+ * Replace a scheme's custom form fields (admin).
+ *
+ * Deliberately separate from PATCH /:id rather than folded into it. The admin edit
+ * page sends the whole scheme on every save, so if this column rode along, a single
+ * save from a page whose loader had failed would send [] and silently erase the
+ * form. Keeping it on its own route means the general save cannot touch it.
+ *
+ * Shares its schema and validation with the developer portal's equivalent endpoint,
+ * so the two write paths cannot diverge. Both replace the entire array.
+ */
+router.patch('/:id/custom-fields', authMiddleware, adminMiddleware, validateBody(updateCustomFieldsSchema), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { customFields } = req.body as z.infer<typeof updateCustomFieldsSchema>;
+
+        const existing = await db.select({ id: schemes.id })
+            .from(schemes)
+            .where(eq(schemes.id, id));
+
+        if (existing.length === 0) {
+            return res.status(404).json(
+                errorResponse({ code: ErrorCodes.NOT_FOUND, message: 'Scheme not found' })
+            );
+        }
+
+        const invalid = validateCustomFieldSet(customFields);
+        if (invalid) {
+            return res.status(400).json(
+                errorResponse({ code: ErrorCodes.VALIDATION_ERROR, message: invalid })
+            );
+        }
+
+        const result = await db.update(schemes)
+            .set({ customFields, updatedAt: new Date() })
+            .where(eq(schemes.id, id))
+            .returning();
+
+        // So the public apply flow picks the new fields up immediately
+        await invalidateSchemeCache();
+
+        // Identity is logged because the portal can write this same column — if the
+        // two ever clobber each other, this is how you find out who wrote last.
+        logger.info('Admin updated custom fields', {
+            schemeId: id,
+            count: customFields.length,
+            by: req.user!.userId,
+        });
+
+        return res.json(successResponse(result[0]));
+    } catch (error) {
+        logger.error('Update custom fields error', error);
+        return res.status(500).json(
+            errorResponse({ code: ErrorCodes.INTERNAL_ERROR, message: 'Failed to update custom fields' })
         );
     }
 });

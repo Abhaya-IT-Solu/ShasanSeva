@@ -8,6 +8,7 @@ import { authRateLimiter } from '../middleware/rateLimit.middleware.js';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { invalidateSchemeCache } from '../lib/redis.js';
 import { authenticatePortalUser, createPortalToken } from '../services/portal.service.js';
+import { updateCustomFieldsSchema, validateCustomFieldSet } from '../lib/customFields.js';
 
 const router: Router = Router();
 
@@ -19,25 +20,8 @@ const loginSchema = z.object({
     password: z.string().min(1, 'Password is required'),
 });
 
-const customFieldSchema = z.object({
-    id: z.string().min(1, 'Field ID is required').regex(/^[a-z0-9_]+$/, 'Field ID must be lowercase letters, numbers, or underscores'),
-    type: z.enum(['text', 'number', 'date', 'select', 'textarea', 'email', 'phone']),
-    label: z.string().min(1, 'Label is required'),
-    label_mr: z.string().optional(),
-    required: z.boolean(),
-    placeholder: z.string().optional(),
-    placeholder_mr: z.string().optional(),
-    options: z.array(z.object({
-        label: z.string(),
-        label_mr: z.string().optional(),
-        value: z.string(),
-    })).optional(),
-    validationRegex: z.string().optional(),
-});
-
-const updateCustomFieldsSchema = z.object({
-    customFields: z.array(customFieldSchema),
-});
+// customFieldSchema / updateCustomFieldsSchema now live in ../lib/customFields.js
+// so the admin panel and this portal validate identically.
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -174,11 +158,12 @@ router.patch('/schemes/:id/custom-fields', portalAuthMiddleware, validateBody(up
             );
         }
 
-        // Reject duplicate field IDs — they would collide in application_form_data
-        const fieldIds = customFields.map(f => f.id);
-        if (new Set(fieldIds).size !== fieldIds.length) {
+        // Duplicate IDs would collide in application_form_data; a dropdown with no
+        // options is unusable. Shared with the admin route so the two cannot drift.
+        const invalid = validateCustomFieldSet(customFields);
+        if (invalid) {
             return res.status(400).json(
-                errorResponse({ code: ErrorCodes.VALIDATION_ERROR, message: 'Duplicate field IDs are not allowed' })
+                errorResponse({ code: ErrorCodes.VALIDATION_ERROR, message: invalid })
             );
         }
 
