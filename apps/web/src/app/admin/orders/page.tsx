@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import Pagination from '@/components/Pagination';
 import styles from './orders.module.css';
 
-type OrderStatus = 'PAID' | 'IN_PROGRESS' | 'PROOF_UPLOADED' | 'COMPLETED' | 'CANCELLED';
+type OrderStatus = 'PENDING_PAYMENT' | 'PAYMENT_FAILED' | 'PAID' | 'IN_PROGRESS' | 'PROOF_UPLOADED' | 'COMPLETED' | 'CANCELLED';
 
 interface Order {
     id: string;
@@ -32,6 +32,10 @@ interface PaginationData {
 
 const STATUS_TABS: { label: string; value: OrderStatus | 'ALL' }[] = [
     { label: 'All', value: 'ALL' },
+    // Unpaid orders were always present under "All" but had no tab of their own,
+    // and the API rejected the status outright.
+    { label: 'Pending Payment', value: 'PENDING_PAYMENT' },
+    { label: 'Payment Failed', value: 'PAYMENT_FAILED' },
     { label: 'Paid', value: 'PAID' },
     { label: 'In Progress', value: 'IN_PROGRESS' },
     { label: 'Proof Uploaded', value: 'PROOF_UPLOADED' },
@@ -48,6 +52,7 @@ export default function OrdersPage() {
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState<OrderStatus | 'ALL'>('ALL');
     const [updating, setUpdating] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
 
     // Pagination state
     const [page, setPage] = useState(1);
@@ -68,12 +73,17 @@ export default function OrdersPage() {
     }, [token]);
 
     // Fetch orders when tab or page changes
-    const fetchOrders = async (status: OrderStatus | 'ALL' = activeTab, pageNum: number = page) => {
+    const fetchOrders = async (
+        status: OrderStatus | 'ALL' = activeTab,
+        pageNum: number = page,
+        searchTerm: string = search,
+    ) => {
         setLoading(true);
         setError('');
         try {
             const params = new URLSearchParams();
             if (status !== 'ALL') params.append('status', status);
+            if (searchTerm.trim()) params.append('search', searchTerm.trim());
             params.append('page', String(pageNum));
             params.append('limit', '20');
 
@@ -93,6 +103,16 @@ export default function OrdersPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        fetchOrders(activeTab, 1, search);
+    };
+
+    const clearSearch = () => {
+        setSearch('');
+        fetchOrders(activeTab, 1, '');
     };
 
     const handleTabChange = (tab: OrderStatus | 'ALL') => {
@@ -162,6 +182,8 @@ export default function OrdersPage() {
 
     const getStatusClass = (status: OrderStatus) => {
         switch (status) {
+            case 'PENDING_PAYMENT': return styles.statusPending;
+            case 'PAYMENT_FAILED': return styles.statusFailed;
             case 'PAID': return styles.statusPaid;
             case 'IN_PROGRESS': return styles.statusProgress;
             case 'PROOF_UPLOADED': return styles.statusProof;
@@ -210,6 +232,23 @@ export default function OrdersPage() {
                         <h1>Orders</h1>
                         <p className={styles.subtitle}>Manage service orders and applications</p>
                     </div>
+                    {/* Server-side: the queue is paginated in SQL, so filtering here
+                        would only ever search the current page. */}
+                    <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
+                        <input
+                            type="search"
+                            className={styles.searchInput}
+                            placeholder="Name, phone, scheme or order ID"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                        <button type="submit" className={styles.searchBtn}>Search</button>
+                        {search && (
+                            <button type="button" className={styles.searchClear} onClick={clearSearch}>
+                                Clear
+                            </button>
+                        )}
+                    </form>
                 </div>
 
                 {/* Status Tabs */}
@@ -297,7 +336,10 @@ export default function OrdersPage() {
                                                         {updating === order.id ? '...' : 'Upload Proof'}
                                                     </button>
                                                 )}
-                                                {(order.status === 'COMPLETED' || order.status === 'CANCELLED') && (
+                                                {/* Unpaid and failed orders have no admin action either —
+                                                    without them here the cell rendered completely empty. */}
+                                                {(order.status === 'COMPLETED' || order.status === 'CANCELLED'
+                                                    || order.status === 'PENDING_PAYMENT' || order.status === 'PAYMENT_FAILED') && (
                                                     <span className={styles.noAction}>-</span>
                                                 )}
                                             </td>

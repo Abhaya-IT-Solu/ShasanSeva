@@ -7,13 +7,14 @@ import {
     verifyPaymentSignature,
     fetchPayment,
 } from '../services/razorpay.service.js';
-import { db, orders, schemes, documents, users, NotificationType } from '@shasansetu/db';
+import { db, orders, schemes, documents, users, NotificationType, OrderEventType } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { env } from '../config/env.js';
 import { generateReceipt } from '../services/receipt.service.js';
 import { createNotification } from '../services/notification.service.js';
 import { validateFormDataAgainstFields } from '../lib/customFields.js';
+import { recordOrderEvent } from '../services/orderEvent.service.js';
 
 const router: Router = Router();
 
@@ -21,6 +22,8 @@ const router: Router = Router();
 const createOrderSchema = z.object({
     schemeId: z.string().uuid(),
     applicationFormData: z.record(z.any()).optional(),
+    // Anything the applicant wants to tell the officer handling the case.
+    userNotes: z.string().trim().max(2000).optional(),
 });
 
 // Schema for verifying payment
@@ -44,7 +47,7 @@ const verifyPaymentSchema = z.object({
 router.post('/create-order', authMiddleware, validateBody(createOrderSchema), async (req: Request, res: Response) => {
     try {
         const userId = req.user!.userId;
-        const { schemeId, applicationFormData } = req.body;
+        const { schemeId, applicationFormData, userNotes } = req.body;
 
         // Get scheme details
         const schemeResult = await db.select()
@@ -118,6 +121,7 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
                 .set({
                     applicationFormData: cleanFormData,
                     paymentAmount: scheme.serviceFee,
+                    ...(userNotes !== undefined && { userNotes: userNotes || null }),
                 })
                 .where(eq(orders.id, order.id));
             order = { ...order, paymentAmount: scheme.serviceFee };
@@ -130,8 +134,22 @@ router.post('/create-order', authMiddleware, validateBody(createOrderSchema), as
                 paymentAmount: scheme.serviceFee,
                 status: 'PENDING_PAYMENT',
                 applicationFormData: cleanFormData,
+                userNotes: userNotes || null,
             }).returning();
             order = orderResult[0];
+
+            // Only the insert branch records CREATED — the reuse branch fires on
+            // every retry click and would spam the timeline.
+            await recordOrderEvent({
+                orderId: order.id,
+                eventType: OrderEventType.CREATED,
+                actorType: 'USER',
+                actorId: userId,
+                actorName: req.user!.name,
+                visibility: 'USER_VISIBLE',
+                toStatus: 'PENDING_PAYMENT',
+                message: userNotes || null,
+            });
         }
 
         // Merge applicationFormData into user profileData
@@ -365,6 +383,19 @@ router.post('/verify', authMiddleware, validateBody(verifyPaymentSchema), async 
         }
 
         logger.info('Payment verified and order updated', { orderId, razorpayPaymentId });
+
+        // Inside the won-the-claim branch, so a webhook race cannot double-record it
+        await recordOrderEvent({
+            orderId,
+            eventType: OrderEventType.PAYMENT_SUCCEEDED,
+            actorType: 'USER',
+            actorId: userId,
+            actorName: req.user!.name,
+            visibility: 'USER_VISIBLE',
+            fromStatus: 'PENDING_PAYMENT',
+            toStatus: 'PAID',
+            metadata: { razorpayPaymentId },
+        });
 
         // Notify the user. Safe to fire unconditionally now — only the request that
         // won the atomic claim above reaches this point.

@@ -21,8 +21,11 @@ interface RecordOrderEventParams {
     metadata?: Record<string, unknown>;
 }
 
-/** Anything with a Drizzle `.insert()` — the real db, or a transaction handle. */
-type DbLike = Pick<typeof db, 'insert'>;
+/**
+ * The handle Drizzle hands to a `db.transaction()` callback. Derived rather than
+ * imported because the concrete type is generic over the whole schema.
+ */
+export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Append an event to an order's timeline.
@@ -33,7 +36,7 @@ type DbLike = Pick<typeof db, 'insert'>;
  */
 export async function recordOrderEvent(
     params: RecordOrderEventParams,
-    tx?: DbLike,
+    tx?: DbTransaction,
 ): Promise<void> {
     try {
         await (tx ?? db).insert(orderEvents).values({

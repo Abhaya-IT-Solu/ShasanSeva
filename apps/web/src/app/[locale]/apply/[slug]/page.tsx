@@ -61,6 +61,7 @@ export default function ApplyPage() {
     const [scheme, setScheme] = useState<Scheme | null>(null);
     const [currentStep, setCurrentStep] = useState<Step>('documents');
     const [applicationFormData, setApplicationFormData] = useState<Record<string, any>>({});
+    const [userNotes, setUserNotes] = useState('');
     const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -159,7 +160,11 @@ export default function ApplyPage() {
         try {
             const orderResponse = await api.request('/api/payments/create-order', {
                 method: 'POST',
-                body: { schemeId: scheme.id, applicationFormData },
+                body: {
+                    schemeId: scheme.id,
+                    applicationFormData,
+                    ...(userNotes.trim() && { userNotes: userNotes.trim() }),
+                },
             });
             if (!orderResponse.success) throw new Error('Failed to create payment order');
             const { orderId: newOrderId, razorpayOrderId, razorpayKeyId, amount } = orderResponse.data as any;
@@ -545,6 +550,30 @@ export default function ApplyPage() {
                                             <p style={{ fontSize: 13, color: '#94a3b8' }}>Our team will contact you for any missing documents.</p>
                                         </div>
                                     )}
+                                </div>
+                            </div>
+
+                            {/* Free-text note to the officer. Until now an applicant had
+                                no way to say anything about their own application. */}
+                            <div className={styles.card}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.cardHeaderRow}>
+                                        <span className="material-icons">edit_note</span>
+                                        <h2>{t('notesTitle')}</h2>
+                                    </div>
+                                </div>
+                                <div className={styles.cardBody}>
+                                    <textarea
+                                        className="input"
+                                        rows={3}
+                                        maxLength={2000}
+                                        value={userNotes}
+                                        onChange={(e) => setUserNotes(e.target.value)}
+                                        placeholder={t('notesPlaceholder')}
+                                    />
+                                    <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>
+                                        {t('notesHint')}
+                                    </p>
                                 </div>
                             </div>
                         </div>

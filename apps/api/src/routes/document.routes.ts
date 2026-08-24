@@ -11,10 +11,11 @@ import {
     uploadBuffer,
 } from '../services/r2.service.js';
 
-import { db, documents, orders, NotificationType } from '@shasansetu/db';
+import { db, documents, orders, NotificationType, OrderEventType } from '@shasansetu/db';
 import { eq, and } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { createNotification } from '../services/notification.service.js';
+import { recordOrderEvent } from '../services/orderEvent.service.js';
 
 const router: Router = Router();
 
@@ -398,6 +399,19 @@ router.patch('/:id/reject', adminMiddleware, validateBody(rejectDocumentSchema),
                     title: 'Document Rejected',
                     message: `Your ${document.docType} document was rejected: ${rejectionReason}`,
                     relatedOrderId: document.orderId,
+                });
+
+                // The document row itself is hard-deleted when the user resubmits,
+                // so without this the reason would be lost the moment they act on it.
+                await recordOrderEvent({
+                    orderId: document.orderId,
+                    eventType: OrderEventType.DOCUMENT_REJECTED,
+                    actorType: 'ADMIN',
+                    actorId: adminId,
+                    actorName: req.user!.name,
+                    visibility: 'USER_VISIBLE',
+                    message: `${document.docType}: ${rejectionReason}`,
+                    metadata: { docType: document.docType, documentId: id },
                 });
             }
         }

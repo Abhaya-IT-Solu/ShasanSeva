@@ -38,6 +38,7 @@ interface OrderDetail {
     paymentAmount: string;
     paymentTimestamp: string;
     adminNotes?: string;
+    userNotes?: string | null;
     assignedTo?: string;
     createdAt: string;
     updatedAt: string;
@@ -77,8 +78,13 @@ export default function OrderDetailPage() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    // Compose box, deliberately not prefilled with the existing note: it appends a
+    // new timeline entry rather than overwriting a single column.
     const [adminNotes, setAdminNotes] = useState('');
+    const [noteVisibility, setNoteVisibility] = useState<'ADMIN_ONLY' | 'USER_VISIBLE'>('ADMIN_ONLY');
     const [isSavingNotes, setIsSavingNotes] = useState(false);
+    const [showCancelPrompt, setShowCancelPrompt] = useState(false);
+    const [cancelReason, setCancelReason] = useState('');
     const [downloadingDoc, setDownloadingDoc] = useState<string | null>(null);
     const [docAction, setDocAction] = useState<string | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -123,10 +129,14 @@ export default function OrderDetailPage() {
         try {
             const response = await api.request(`/api/orders/${orderId}/notes`, {
                 method: 'PATCH',
-                body: { adminNotes },
+                body: { adminNotes, visibility: noteVisibility },
             });
             if (response.success) {
-                setSuccess('Notes saved successfully');
+                setSuccess(noteVisibility === 'USER_VISIBLE'
+                    ? 'Note saved and shared with the applicant'
+                    : 'Private note saved');
+                setAdminNotes('');
+                fetchOrderDetails();
             } else {
                 setError(response.error?.message || 'Failed to save notes');
             }
@@ -145,7 +155,7 @@ export default function OrderDetailPage() {
                 const data = response.data as OrderResponse;
                 setOrder(data.order);
                 setDocuments(data.documents);
-                setAdminNotes(data.order.adminNotes || '');
+                // Intentionally not prefilled — see the state declaration.
             } else {
                 setError(response.error?.message || 'Failed to load order');
             }
@@ -168,7 +178,7 @@ export default function OrderDetailPage() {
         }
     };
 
-    const updateOrderStatus = async (newStatus: string) => {
+    const updateOrderStatus = async (newStatus: string, reason?: string) => {
         setIsUpdating(true);
         setError(null);
         setSuccess(null);
@@ -178,7 +188,11 @@ export default function OrderDetailPage() {
                 method: 'PATCH',
                 body: {
                     status: newStatus,
-                    adminNotes: adminNotes || undefined,
+                    // Only an explicitly supplied reason travels with a transition.
+                    // This used to send whatever happened to be in the notes textarea,
+                    // so cancelling without typing showed the user a stale note from an
+                    // earlier cycle as their "cancellation reason".
+                    ...(reason ? { adminNotes: reason } : {}),
                 },
             });
 
@@ -498,12 +512,55 @@ export default function OrderDetailPage() {
 
                                 {canCancel && (
                                     <button
-                                        onClick={() => updateOrderStatus('CANCELLED')}
+                                        onClick={() => setShowCancelPrompt(true)}
                                         disabled={isUpdating}
                                         className={`${styles.btnAction} ${styles.btnCancel}`}
                                     >
                                         {isUpdating ? 'Processing...' : '❌ Cancel Order'}
                                     </button>
+                                )}
+
+                                {/* A cancellation must say why. The reason is shown to the
+                                    applicant and is what they act on when resubmitting. */}
+                                {showCancelPrompt && (
+                                    <div className={styles.cancelPrompt}>
+                                        <label className={styles.cancelPromptLabel}>
+                                            Reason for cancelling (shown to the applicant)
+                                        </label>
+                                        <textarea
+                                            value={cancelReason}
+                                            onChange={(e) => setCancelReason(e.target.value)}
+                                            placeholder="e.g. The Aadhaar card image was unreadable — please re-upload a clearer scan."
+                                            className={styles.notesTextarea}
+                                            rows={3}
+                                        />
+                                        <div className={styles.cancelPromptActions}>
+                                            <button
+                                                type="button"
+                                                className={`${styles.btnAction} ${styles.btnCancel}`}
+                                                disabled={isUpdating || cancelReason.trim().length < 5}
+                                                onClick={async () => {
+                                                    await updateOrderStatus('CANCELLED', cancelReason.trim());
+                                                    setShowCancelPrompt(false);
+                                                    setCancelReason('');
+                                                }}
+                                            >
+                                                {isUpdating ? 'Cancelling...' : 'Confirm Cancellation'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={styles.btnAction}
+                                                onClick={() => { setShowCancelPrompt(false); setCancelReason(''); }}
+                                            >
+                                                Keep Order
+                                            </button>
+                                        </div>
+                                        {cancelReason.trim().length > 0 && cancelReason.trim().length < 5 && (
+                                            <span style={{ fontSize: 12, color: '#dc2626' }}>
+                                                Please give a reason of at least 5 characters.
+                                            </span>
+                                        )}
+                                    </div>
                                 )}
 
                                 {!canPickup && !canUploadProof && !canComplete && !canCancel && (
@@ -550,6 +607,16 @@ export default function OrderDetailPage() {
                         </div>
 
                         {/* Custom Application Form Data */}
+                        {/* Whatever the applicant wanted the officer to know. A note
+                            nobody reads is worse than no note, so it sits with the
+                            rest of what they submitted. */}
+                        {order.userNotes && (
+                            <div className={styles.detailCard}>
+                                <h2>Note from Applicant</h2>
+                                <p style={{ whiteSpace: 'pre-wrap', color: '#334155' }}>{order.userNotes}</p>
+                            </div>
+                        )}
+
                         {order.applicationFormData && Object.keys(order.applicationFormData).length > 0 && (
                             <div className={styles.detailCard}>
                                 <h2>Application Form Details</h2>
@@ -706,15 +773,36 @@ export default function OrderDetailPage() {
                                 <textarea
                                     value={adminNotes}
                                     onChange={(e) => setAdminNotes(e.target.value)}
-                                    placeholder="Add notes about this order..."
+                                    placeholder="Add a note about this order..."
                                     className={styles.notesTextarea}
                                 />
+                                {/* Notes used to be unconditionally visible to the
+                                    applicant, so there was no way to record an
+                                    internal observation. Private is the default. */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '8px 0' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                                        <input
+                                            type="radio"
+                                            checked={noteVisibility === 'ADMIN_ONLY'}
+                                            onChange={() => setNoteVisibility('ADMIN_ONLY')}
+                                        />
+                                        Internal only
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                                        <input
+                                            type="radio"
+                                            checked={noteVisibility === 'USER_VISIBLE'}
+                                            onChange={() => setNoteVisibility('USER_VISIBLE')}
+                                        />
+                                        Visible to applicant
+                                    </label>
+                                </div>
                                 <button
                                     onClick={saveAdminNotes}
-                                    disabled={isSavingNotes}
+                                    disabled={isSavingNotes || !adminNotes.trim()}
                                     className={`${styles.btnAction} ${styles.btnSaveNotes}`}
                                 >
-                                    {isSavingNotes ? 'Saving...' : '💾 Save Notes'}
+                                    {isSavingNotes ? 'Saving...' : '💾 Add Note'}
                                 </button>
                             </div>
                         </div>

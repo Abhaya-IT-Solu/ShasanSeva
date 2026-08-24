@@ -667,3 +667,26 @@
     color: var(--color-gray-500);
     margin: 0;
 }
+/* Cancel reason prompt — a cancellation must state why */
+.cancelPrompt {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cancelPromptLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: #991b1b;
+}
+
+.cancelPromptActions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}

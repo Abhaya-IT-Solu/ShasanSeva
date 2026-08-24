@@ -458,6 +458,9 @@
         "receiptGst": "GST (18%)",
         "receiptTotal": "Total Amount Paid",
         "printReceipt": "Print Receipt",
-        "downloadForm": "Download Form"
+        "downloadForm": "Download Form",
+        "notesTitle": "Anything we should know?",
+        "notesPlaceholder": "Optional — add any details that might help us process your application",
+        "notesHint": "Visible to the officer handling your application."
     }
 }

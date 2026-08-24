@@ -2,11 +2,12 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
 import { validateBody, validateQuery } from '../middleware/validation.middleware.js';
-import { db, orders, documents, schemes, users, NotificationType } from '@shasansetu/db';
-import { eq, desc, count, and } from 'drizzle-orm';
+import { db, orders, orderEvents, documents, schemes, users, NotificationType, OrderEventType } from '@shasansetu/db';
+import { eq, desc, count, and, or, ilike, sql, type SQL } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
 import { getDownloadUrl } from '../services/r2.service.js';
 import { createNotification } from '../services/notification.service.js';
+import { recordOrderEvent, type DbTransaction } from '../services/orderEvent.service.js';
 
 const router: Router = Router();
 
@@ -282,6 +283,18 @@ router.patch('/:id/status', authMiddleware, adminMiddleware, validateBody(update
             );
         }
 
+        // A cancellation without a stated reason is the defect users actually feel:
+        // the admin UI used to ship whatever happened to be in the notes box, so a
+        // stale note from an earlier cycle was shown as the cancellation reason.
+        if (status === 'CANCELLED' && (!adminNotes || adminNotes.trim().length < 5)) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'A reason of at least 5 characters is required to cancel an order',
+                })
+            );
+        }
+
         // Update order
         const updateData: Record<string, unknown> = {
             status,
@@ -293,11 +306,44 @@ router.patch('/:id/status', authMiddleware, adminMiddleware, validateBody(update
             updateData.assignedTo = adminId;
         }
 
-        if (adminNotes) updateData.adminNotes = adminNotes;
+        // Terminal timestamps — completedAt has been referenced by the user's
+        // "Key Dates" card since long before the column existed.
+        if (status === 'COMPLETED') updateData.completedAt = new Date();
+        if (status === 'CANCELLED') updateData.cancelledAt = new Date();
 
-        await db.update(orders)
-            .set(updateData)
-            .where(eq(orders.id, id));
+        // A note supplied with a transition is always user-visible: it explains the
+        // transition to the applicant. Private notes go through PATCH /:id/notes.
+        const trimmedNote = adminNotes?.trim();
+        if (trimmedNote) updateData.adminNotes = trimmedNote;
+
+        await db.transaction(async (tx: DbTransaction) => {
+            await tx.update(orders)
+                .set(updateData)
+                .where(eq(orders.id, id));
+
+            await recordOrderEvent({
+                orderId: id,
+                eventType: OrderEventType.STATUS_CHANGED,
+                actorType: 'ADMIN',
+                actorId: adminId,
+                actorName: req.user!.name,
+                visibility: 'USER_VISIBLE',
+                fromStatus: order.status,
+                toStatus: status,
+            }, tx);
+
+            if (trimmedNote) {
+                await recordOrderEvent({
+                    orderId: id,
+                    eventType: OrderEventType.ADMIN_NOTE,
+                    actorType: 'ADMIN',
+                    actorId: adminId,
+                    actorName: req.user!.name,
+                    visibility: 'USER_VISIBLE',
+                    message: trimmedNote,
+                }, tx);
+            }
+        });
 
         // Notify the user about the status change
         const statusMessages: Record<string, string> = {
@@ -380,25 +426,67 @@ router.post('/:id/resubmit', authMiddleware, async (req: Request, res: Response)
             );
         }
 
-        // Reset order status to PAID, clear admin assignment
-        await db.update(orders)
-            .set({
-                status: 'PAID',
-                assignedTo: null,
-                adminNotes: null,
-                updatedAt: new Date(),
-            })
-            .where(eq(orders.id, id));
+        // Capture what is about to be discarded, so the timeline keeps it. The
+        // previously-assigned admin is read now because the update nulls it below.
+        const previousAdminId = order.assignedTo;
+        const rejectedDocs = await db.select({ docType: documents.docType, reason: documents.rejectionReason })
+            .from(documents)
+            .where(and(eq(documents.orderId, id), eq(documents.status, 'REJECTED')));
 
-        // Delete REJECTED documents entirely — user will re-upload corrected versions.
-        // (Resetting to UPLOADED would cause duplicates when new upload creates a fresh record.)
-        await db.delete(documents)
-            .where(
-                and(
-                    eq(documents.orderId, id),
-                    eq(documents.status, 'REJECTED')
-                )
-            );
+        // One transaction: the reset and the document delete were two unguarded
+        // statements, so a failure between them left a half-reset order.
+        await db.transaction(async (tx: DbTransaction) => {
+            await tx.update(orders)
+                .set({
+                    status: 'PAID',
+                    assignedTo: null,
+                    // Clearing this is now correct rather than destructive: the note
+                    // survives as an ADMIN_NOTE event, and leaving it would show a
+                    // stale rejection reason on a freshly-active order.
+                    adminNotes: null,
+                    cancelledAt: null,
+                    updatedAt: new Date(),
+                })
+                .where(eq(orders.id, id));
+
+            // Delete REJECTED documents entirely — user will re-upload corrected versions.
+            // (Resetting to UPLOADED would cause duplicates when new upload creates a fresh record.)
+            await tx.delete(documents)
+                .where(
+                    and(
+                        eq(documents.orderId, id),
+                        eq(documents.status, 'REJECTED')
+                    )
+                );
+
+            await recordOrderEvent({
+                orderId: id,
+                eventType: OrderEventType.RESUBMITTED,
+                actorType: 'USER',
+                actorId: userId,
+                visibility: 'USER_VISIBLE',
+                fromStatus: order.status,
+                toStatus: 'PAID',
+                metadata: {
+                    // The deleted rows are gone; keep what they said.
+                    clearedAdminNote: order.adminNotes ?? null,
+                    removedDocuments: rejectedDocs.map((d: { docType: string; reason: string | null }) => ({ docType: d.docType, reason: d.reason })),
+                },
+            }, tx);
+        });
+
+        // Nothing previously told anyone an order had re-entered the queue. There is
+        // no all-admins fan-out helper, so notify whoever last handled it.
+        if (previousAdminId) {
+            await createNotification({
+                recipientId: previousAdminId,
+                recipientType: 'ADMIN',
+                type: NotificationType.ORDER_STATUS_CHANGE,
+                title: 'Order Resubmitted',
+                message: 'An order you previously handled has been resubmitted and is back in the queue.',
+                relatedOrderId: id,
+            });
+        }
 
         logger.info('Order resubmitted', { orderId: id, userId });
 
@@ -424,25 +512,54 @@ router.post('/:id/resubmit', authMiddleware, async (req: Request, res: Response)
  */
 router.get('/admin/queue', authMiddleware, adminMiddleware, validateQuery(
     paginationSchema.extend({
-        status: z.enum(['PAID', 'IN_PROGRESS', 'PROOF_UPLOADED', 'COMPLETED', 'CANCELLED']).optional(),
+        // PENDING_PAYMENT and PAYMENT_FAILED are real persisted statuses that were
+        // missing here, so filtering for either returned 400 even though such rows
+        // were already showing up under "All".
+        status: z.enum([
+            'PENDING_PAYMENT', 'PAYMENT_FAILED', 'PAID',
+            'IN_PROGRESS', 'PROOF_UPLOADED', 'COMPLETED', 'CANCELLED',
+        ]).optional(),
+        search: z.string().trim().max(100).optional(),
     })
 ), async (req: Request, res: Response) => {
     try {
         const status = req.query.status as string | undefined;
+        const search = req.query.search as string | undefined;
         const page = Number(req.query.page) || 1;
         const limit = Math.min(Math.max(Number(req.query.limit) || 20, 10), 100);
         const offset = (page - 1) * limit;
 
-        // Get total count with optional status filter
-        let countQuery = db.select({ count: count() }).from(orders);
-        if (status) {
-            countQuery = countQuery.where(eq(orders.status, status)) as typeof countQuery;
+        // Build the filter once and apply it to both queries. Previously .where()
+        // was chained after .orderBy().limit().offset() behind a @ts-ignore, which
+        // happened to work but could not accept a second condition.
+        const conditions: SQL[] = [];
+        if (status) conditions.push(eq(orders.status, status));
+        if (search) {
+            // Escape LIKE metacharacters so a literal % or _ does not widen the match
+            const term = `%${search.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+            conditions.push(
+                or(
+                    ilike(users.name, term),
+                    ilike(users.phone, term),
+                    ilike(schemes.name, term),
+                    sql`${orders.id}::text ILIKE ${term}`,
+                )!
+            );
         }
-        const countResult = await countQuery;
+        // .where(undefined) is a no-op in Drizzle, so no conditional chaining needed
+        const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+        // The count query needs the same joins as the data query: searching on
+        // users.name cannot resolve without users joined, and without this the
+        // count 500s the moment anyone types in the search box.
+        const countResult = await db.select({ count: count() })
+            .from(orders)
+            .leftJoin(users, eq(orders.userId, users.id))
+            .leftJoin(schemes, eq(orders.schemeId, schemes.id))
+            .where(where);
         const total = countResult[0]?.count || 0;
 
-        // Build query with joins
-        let query = db.select({
+        const result = await db.select({
             id: orders.id,
             userId: orders.userId,
             userName: users.name,
@@ -458,17 +575,10 @@ router.get('/admin/queue', authMiddleware, adminMiddleware, validateQuery(
             .from(orders)
             .leftJoin(users, eq(orders.userId, users.id))
             .leftJoin(schemes, eq(orders.schemeId, schemes.id))
+            .where(where)
             .orderBy(desc(orders.createdAt))
             .limit(limit)
             .offset(offset);
-
-        // Filter by status if provided
-        if (status) {
-            // @ts-ignore - drizzle type complexity
-            query = query.where(eq(orders.status, status));
-        }
-
-        const result = await query;
 
         return res.json(successResponse({
             data: result,
@@ -526,13 +636,27 @@ router.post('/:id/complete', authMiddleware, adminMiddleware, async (req: Reques
         }
 
         // Update order status to COMPLETED
-        await db.update(orders)
-            .set({
-                status: 'COMPLETED',
-                assignedTo: adminId,
-                updatedAt: new Date(),
-            })
-            .where(eq(orders.id, id));
+        await db.transaction(async (tx: DbTransaction) => {
+            await tx.update(orders)
+                .set({
+                    status: 'COMPLETED',
+                    assignedTo: adminId,
+                    completedAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(eq(orders.id, id));
+
+            await recordOrderEvent({
+                orderId: id,
+                eventType: OrderEventType.STATUS_CHANGED,
+                actorType: 'ADMIN',
+                actorId: adminId,
+                actorName: req.user!.name,
+                visibility: 'USER_VISIBLE',
+                fromStatus: order.status,
+                toStatus: 'COMPLETED',
+            }, tx);
+        });
 
         // Notify user about order completion
         await createNotification({
@@ -564,7 +688,10 @@ router.post('/:id/complete', authMiddleware, adminMiddleware, async (req: Reques
 
 // Schema for saving admin notes
 const saveNotesSchema = z.object({
-    adminNotes: z.string().max(2000),
+    adminNotes: z.string().min(1).max(2000),
+    // Defaults to private. Every admin note used to be rendered verbatim on the
+    // user's order page, so there was no way to record an internal observation.
+    visibility: z.enum(['ADMIN_ONLY', 'USER_VISIBLE']).default('ADMIN_ONLY'),
 });
 
 /**
@@ -574,10 +701,11 @@ const saveNotesSchema = z.object({
 router.patch('/:id/notes', authMiddleware, adminMiddleware, validateBody(saveNotesSchema), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { adminNotes } = req.body;
+        const { adminNotes, visibility } = req.body;
+        const adminId = req.user!.userId;
+        const adminRole = req.user!.role;
 
-        // Verify order exists
-        const orderResult = await db.select({ id: orders.id })
+        const orderResult = await db.select({ id: orders.id, assignedTo: orders.assignedTo })
             .from(orders)
             .where(eq(orders.id, id));
 
@@ -590,20 +718,48 @@ router.patch('/:id/notes', authMiddleware, adminMiddleware, validateBody(saveNot
             );
         }
 
-        // Update admin notes
-        await db.update(orders)
-            .set({
-                adminNotes,
-                updatedAt: new Date(),
-            })
-            .where(eq(orders.id, id));
+        // The same assignment rule /status enforces. This route had none at all, so
+        // any admin could overwrite the note on an order someone else was handling.
+        const assigned = orderResult[0].assignedTo;
+        if (adminRole !== 'SUPER_ADMIN' && assigned && assigned !== adminId) {
+            return res.status(403).json(
+                errorResponse({
+                    code: ErrorCodes.FORBIDDEN,
+                    message: 'This order is assigned to another admin',
+                })
+            );
+        }
 
-        logger.info('Admin notes saved', { orderId: id });
+        const note = adminNotes.trim();
+
+        await db.transaction(async (tx: DbTransaction) => {
+            // orders.admin_notes mirrors only the latest USER_VISIBLE note, because
+            // the user's order page renders that column directly in three places —
+            // mirroring a private note there would leak it.
+            if (visibility === 'USER_VISIBLE') {
+                await tx.update(orders)
+                    .set({ adminNotes: note, updatedAt: new Date() })
+                    .where(eq(orders.id, id));
+            }
+
+            await recordOrderEvent({
+                orderId: id,
+                eventType: OrderEventType.ADMIN_NOTE,
+                actorType: 'ADMIN',
+                actorId: adminId,
+                actorName: req.user!.name,
+                visibility,
+                message: note,
+            }, tx);
+        });
+
+        logger.info('Admin note added', { orderId: id, adminId, visibility });
 
         return res.json(successResponse({
             orderId: id,
-            adminNotes,
-            message: 'Notes saved successfully',
+            adminNotes: note,
+            visibility,
+            message: 'Note saved successfully',
         }));
     } catch (error) {
         logger.error('Failed to save admin notes', error);
@@ -612,6 +768,158 @@ router.patch('/:id/notes', authMiddleware, adminMiddleware, validateBody(saveNot
                 code: ErrorCodes.INTERNAL_ERROR,
                 message: 'Failed to save notes',
             })
+        );
+    }
+});
+
+/**
+ * GET /api/orders/:id/events
+ * The order's timeline. Admins see everything; the owner sees only user-visible
+ * entries.
+ */
+router.get('/:id/events', authMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!.userId;
+        const isAdmin = req.user!.userType === 'ADMIN';
+
+        const orderResult = await db.select({ userId: orders.userId })
+            .from(orders)
+            .where(eq(orders.id, id));
+
+        if (orderResult.length === 0) {
+            return res.status(404).json(
+                errorResponse({ code: ErrorCodes.NOT_FOUND, message: 'Order not found' })
+            );
+        }
+
+        if (!isAdmin && orderResult[0].userId !== userId) {
+            return res.status(403).json(
+                errorResponse({ code: ErrorCodes.FORBIDDEN, message: 'Unauthorized' })
+            );
+        }
+
+        // Visibility is filtered in SQL rather than in the response mapper, so a
+        // later change to the projection cannot accidentally leak a private note.
+        const conditions: SQL[] = [eq(orderEvents.orderId, id)];
+        if (!isAdmin) conditions.push(eq(orderEvents.visibility, 'USER_VISIBLE'));
+
+        const events = await db.select({
+            id: orderEvents.id,
+            eventType: orderEvents.eventType,
+            fromStatus: orderEvents.fromStatus,
+            toStatus: orderEvents.toStatus,
+            actorType: orderEvents.actorType,
+            actorName: orderEvents.actorName,
+            visibility: orderEvents.visibility,
+            message: orderEvents.message,
+            metadata: orderEvents.metadata,
+            createdAt: orderEvents.createdAt,
+        })
+            .from(orderEvents)
+            .where(and(...conditions))
+            .orderBy(desc(orderEvents.createdAt));
+
+        return res.json(successResponse({
+            events,
+            // Derived rather than stored: a counter and an event log drift, which is
+            // the exact failure this table exists to fix. Free here, since the
+            // timeline is already loaded.
+            resubmissionCount: events.filter(
+                (e: { eventType: string }) => e.eventType === OrderEventType.RESUBMITTED
+            ).length,
+        }));
+    } catch (error) {
+        logger.error('Failed to fetch order events', error);
+        return res.status(500).json(
+            errorResponse({ code: ErrorCodes.INTERNAL_ERROR, message: 'Failed to fetch order history' })
+        );
+    }
+});
+
+const userNoteSchema = z.object({
+    note: z.string().trim().min(1).max(2000),
+});
+
+/** How many notes one user may attach, so the timeline cannot become a chat. */
+const MAX_USER_NOTES = 20;
+
+/**
+ * PATCH /api/orders/:id/user-note
+ * Let the applicant attach a note to their own order — when resubmitting, or to
+ * add something they forgot. Previously there was no way for a user to say
+ * anything about an order at all.
+ */
+router.patch('/:id/user-note', authMiddleware, validateBody(userNoteSchema), async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user!.userId;
+        const { note } = req.body;
+
+        const orderResult = await db.select({ userId: orders.userId, status: orders.status })
+            .from(orders)
+            .where(eq(orders.id, id));
+
+        if (orderResult.length === 0) {
+            return res.status(404).json(
+                errorResponse({ code: ErrorCodes.NOT_FOUND, message: 'Order not found' })
+            );
+        }
+
+        if (orderResult[0].userId !== userId) {
+            return res.status(403).json(
+                errorResponse({ code: ErrorCodes.FORBIDDEN, message: 'Unauthorized' })
+            );
+        }
+
+        // Nothing reads a note added after the work is finished.
+        if (orderResult[0].status === 'COMPLETED') {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'This order is already completed',
+                })
+            );
+        }
+
+        const existing = await db.select({ count: count() })
+            .from(orderEvents)
+            .where(and(
+                eq(orderEvents.orderId, id),
+                eq(orderEvents.eventType, OrderEventType.USER_NOTE),
+            ));
+        if ((existing[0]?.count || 0) >= MAX_USER_NOTES) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'You have added the maximum number of notes to this order',
+                })
+            );
+        }
+
+        await db.transaction(async (tx: DbTransaction) => {
+            await tx.update(orders)
+                .set({ userNotes: note, updatedAt: new Date() })
+                .where(eq(orders.id, id));
+
+            await recordOrderEvent({
+                orderId: id,
+                eventType: OrderEventType.USER_NOTE,
+                actorType: 'USER',
+                actorId: userId,
+                actorName: req.user!.name,
+                visibility: 'USER_VISIBLE',
+                message: note,
+            }, tx);
+        });
+
+        logger.info('User note added', { orderId: id, userId });
+
+        return res.json(successResponse({ orderId: id, note, message: 'Note added' }));
+    } catch (error) {
+        logger.error('Failed to add user note', error);
+        return res.status(500).json(
+            errorResponse({ code: ErrorCodes.INTERNAL_ERROR, message: 'Failed to add note' })
         );
     }
 });
