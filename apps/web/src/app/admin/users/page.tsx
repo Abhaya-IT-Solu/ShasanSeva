@@ -85,7 +85,7 @@ export default function UsersPage() {
             <aside className={styles.sidebar}>
                 <div className={styles.sidebarHeader}>
                     <div className={styles.logo}>
-                        <Image src="/logo/logo_icon.png" alt="Logo" width={200} height={100} />
+                        <Image src="/logo/logo_icon.png" alt="ShasanSeva" width={48} height={48} />
                     </div>
                     <span className={styles.badge}>{isSuperAdmin ? 'Super Admin' : 'Admin'}</span>
                 </div>

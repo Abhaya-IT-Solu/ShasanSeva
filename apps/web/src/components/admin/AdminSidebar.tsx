@@ -95,7 +95,7 @@ export default function AdminSidebar({ activePage }: AdminSidebarProps) {
 
                 <div className={styles.sidebarHeader}>
                     <Link href="/" className={styles.logo}>
-                        <Image src="/logo/logo_icon.png" alt="Logo" width={200} height={100} />
+                        <Image src="/logo/logo_icon.png" alt="ShasanSeva" width={48} height={48} />
                     </Link>
                     <span className={styles.badge}>
                         {isSuperAdmin ? 'Super Admin' : 'Admin'}

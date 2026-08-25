@@ -32,6 +32,15 @@
     text-align: center;
 }
 
+/* Replaced the old .headerIcon circle. inline-flex so the centring from
+   .cardHeader's text-align applies predictably to the image. */
+.logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
 .headerIcon {
     display: inline-flex;
     align-items: center;

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
+import Image from 'next/image';
+import { Link } from '@/i18n/routing';
 import {
     RecaptchaVerifier,
     signInWithPhoneNumber,
@@ -506,11 +508,9 @@ export default function LoginPage() {
             <div className={styles.card}>
                 {/* Header with Icon */}
                 <div className={styles.cardHeader}>
-                    <div className={styles.headerIcon}>
-                        <span className="material-icons">verified_user</span>
-                    </div>
-                    <h1 className={styles.headerTitle}>{tCommon('appName')}</h1>
-                    <p className={styles.headerSubtitle}>{t('loginSubtitle')}</p>
+                    <Link href="/" className={styles.logo}>
+                        <Image src="/logo/logo_full.png" alt="ShasanSeva" width={88} height={88} priority />
+                    </Link>
                 </div>
 
                 {/* Tabs with bottom indicator */}

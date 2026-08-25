@@ -57,7 +57,7 @@ export function Header() {
                 <div className={styles.container}>
                     <div className={styles.navContent}>
                         <Link href="/" className={`${styles.logo} h-sm w-sm`}>
-                            <Image src="/logo/logo_icon.png" alt="Logo" width={100} height={50} />
+                            <Image src="/logo/logo_icon.png" alt="ShasanSeva" width={44} height={44} priority />
                         </Link>
                         <div className={styles.navLinks}>
                             <Link href="/" className={styles.navLink}>Home</Link>

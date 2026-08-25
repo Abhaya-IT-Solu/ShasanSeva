@@ -403,7 +403,7 @@ export default function OrderDetailPage() {
             <aside className={layoutStyles.sidebar}>
                 <div className={layoutStyles.sidebarHeader}>
                     <Link href="/" className={layoutStyles.logo}>
-                        <Image src="/logo/logo_icon.png" alt="Logo" width={200} height={100} />
+                        <Image src="/logo/logo_icon.png" alt="ShasanSeva" width={48} height={48} />
                     </Link>
                     <span className={layoutStyles.badge}>
                         {isSuperAdmin ? 'Super Admin' : 'Admin'}

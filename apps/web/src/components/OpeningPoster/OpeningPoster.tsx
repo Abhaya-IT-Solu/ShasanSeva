@@ -35,6 +35,7 @@ export default function OpeningPoster() {
     const t = useTranslations('Poster');
     const [poster, setPoster] = useState<CarouselItem | null>(null);
     const [show, setShow] = useState(false);
+    const [imageFailed, setImageFailed] = useState(false);
 
     // Fetch first; nothing renders until the consent gate opens as well.
     useEffect(() => {
@@ -81,13 +82,6 @@ export default function OpeningPoster() {
         setShow(false);
     }, [poster]);
 
-    /**
-     * Hidden because the image would not load. Deliberately does NOT mark the
-     * poster seen: R2 URLs expire and buckets get misconfigured, and a transient
-     * failure must not suppress the poster for that visitor permanently.
-     */
-    const hideBroken = useCallback(() => setShow(false), []);
-
     useEffect(() => {
         if (!show) return;
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
@@ -107,16 +101,22 @@ export default function OpeningPoster() {
                 </button>
 
                 {/* Plain <img>: next.config.js has no images block, so remote R2 URLs
-                    are not configured for next/image. The presigned URL can expire,
-                    so a failure hides the poster rather than showing a broken frame. */}
-                <div className={styles.imageWrap}>
-                    <img
-                        src={poster.imageUrl!}
-                        alt={poster.title}
-                        className={styles.image}
-                        onError={hideBroken}
-                    />
-                </div>
+                    are not configured for next/image.
+
+                    A failed image drops only the image, never the whole poster.
+                    Hiding everything made the poster appear and then silently vanish
+                    a second later whenever the key pointed at a missing object —
+                    which is exactly what a stale or orphaned R2 key produces. */}
+                {!imageFailed && (
+                    <div className={styles.imageWrap}>
+                        <img
+                            src={poster.imageUrl!}
+                            alt={poster.title}
+                            className={styles.image}
+                            onError={() => setImageFailed(true)}
+                        />
+                    </div>
+                )}
 
                 <div className={styles.body}>
                     <h2 className={styles.title}>{poster.title}</h2>

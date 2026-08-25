@@ -21,7 +21,7 @@ export default function Footer() {
                                 src="/logo/logo_text.png"
                                 alt="ShasanSeva"
                                 width={180}
-                                height={50}
+                                height={49}
                                 style={{ filter: 'brightness(2)' }}
                             />
                         </Link>
