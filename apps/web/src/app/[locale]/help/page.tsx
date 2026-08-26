@@ -95,7 +95,7 @@ export default function HelpPage() {
                         <div className={styles.contactCard}>
                             <span className={styles.icon}>📧</span>
                             <h3>Email</h3>
-                            <p><a href="mailto:support@shasanseva.com">support@shasanseva.in</a></p>
+                            <p><a href="mailto:support@shasanseva.in">support@shasanseva.in</a></p>
                         </div>
                         <div className={styles.contactCard}>
                             <span className={styles.icon}>📞</span>

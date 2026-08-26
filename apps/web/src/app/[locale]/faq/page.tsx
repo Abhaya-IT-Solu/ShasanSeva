@@ -56,7 +56,7 @@ const faqData: FAQItem[] = [
     },
     {
         question: 'How do I contact support?',
-        answer: 'You can reach us via phone (+91 98765 43210), email (support@shasanseva.com), or WhatsApp. Our support hours are Monday to Saturday, 9 AM to 7 PM.',
+        answer: 'You can reach us via phone (+91 7517866060), email (support@shasanseva.in), or WhatsApp. Our support hours are Monday to Saturday, 9 AM to 7 PM.',
     },
 ];
 

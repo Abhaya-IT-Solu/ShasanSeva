@@ -85,6 +85,7 @@ export default function Footer() {
                         <Link href="/terms">{t('termsOfService')}</Link>
                         <Link href="/refund">{t('refundPolicy')}</Link>
                         <Link href="/disclaimer">{t('disclaimerLink')}</Link>
+                        <Link href="/delete-account">{t('deleteAccount')}</Link>
                     </div>
                     {/* Rich text so the brand sits inside the translated string —
                         Marathi word order puts it elsewhere in the sentence. */}

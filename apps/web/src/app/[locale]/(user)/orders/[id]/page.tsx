@@ -1035,9 +1035,9 @@ export default function OrderDetailPage() {
                     <div className={styles.helpActions}>
                         <a href="tel:+919876543210" className={styles.helpCallBtn}>
                             <span className="material-icons" style={{ fontSize: 20, color: '#16a34a' }}>call</span>
-                            +91 98765 43210
+                            +91 7517866060
                         </a>
-                        <a href="mailto:support@shasanseva.com" className={styles.helpEmailBtn}>
+                        <a href="mailto:support@shasanseva.in" className={styles.helpEmailBtn}>
                             <span className="material-icons" style={{ fontSize: 20 }}>email</span>
                             {t('emailSupport') || 'Email Support'}
                         </a>

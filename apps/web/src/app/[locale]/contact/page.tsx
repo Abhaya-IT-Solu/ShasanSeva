@@ -58,7 +58,7 @@ export default function ContactPage() {
                     <p>If you need help with a specific application, please have your <strong>Application ID</strong> ready when contacting us. You can find it in your <Link href="/orders">My Applications</Link> page.</p>
 
                     <h3>Business Inquiries</h3>
-                    <p>For partnerships, collaborations, or business-related queries, please email us at <a href="mailto:support@shasanseva.com">support@shasanseva.com</a>.</p>
+                    <p>For partnerships, collaborations, or business-related queries, please email us at <a href="mailto:support@shasanseva.in">support@shasanseva.in</a>.</p>
                 </div>
 
                 <div className={styles.card}>

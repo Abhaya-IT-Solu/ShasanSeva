@@ -51,7 +51,8 @@
         "refundPolicy": "Refund Policy",
         "disclaimerLink": "Disclaimer",
         "disclaimer": "Disclaimer: ShasanSeva is a paid assistance platform. We do not guarantee approval of any scheme. We provide professional assistance with document handling and application support.",
-        "builtBy": "Built by <link>Gravincy</link>"
+        "builtBy": "Built by <link>Gravincy</link>",
+        "deleteAccount": "Delete Account"
     },
     "HomePage": {
         "heroTitle": "Government Services,",
