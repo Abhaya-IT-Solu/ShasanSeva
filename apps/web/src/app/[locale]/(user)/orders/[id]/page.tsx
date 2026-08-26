@@ -77,10 +77,23 @@ interface Order {
     applicationFormData?: Record<string, any>;
 }
 
-const STATUS_STEPS = ['PAID', 'IN_PROGRESS', 'DOCUMENTS_VERIFIED', 'COMPLETED'];
+/**
+ * The real fulfilment path. DOCUMENTS_VERIFIED used to sit in the third slot, but
+ * no such status exists in the API or the database — meanwhile PROOF_UPLOADED,
+ * which does, was missing entirely, so a proof-uploaded order matched nothing and
+ * showed zero progress.
+ */
+const STATUS_STEPS = ['PAID', 'IN_PROGRESS', 'PROOF_UPLOADED', 'COMPLETED'];
+
+/** Statuses that sit before the fulfilment path starts. */
+const PRE_PAYMENT_STATUSES = ['PENDING_PAYMENT', 'PAYMENT_FAILED'];
 
 const getStatusColor = (status: string) => {
     const colors: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+        // Both of these are real persisted statuses that had no entry here, so an
+        // unpaid or failed order rendered an unexplained grey badge.
+        PENDING_PAYMENT: { bg: '#fffbeb', text: '#b45309', border: '#fde68a', dot: '#f59e0b' },
+        PAYMENT_FAILED: { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca', dot: '#ef4444' },
         PAID: { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', dot: '#16a34a' },
         IN_PROGRESS: { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', dot: '#f97316' },
         PROOF_UPLOADED: { bg: '#f5f3ff', text: '#6d28d9', border: '#ddd6fe', dot: '#8b5cf6' },
@@ -101,6 +114,9 @@ export default function OrderDetailPage() {
     const [order, setOrder] = useState<Order | null>(null);
     const [documents, setDocuments] = useState<Document[]>([]);
     const [proofs, setProofs] = useState<Proof[]>([]);
+    // Real transition times, so the tracker shows when each step was actually
+    // reached rather than approximating from the order's own columns.
+    const [statusReachedAt, setStatusReachedAt] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -138,6 +154,26 @@ export default function OrderDetailPage() {
     };
 
     useEffect(() => {
+        const fetchTimeline = async () => {
+            try {
+                const response = await api.request(`/api/orders/${params.id}/events`);
+                if (!response.success) return;
+                const { events } = response.data as {
+                    events: { eventType: string; toStatus: string | null; createdAt: string }[];
+                };
+                // Events come newest-first, so walking forward leaves the earliest
+                // time a status was reached — the right one when an order has been
+                // cancelled and resubmitted through the same step more than once.
+                const reached: Record<string, string> = {};
+                for (const e of events) {
+                    if (e.toStatus) reached[e.toStatus] = e.createdAt;
+                }
+                setStatusReachedAt(reached);
+            } catch {
+                // Non-critical: the tracker simply omits dates
+            }
+        };
+
         const fetchProofs = async () => {
             try {
                 const response = await api.request(`/api/proofs/order/${params.id}`);
@@ -152,6 +188,7 @@ export default function OrderDetailPage() {
         if (params.id) {
             fetchOrderDetails();
             fetchProofs();
+            fetchTimeline();
             fetchFeedback();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -330,7 +367,19 @@ export default function OrderDetailPage() {
         );
     }
 
+    const isPrePayment = PRE_PAYMENT_STATUSES.includes(order.status);
     const currentStepIndex = STATUS_STEPS.indexOf(order.status);
+
+    /**
+     * When a step was actually reached. Prefers the recorded transition, falling
+     * back to the order's own columns for orders that predate the timeline.
+     */
+    const stepReachedAt = (step: string): string | null => {
+        if (statusReachedAt[step]) return statusReachedAt[step];
+        if (step === 'PAID') return order.paymentTimestamp;
+        if (step === 'COMPLETED') return order.completedAt;
+        return null;
+    };
     const schemeName = order.scheme?.name || order.schemeName || 'Unknown Scheme';
     const statusColors = getStatusColor(order.status);
     const rejectedDocuments = documents.filter(d => d.status === 'REJECTED');
@@ -374,6 +423,32 @@ export default function OrderDetailPage() {
             {/* Timeline */}
             <section className={styles.timeline}>
                 <div className={styles.timelineCard}>
+                    {/* An unpaid order has not entered the fulfilment path, so showing
+                        a "Paid → In Progress → …" tracker misrepresents where it is. */}
+                    {isPrePayment ? (
+                        <div className={styles.rejected} style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+                            <span className="material-icons" style={{ color: '#b45309' }}>
+                                {order.status === 'PAYMENT_FAILED' ? 'error_outline' : 'schedule'}
+                            </span>
+                            <div>
+                                <h3>
+                                    {order.status === 'PAYMENT_FAILED'
+                                        ? (t('paymentFailedTitle') || 'Payment failed')
+                                        : (t('paymentPendingTitle') || 'Payment pending')}
+                                </h3>
+                                <p>
+                                    {order.status === 'PAYMENT_FAILED'
+                                        ? (t('paymentFailedBody') || 'Your payment did not go through. You can start the application again from the scheme page.')
+                                        : (t('paymentPendingBody') || 'This application has not been paid for yet, so it has not been sent for processing.')}
+                                </p>
+                                {order.scheme?.slug && (
+                                    <Link href={`/apply/${order.scheme.slug}`} className={styles.resubmitBtn} style={{ marginTop: 12, display: 'inline-block' }}>
+                                        {t('completePayment') || 'Complete payment'}
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
                     <div className={styles.steps}>
                         {STATUS_STEPS.map((step, index) => {
                             const isCompleted = index <= currentStepIndex && order.status !== 'CANCELLED';
@@ -399,22 +474,21 @@ export default function OrderDetailPage() {
                                     <span className={styles.stepLabel}>
                                         {tStatus(step as any) || step.replace('_', ' ')}
                                     </span>
-                                    {isCompleted && order.paymentTimestamp && index === 0 && (
-                                        <span className={styles.stepDate}>{formatDateTime(order.paymentTimestamp)}</span>
-                                    )}
-                                    {isCompleted && order.createdAt && index === 1 && (
-                                        <span className={styles.stepDate}>{formatDateTime(order.createdAt)}</span>
+                                    {/* When this step was actually reached. The IN_PROGRESS
+                                        step used to render order.createdAt — the moment the
+                                        order was created, not when an officer picked it up.
+                                        The timeline records the real transitions. */}
+                                    {isCompleted && !isCurrent && stepReachedAt(step) && (
+                                        <span className={styles.stepDate}>{formatDateTime(stepReachedAt(step)!)}</span>
                                     )}
                                     {isCurrent && (
                                         <span className={styles.stepDate}>{t('inProgress') || 'In Progress'}</span>
-                                    )}
-                                    {isCompleted && order.completedAt && index === 3 && (
-                                        <span className={styles.stepDate}>{formatDateTime(order.completedAt)}</span>
                                     )}
                                 </div>
                             );
                         })}
                     </div>
+                    )}
 
                     {order.status === 'CANCELLED' && (
                         <div className={styles.rejected}>

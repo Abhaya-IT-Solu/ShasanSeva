@@ -325,7 +325,12 @@
         "proofs": "Uploaded Proofs",
         "proofType": "Proof Type",
         "description": "Description",
-        "download": "Download"
+        "download": "Download",
+        "paymentPendingTitle": "Payment pending",
+        "paymentPendingBody": "This application has not been paid for yet, so it has not been sent for processing.",
+        "paymentFailedTitle": "Payment failed",
+        "paymentFailedBody": "Your payment did not go through. You can start the application again from the scheme page.",
+        "completePayment": "Complete payment"
     },
     "ProfilePage": {
         "title": "My Profile",
@@ -363,7 +368,9 @@
         "UNDER_REVIEW": "Under Review",
         "APPROVED": "Approved",
         "REJECTED": "Rejected",
-        "COMPLETED": "Completed"
+        "COMPLETED": "Completed",
+        "PAYMENT_FAILED": "Payment Failed",
+        "CANCELLED": "Cancelled"
     },
     "AuthCallback": {
         "loading": "Loading...",

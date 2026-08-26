@@ -293,7 +293,12 @@
         "proofs": "अपलोड केलेले पुरावे",
         "proofType": "पुरावा प्रकार",
         "description": "वर्णन",
-        "download": "डाउनलोड"
+        "download": "डाउनलोड",
+        "paymentPendingTitle": "पेमेंट प्रलंबित",
+        "paymentPendingBody": "या अर्जाचे पेमेंट अद्याप झालेले नाही, त्यामुळे तो प्रक्रियेसाठी पाठवला गेला नाही.",
+        "paymentFailedTitle": "पेमेंट अयशस्वी",
+        "paymentFailedBody": "तुमचे पेमेंट पूर्ण झाले नाही. तुम्ही योजना पृष्ठावरून पुन्हा अर्ज सुरू करू शकता.",
+        "completePayment": "पेमेंट पूर्ण करा"
     },
     "ProfilePage": {
         "title": "माझे प्रोफाइल",
@@ -331,7 +336,9 @@
         "UNDER_REVIEW": "पुनरावलोकनाधीन",
         "APPROVED": "मंजूर",
         "REJECTED": "नाकारले",
-        "COMPLETED": "पूर्ण"
+        "COMPLETED": "पूर्ण",
+        "PAYMENT_FAILED": "पेमेंट अयशस्वी",
+        "CANCELLED": "रद्द केले"
     },
     "AuthCallback": {
         "loading": "लोड होत आहे...",
