@@ -5,7 +5,7 @@ import { validateBody } from '../middleware/validation.middleware.js';
 import { db, announcements, schemes } from '@shasansetu/db';
 import { eq, asc } from 'drizzle-orm';
 import { successResponse, errorResponse, ErrorCodes, logger } from '../lib/utils.js';
-import { getUploadUrl, getDownloadUrl, getExtensionFromContentType, deleteDocument } from '../services/r2.service.js';
+import { uploadBuffer, getDownloadUrl, getExtensionFromContentType, generateAnnouncementKey, deleteDocument } from '../services/r2.service.js';
 
 const router: Router = Router();
 
@@ -33,8 +33,11 @@ const updateAnnouncementSchema = z.object({
     sortOrder: z.number().int().optional(),
 });
 
+// The image is proxied through the server as base64, the same way scheme logos
+// are. See the upload route below for why it is not a presigned browser PUT.
 const imageUploadSchema = z.object({
     contentType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+    fileData: z.string().min(1),
 });
 
 // ---------- Public Endpoint ----------
@@ -161,33 +164,43 @@ router.get('/', authMiddleware, adminMiddleware, async (_req: Request, res: Resp
 
 /**
  * POST /api/announcements/upload-image
- * Admin — get a presigned URL to upload a carousel background image to R2
+ * Admin — upload a carousel background image to R2.
+ *
+ * Accepts the file as base64 and writes it server-side, exactly like
+ * POST /api/schemes/:id/upload-image. This used to hand the browser a presigned
+ * URL to PUT directly to R2, which fails: the bucket has no CORS policy allowing
+ * the admin origin, and the client never checked the PUT response — so the key
+ * was saved on the announcement while the object was never written, and the
+ * carousel rendered a broken image. Proxying keeps R2 credentials and CORS out
+ * of the browser, and a failed write is a failed request.
  */
 router.post('/upload-image', authMiddleware, adminMiddleware, validateBody(imageUploadSchema), async (req: Request, res: Response) => {
     try {
-        const { contentType } = req.body;
+        const { contentType, fileData } = req.body;
         const fileExtension = getExtensionFromContentType(contentType);
+        const key = generateAnnouncementKey(fileExtension);
 
-        const { uploadUrl, key, expiresIn } = await getUploadUrl({
-            userId: 'admin',
-            documentType: 'carousel_bg',
-            contentType,
-            fileExtension,
-        });
+        const buffer = Buffer.from(fileData, 'base64');
+        if (buffer.length === 0) {
+            return res.status(400).json(
+                errorResponse({
+                    code: ErrorCodes.VALIDATION_ERROR,
+                    message: 'Image data is empty or not valid base64',
+                })
+            );
+        }
 
-        logger.info('Generated carousel image upload URL', { key });
+        await uploadBuffer(key, buffer, contentType);
 
-        return res.json(successResponse({
-            uploadUrl,
-            key,
-            expiresIn,
-        }));
+        logger.info('Carousel image uploaded', { key, size: buffer.length });
+
+        return res.json(successResponse({ key }));
     } catch (error) {
-        logger.error('Failed to generate carousel image upload URL', error);
+        logger.error('Failed to upload carousel image', error);
         return res.status(500).json(
             errorResponse({
                 code: ErrorCodes.INTERNAL_ERROR,
-                message: 'Failed to generate upload URL',
+                message: 'Failed to upload image',
             })
         );
     }

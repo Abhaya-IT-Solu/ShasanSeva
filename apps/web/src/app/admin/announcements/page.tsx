@@ -139,45 +139,44 @@ export default function AnnouncementsPage() {
             setError('Only JPEG, PNG, or WebP images are allowed');
             return;
         }
-        if (file.size > 10 * 1024 * 1024) {
-            setError('Image must be under 10MB');
+        // Kept under the API's 15MB JSON body limit, since base64 inflates the
+        // file by roughly a third on the way through.
+        if (file.size > 8 * 1024 * 1024) {
+            setError('Image must be under 8MB');
             return;
         }
 
         setIsUploading(true);
         setError('');
-        setUploadProgress('Getting upload URL...');
+        setUploadProgress('Uploading image...');
 
         try {
-            // Step 1: Get presigned URL
-            const urlRes = await api.request('/api/announcements/upload-image', {
+            // Read as base64 and upload via the backend proxy, the same flow the
+            // schemes tab uses. A direct presigned PUT from the browser is blocked
+            // by R2's CORS policy.
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('Could not read the file'));
+                reader.readAsDataURL(file);
+            });
+            const fileData = dataUrl.split(',')[1];
+
+            const uploadRes = await api.request('/api/announcements/upload-image', {
                 method: 'POST',
-                body: { contentType: file.type },
+                body: { contentType: file.type, fileData },
             });
 
-            if (!urlRes.success) {
-                setError(urlRes.error?.message || 'Failed to get upload URL');
+            if (!uploadRes.success) {
+                setError(uploadRes.error?.message || 'Failed to upload image');
+                setUploadProgress('');
                 return;
             }
 
-            const { uploadUrl, key } = urlRes.data as { uploadUrl: string; key: string };
-            setUploadProgress('Uploading image...');
-
-            // Step 2: PUT file to R2
-            await fetch(uploadUrl, {
-                method: 'PUT',
-                headers: { 'Content-Type': file.type },
-                body: file,
-            });
-
-            // Step 3: Save the key in form state
+            const { key } = uploadRes.data as { key: string };
             setFormImageKey(key);
             setUploadProgress('Upload complete ✓');
-
-            // Show local preview
-            const reader = new FileReader();
-            reader.onload = () => setImagePreview(reader.result as string);
-            reader.readAsDataURL(file);
+            setImagePreview(dataUrl);
         } catch {
             setError('Failed to upload image');
             setUploadProgress('');

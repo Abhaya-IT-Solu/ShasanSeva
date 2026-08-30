@@ -68,6 +68,14 @@ export function generateSchemeKey(schemeId: string, type: 'logo' | 'reference', 
 }
 
 /**
+ * Generate a storage key for announcement assets (carousel backgrounds)
+ */
+export function generateAnnouncementKey(fileExtension: string): string {
+    const timestamp = Date.now();
+    return `announcements/carousel_${timestamp}.${fileExtension}`;
+}
+
+/**
  * Get the public URL for an R2 object key
  * Returns null if R2_PUBLIC_URL is not configured
  */
