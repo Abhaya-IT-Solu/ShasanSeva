@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import type { CustomFormField } from '@shasansetu/types';
 import styles from '../../admin.module.css';
 import formStyles from './newScheme.module.css';
 
@@ -14,6 +15,47 @@ interface RequiredDoc {
     required: boolean;
     description: string;
     description_mr: string;
+}
+
+const FIELD_TYPES: { value: CustomFormField['type']; label: string }[] = [
+    { value: 'text', label: 'Short Text' },
+    { value: 'textarea', label: 'Long Text' },
+    { value: 'number', label: 'Number' },
+    { value: 'date', label: 'Date' },
+    { value: 'email', label: 'Email' },
+    { value: 'phone', label: 'Phone' },
+    { value: 'select', label: 'Dropdown' },
+];
+
+/**
+ * The wire type with every optional turned into '' / [], so React inputs stay
+ * controlled. Same shape the edit page uses.
+ */
+interface EditableField {
+    id: string;
+    type: CustomFormField['type'];
+    label: string;
+    label_mr: string;
+    required: boolean;
+    placeholder: string;
+    placeholder_mr: string;
+    options: { label: string; label_mr: string; value: string }[];
+    validationRegex: string;
+}
+
+function toPayload(f: EditableField): CustomFormField {
+    const out: CustomFormField = {
+        id: f.id.trim(),
+        type: f.type,
+        label: f.label.trim(),
+        required: f.required,
+    };
+    if (f.label_mr.trim()) out.label_mr = f.label_mr.trim();
+    if (f.placeholder.trim()) out.placeholder = f.placeholder.trim();
+    if (f.placeholder_mr.trim()) out.placeholder_mr = f.placeholder_mr.trim();
+    if (f.validationRegex.trim()) out.validationRegex = f.validationRegex.trim();
+    if (f.type === 'select' && f.options.length > 0) out.options = f.options;
+    return out;
 }
 
 type TabType = 'english' | 'marathi';
@@ -60,6 +102,13 @@ export default function NewSchemePage() {
         { type: 'AADHAAR', label: 'Aadhaar Card', label_mr: 'आधार कार्ड', required: true, description: '', description_mr: '' },
     ]);
 
+    // Custom form fields — the extra details an applicant fills in for this
+    // scheme. Sent after creation, since POST /api/schemes deliberately does not
+    // accept them (see createSchemeSchema).
+    const [customFields, setCustomFields] = useState<EditableField[]>([]);
+    const [newOptionInputs, setNewOptionInputs] = useState<Record<number, string>>({});
+    const [showAdvanced, setShowAdvanced] = useState<Record<number, boolean>>({});
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -93,10 +142,77 @@ export default function NewSchemePage() {
         setRequiredDocs(requiredDocs.filter((_, i) => i !== index));
     };
 
+    const addCustomField = () => {
+        setCustomFields((prev) => [...prev, {
+            id: '', type: 'text', label: '', label_mr: '', required: true,
+            placeholder: '', placeholder_mr: '', options: [], validationRegex: '',
+        }]);
+    };
+
+    const updateCustomField = (index: number, key: keyof EditableField, value: unknown) => {
+        setCustomFields((prev) => {
+            const next = [...prev];
+            next[index] = { ...next[index], [key]: value };
+            return next;
+        });
+    };
+
+    const removeCustomField = (index: number) => {
+        setCustomFields((prev) => prev.filter((_, i) => i !== index));
+        setNewOptionInputs((prev) => {
+            const next = { ...prev };
+            delete next[index];
+            return next;
+        });
+    };
+
+    const addOption = (fieldIndex: number) => {
+        const value = (newOptionInputs[fieldIndex] || '').trim();
+        if (!value) return;
+        setCustomFields((prev) => {
+            const next = [...prev];
+            const existing = next[fieldIndex].options;
+            if (existing.some((o) => o.value === value)) return prev;
+            next[fieldIndex] = {
+                ...next[fieldIndex],
+                options: [...existing, { value, label: value, label_mr: value }],
+            };
+            return next;
+        });
+        setNewOptionInputs((prev) => ({ ...prev, [fieldIndex]: '' }));
+    };
+
+    const removeOption = (fieldIndex: number, optionValue: string) => {
+        setCustomFields((prev) => {
+            const next = [...prev];
+            next[fieldIndex] = {
+                ...next[fieldIndex],
+                options: next[fieldIndex].options.filter((o) => o.value !== optionValue),
+            };
+            return next;
+        });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setSuccess('');
+
+        // Mirror the server's validateCustomFieldSet so the admin gets the message
+        // before the scheme is created. Incomplete rows are dropped rather than
+        // flagged — same as the edit page.
+        const usable = customFields.filter((f) => f.id.trim() && f.label.trim());
+        const ids = usable.map((f) => f.id.trim());
+        if (new Set(ids).size !== ids.length) {
+            setError('Duplicate custom field IDs are not allowed.');
+            return;
+        }
+        const badSelect = usable.find((f) => f.type === 'select' && f.options.length === 0);
+        if (badSelect) {
+            setError(`Dropdown field "${badSelect.label || badSelect.id}" needs at least one option.`);
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -133,6 +249,23 @@ export default function NewSchemePage() {
                 const createdScheme = response.data as any;
                 const schemeId = createdScheme?.id;
 
+                // Custom fields go through their own endpoint — POST /api/schemes
+                // does not accept them, so they are attached to the new scheme here.
+                let fieldsError = '';
+                if (schemeId && usable.length > 0) {
+                    try {
+                        const fieldsResponse = await api.request(`/api/schemes/${schemeId}/custom-fields`, {
+                            method: 'PATCH',
+                            body: { customFields: usable.map(toPayload) },
+                        });
+                        if (!fieldsResponse.success) {
+                            fieldsError = fieldsResponse.error?.message || 'unknown error';
+                        }
+                    } catch {
+                        fieldsError = 'could not reach the server';
+                    }
+                }
+
                 // Upload images if files were selected
                 const failedUploads: string[] = [];
                 if (schemeId && (logoFile || refImageFile)) {
@@ -166,16 +299,20 @@ export default function NewSchemePage() {
                     if (refImageFile) await uploadImage(refImageFile, 'reference');
                 }
 
-                if (failedUploads.length > 0) {
-                    // The scheme itself was created — say so, but don't claim the
-                    // images made it. They can be re-uploaded from the edit page.
-                    setSuccess(`Scheme created, but the ${failedUploads.join(' and ')} image failed to upload. Add it from the edit page.`);
+                // The scheme itself was created — say so, but don't claim the images
+                // or fields made it. Both can be redone from the edit page.
+                const problems: string[] = [];
+                if (fieldsError) problems.push(`the custom form fields did not save (${fieldsError})`);
+                if (failedUploads.length > 0) problems.push(`the ${failedUploads.join(' and ')} image failed to upload`);
+
+                if (problems.length > 0) {
+                    setSuccess(`Scheme created, but ${problems.join(', and ')}. Fix it from the edit page.`);
                 } else {
                     setSuccess('Scheme created successfully!');
                 }
                 setTimeout(() => {
                     router.push('/admin/schemes');
-                }, failedUploads.length > 0 ? 3000 : 1500);
+                }, problems.length > 0 ? 3000 : 1500);
             } else {
                 setError(response.error?.message || 'Failed to create scheme');
             }
@@ -558,6 +695,163 @@ export default function NewSchemePage() {
                                 </button>
                             </div>
                         ))}
+                    </div>
+                </section>
+
+                {/* Custom Form Fields (shown on both tabs) — the extra details a
+                    user fills in when applying for this scheme. */}
+                <section className={formStyles.section}>
+                    <div className={formStyles.sectionHeader}>
+                        <h2>Custom Form Fields</h2>
+                        <button type="button" onClick={addCustomField} className="btn btn-secondary btn-sm">
+                            + Add Field
+                        </button>
+                    </div>
+                    <p style={{ color: 'var(--color-gray-500)', fontSize: 13, marginBottom: 'var(--space-3)' }}>
+                        Extra details the applicant must provide for this scheme (e.g. College Name).
+                        These are saved once the scheme is created.
+                    </p>
+
+                    <div className={formStyles.documentsList}>
+                        {customFields.length === 0 ? (
+                            <p style={{ color: 'var(--color-gray-500)', textAlign: 'center', padding: 'var(--space-4)' }}>
+                                No custom fields. Add one if this scheme needs information beyond the standard profile.
+                            </p>
+                        ) : (
+                            customFields.map((field, index) => (
+                                <div
+                                    key={index}
+                                    className={formStyles.documentRow}
+                                    style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}
+                                >
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="Field ID (e.g. college_name)"
+                                            value={field.id}
+                                            onChange={(e) => updateCustomField(index, 'id', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                        />
+                                        <select
+                                            className="input"
+                                            value={field.type}
+                                            onChange={(e) => updateCustomField(index, 'type', e.target.value)}
+                                        >
+                                            {FIELD_TYPES.map((t) => (
+                                                <option key={t.value} value={t.value}>{t.label}</option>
+                                            ))}
+                                        </select>
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="Label (English)"
+                                            value={field.label}
+                                            onChange={(e) => updateCustomField(index, 'label', e.target.value)}
+                                        />
+                                        <input
+                                            type="text"
+                                            className="input"
+                                            placeholder="Label (Marathi)"
+                                            value={field.label_mr}
+                                            onChange={(e) => updateCustomField(index, 'label_mr', e.target.value)}
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                                        <label className={formStyles.checkboxLabel}>
+                                            <input
+                                                type="checkbox"
+                                                checked={field.required}
+                                                onChange={(e) => updateCustomField(index, 'required', e.target.checked)}
+                                            />
+                                            Required
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAdvanced((prev) => ({ ...prev, [index]: !prev[index] }))}
+                                            style={{ background: 'none', border: 'none', color: '#475569', fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}
+                                        >
+                                            {showAdvanced[index] ? 'Hide advanced' : 'Advanced'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeCustomField(index)}
+                                            className={formStyles.removeBtn}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+
+                                    {showAdvanced[index] && (
+                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                placeholder="Placeholder (English)"
+                                                value={field.placeholder}
+                                                onChange={(e) => updateCustomField(index, 'placeholder', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                placeholder="Placeholder (Marathi)"
+                                                value={field.placeholder_mr}
+                                                onChange={(e) => updateCustomField(index, 'placeholder_mr', e.target.value)}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="input"
+                                                placeholder="Validation regex (optional)"
+                                                value={field.validationRegex}
+                                                onChange={(e) => updateCustomField(index, 'validationRegex', e.target.value)}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {field.type === 'select' && (
+                                        <div className={formStyles.optionsBuilder}>
+                                            <div className={formStyles.optionsBuilderLabel}>Dropdown Options</div>
+                                            <div className={formStyles.optionChips}>
+                                                {field.options.length === 0 ? (
+                                                    <span className={formStyles.optionsEmpty}>No options added yet</span>
+                                                ) : (
+                                                    field.options.map((opt) => (
+                                                        <span key={opt.value} className={formStyles.optionChip}>
+                                                            {opt.label}
+                                                            <button
+                                                                type="button"
+                                                                className={formStyles.optionChipRemove}
+                                                                onClick={() => removeOption(index, opt.value)}
+                                                            >
+                                                                &times;
+                                                            </button>
+                                                        </span>
+                                                    ))
+                                                )}
+                                            </div>
+                                            <div className={formStyles.optionInputRow}>
+                                                <input
+                                                    type="text"
+                                                    className="input"
+                                                    placeholder="Type an option and press Enter"
+                                                    value={newOptionInputs[index] || ''}
+                                                    onChange={(e) => setNewOptionInputs((prev) => ({ ...prev, [index]: e.target.value }))}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            addOption(index);
+                                                        }
+                                                    }}
+                                                />
+                                                <button type="button" className={formStyles.addOptionBtn} onClick={() => addOption(index)}>
+                                                    + Add
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        )}
                     </div>
                 </section>
 
