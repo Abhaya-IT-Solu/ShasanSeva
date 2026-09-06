@@ -69,6 +69,7 @@ graph LR
 7. [Part 7: Domain & SSL (HTTPS)](#part-7-domain--ssl-https)
 8. [Part 8: Zero-Downtime Deployments](#part-8-zero-downtime-deployments)
 9. [Appendix: Useful Commands Cheat Sheet](#appendix-useful-commands-cheat-sheet)
+10. [Migrating to a New Server](#migrating-to-a-new-server)
 
 ---
 
@@ -102,6 +103,14 @@ graph LR
    | Scale | `t3.medium` | 2 | 4 GB | ~$30/month |
 
    > **WHY t2.micro to start?** Free tier eligible for 12 months. Good enough to test the setup. Switch to t3.small before production launch.
+
+   > [!WARNING]
+   > **1 GB of RAM is not enough to run this API without swap.** If you start on
+   > `t2.micro`/`t3.micro`, Step 2.6 is mandatory, not optional — Docker plus
+   > Node.js will exhaust 1 GB under a handful of concurrent requests and the
+   > OOM killer will take the process down. Capacity planning for the expected
+   > launch load (10K daily users, 100 orders/day) points at **t3.medium**; see
+   > the Capacity & Scaling section of `project-context.md`.
 
 5. **Key Pair:** Click **Create new key pair**
    - Name: `shasansetu-api-key`
@@ -228,6 +237,32 @@ mkdir -p /home/ubuntu/shasansetu
 ```
 
 > **WHY?** This is where we'll store the [.env](file:///c:/Users/niles/OneDrive/Desktop/Projects/AbhayaITSolutions-Projects/ShasanSeva/.env) file and deployment scripts. Keeps everything organized.
+
+### Step 2.6: Add Swap Space ⚠️ Do not skip
+
+```bash
+# Create a 2GB swap file
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Make it survive reboots
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Only use swap when genuinely needed, rather than eagerly
+sudo sysctl vm.swappiness=10
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+
+# Verify — the Swap row must no longer read 0B
+free -h
+```
+
+> **WHY?** AWS ships Ubuntu images with **zero swap**. On a 1 GB instance, Docker plus Node.js can exhaust RAM under a handful of concurrent requests, and with no swap the kernel's OOM killer takes the process down. The container looks alive; every request times out.
+>
+> This is not hypothetical — it is exactly what happened to this project in production. The full diagnosis is in [Resolving Backend Connection Timeouts.md](./Resolving%20Backend%20Connection%20Timeouts.md).
+>
+> **This step is the single most important manual item in this guide.** Nothing automates it: it is not in the Dockerfile and not in the GitHub Actions workflow, so a rebuilt server silently lacks it until the box falls over under load. Verify `free -h` before moving on.
 
 ---
 
@@ -373,52 +408,51 @@ apps/web
 
 ### Step 4.1: Configure Nginx (on your EC2 instance)
 
+**Use the config that lives in this repo — do not hand-write one.**
+[`docs/nginx-shasansetu-api.conf`](./nginx-shasansetu-api.conf) is the maintained
+version. On top of a plain reverse proxy it adds request rate limiting, a
+bot/scanner user-agent block, and `444` responses for vulnerability-probe paths
+(`/.env`, `/wp-login`, `/phpmyadmin` and friends) so they never reach Node.
+
+Copy it up from your machine and install it:
+
 ```bash
-# SSH into your EC2 first, then:
+# From your local repo checkout
+scp -i <your-key.pem> docs/nginx-shasansetu-api.conf ubuntu@<EC2_HOST>:/tmp/
+
+# Then, on the EC2 box
+sudo cp /tmp/nginx-shasansetu-api.conf /etc/nginx/sites-available/shasansetu-api
+```
+
+Edit the one line that is environment-specific:
+
+```bash
 sudo nano /etc/nginx/sites-available/shasansetu-api
 ```
 
-Paste this configuration:
-
 ```nginx
-# /etc/nginx/sites-available/shasansetu-api
-#
-# WHY this config?
-# - Listens on port 80 (HTTP)
-# - Forwards ALL requests to the Docker container running on port 3001
-# - Passes along real client info (IP, protocol) so your Express app sees correct data
-# - Later, we'll add SSL (port 443) here
-
-server {
-    listen 80;
-    server_name _;  
-    # server_name _; means "match any hostname"
-    # Replace with your domain later, e.g.: server_name api.shasansetu.in;
-
-    # Maximum upload size (matches your Express body limit of 10mb)
-    client_max_body_size 10M;
-
-    location / {
-        proxy_pass http://127.0.0.1:3001;
-        
-        # Pass real client info to Express
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # WebSocket support (if needed later)
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-
-        # Timeouts
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-}
+server_name api.shasanseva.in;   # your domain — or `_` to match any host
+                                 # while you are still testing on a bare IP
 ```
+
+> **Leave it listening on port 80 only.** Do not add `listen 443` or any
+> `ssl_certificate` lines by hand. Certbot rewrites this file in Part 7 and adds
+> the SSL server block, the certificate paths and the HTTP→HTTPS redirect for
+> you. Writing them yourself before the certificate exists means nginx refuses
+> to start, because it is pointed at files that are not there.
+
+<details>
+<summary><strong>Why the repo config and not a minimal one?</strong></summary>
+
+The first production server ran a bare proxy with none of this hardening, and
+its nginx logs filled with scanner traffic — `zgrab`, `censys`, probes for
+`/actuator`, `/phpmyadmin`, `/.env`. Every one of those reached Node, consumed a
+request against the app's own rate limiter, and was logged.
+
+Blocking them at nginx costs nothing and keeps the API logs readable, which
+matters more than it sounds when you are trying to spot a real error.
+
+</details>
 
 ### Step 4.2: Enable the Configuration
 
@@ -625,12 +659,37 @@ jobs:
             # --restart unless-stopped: Auto-restart on crash or server reboot
             # --env-file: Load env vars from the file we just created
             # -p 3001:3001: Map host port 3001 to container port 3001
+            # --memory: Hard ceiling, so a leak kills the container, not the box
+            # --health-*: Docker probes /api/health, which itself pings the DB
+            # --label autoheal=true: Marks this container for the watcher below
             docker run -d \
               --name shasansetu-api \
               --restart unless-stopped \
               --env-file /home/ubuntu/shasansetu/.env \
               -p 3001:3001 \
+              --memory=768m \
+              --health-cmd="wget -qO- http://localhost:3001/api/health || exit 1" \
+              --health-interval=30s \
+              --health-retries=3 \
+              --health-start-period=15s \
+              --health-timeout=10s \
+              --label autoheal=true \
               ${{ secrets.DOCKERHUB_USERNAME }}/shasansetu-api:latest
+
+            # Start autoheal - restarts the API when its health check fails.
+            # WHY? A Docker health check only FLAGS a container as unhealthy; it
+            # does not act on it. Without this, an API that has lost its DB pool
+            # sits there marked "unhealthy", serving errors indefinitely.
+            docker stop autoheal 2>/dev/null || true
+            docker rm autoheal 2>/dev/null || true
+            docker run -d \
+              --name autoheal \
+              --restart unless-stopped \
+              -e AUTOHEAL_CONTAINER_LABEL=autoheal \
+              -e AUTOHEAL_INTERVAL=60 \
+              -e AUTOHEAL_START_PERIOD=120 \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              willfarrell/autoheal:latest
 
             # ── Clean up old images to save disk space ──
             # WHY? Old images accumulate. This removes unused ones.
@@ -639,6 +698,18 @@ jobs:
 
 > [!IMPORTANT]
 > The `paths` filter is crucial for a monorepo. If someone updates the Next.js frontend (`apps/web`), the API won't redeploy unnecessarily.
+
+> [!NOTE]
+> **A healthy server runs _two_ containers, not one.** `docker ps` should show
+> both `shasansetu-api` and `autoheal`, each marked `(healthy)`. The workflow
+> recreates both on every deploy, so there is nothing to start by hand — but if
+> `autoheal` is ever missing, the health check becomes decorative and a wedged
+> API will never recover on its own.
+>
+> **Why `--memory=768m`?** It bounds the blast radius on a 1 GB instance: a leak
+> kills and restarts the container instead of dragging the whole box into swap
+> death. Raise it with the instance — roughly **2g on a t3.medium**. This works
+> *with* the swap file from Step 2.6; it does not replace it.
 
 ### Step 6.2: Verify Deployment
 
@@ -718,11 +789,29 @@ Your API is accessible at `http://YOUR_EC2_IP`. This works for development and t
 
 > **WHY Let's Encrypt?** It's a free, automated Certificate Authority. Certbot handles everything — gets the certificate, configures Nginx, and auto-renews every 90 days.
 
+> [!WARNING]
+> **Point DNS at this server before you run Certbot.** Validation works by
+> Let's Encrypt making an HTTP request to your domain on port 80 — so it reaches
+> whatever the A record currently resolves to. If you are migrating and the old
+> server is still running, DNS still points there, and validation fails on the
+> new box while succeeding against a machine you are about to delete.
+>
+> ```bash
+> dig +short api.shasanseva.in    # must return THIS server's Elastic IP
+> ```
+>
+> Only continue once that matches.
+
 ```bash
 # Install Certbot
 sudo apt install -y certbot python3-certbot-nginx
 
-# Get SSL certificate and auto-configure Nginx
+# Rehearse first. This performs a real HTTP-01 challenge against Let's Encrypt's
+# staging environment, so it proves DNS, port 80 and the Nginx config all work
+# WITHOUT spending one of your five certificates per week for this domain.
+sudo certbot --nginx -d api.yourdomain.in --dry-run
+
+# If the dry run succeeded, issue the real certificate
 sudo certbot --nginx -d api.yourdomain.in
 
 # Follow the prompts:
@@ -733,6 +822,19 @@ sudo certbot --nginx -d api.yourdomain.in
 # Verify auto-renewal is set up
 sudo certbot renew --dry-run
 ```
+
+> **Why the dry run matters here specifically.** The hardened config from Step 4.1
+> returns `444` for scanner user-agents and probe paths. The ACME challenge path
+> (`/.well-known/acme-challenge/…`) does not match any of those rules, so this
+> works — but the dry run proves it against the real service rather than trusting
+> a reading of the regexes.
+
+**What Certbot changes.** It rewrites `/etc/nginx/sites-available/shasansetu-api`
+in place: your existing `server` block gains `listen 443 ssl` plus the
+certificate paths, and a second `server` block is appended on port 80 that
+redirects everything to HTTPS. Your proxy settings, rate limits and bot rules are
+preserved. This is why Step 4.1 says to leave SSL alone — Certbot writes it, and
+it can only do so if the port 80 block is already serving your domain.
 
 After this, Certbot automatically modifies your Nginx config to handle HTTPS. Your API is now at `https://api.yourdomain.in` 🎉
 
@@ -1149,15 +1251,67 @@ sudo journalctl --vacuum-time=3d  # keep only 3 days of system logs
 - [ ] **1.** Create EC2 instance (Part 1)
 - [ ] **2.** Allocate Elastic IP and associate (Part 1.3)
 - [ ] **3.** SSH into EC2 and run server setup (Part 2)
-- [ ] **4.** Add `Dockerfile` and `.dockerignore` to repo (Part 3)
-- [ ] **5.** Add health check endpoint to API
-- [ ] **6.** Configure Nginx on EC2 (Part 4)
-- [ ] **7.** Create Docker Hub account and repo (Part 5.2)
-- [ ] **8.** Add all secrets to GitHub (Part 5.1)
-- [ ] **9.** Add GitHub Actions workflow to repo (Part 6)
-- [ ] **10.** Push to `main` and watch the deployment 🚀
-- [ ] **11.** Test: `curl http://YOUR_EC2_IP/api/health`
-- [ ] **12.** Update frontend env to point to new API URL
-- [ ] **13.** Create deploy.sh on EC2 for zero-downtime (Part 8)
-- [ ] **14.** Update GitHub Actions to use deploy.sh (Part 8)
-- [ ] **15.** (Later) Buy domain and add SSL (Part 7)
+- [ ] **4.** **Add swap and verify with `free -h`** (Part 2.6) — nothing automates this
+- [ ] **5.** Add `Dockerfile` and `.dockerignore` to repo (Part 3)
+- [ ] **6.** Add health check endpoint to API
+- [ ] **7.** Install the repo's Nginx config on EC2, port 80 only (Part 4)
+- [ ] **8.** Create Docker Hub account and repo (Part 5.2)
+- [ ] **9.** Add all secrets to GitHub (Part 5.1)
+- [ ] **10.** Add GitHub Actions workflow to repo (Part 6)
+- [ ] **11.** Push to `main` and watch the deployment 🚀
+- [ ] **12.** Confirm **both** containers are up and healthy: `docker ps` shows `shasansetu-api` **and** `autoheal`
+- [ ] **13.** Test: `curl http://YOUR_EC2_IP/api/health` → `{"status":"ok","db":"ok"}`
+- [ ] **14.** Point DNS at the Elastic IP and confirm with `dig +short <domain>` (Part 7)
+- [ ] **15.** Certbot `--dry-run`, then issue for real (Part 7 Phase 3)
+- [ ] **16.** Update `API_URL`, `GOOGLE_CALLBACK_URL`, Google Console redirect URIs, and the frontend env
+- [ ] **17.** (Optional) Create deploy.sh on EC2 for zero-downtime (Part 8)
+
+---
+
+## Migrating to a New Server
+
+Rebuilding on a fresh instance — a new AWS account, a bigger box, another
+provider. The whole of this guide applies; these are the things that are easy to
+lose because they live only on the old machine.
+
+**Nothing stateful is on the server.** The database is Supabase, files are in R2,
+sessions and rate limits are in Upstash, and receipts are streamed to R2 without
+touching local disk. The container runs with no volume mounts. There is no data
+to migrate — only configuration.
+
+**Capture before you terminate anything:**
+
+```bash
+ssh -i <key.pem> ubuntu@<OLD_EC2_HOST> 'mkdir -p /tmp/cap && cd /tmp/cap && \
+  sudo cp -r /etc/nginx/sites-available . && cp /home/ubuntu/shasansetu/.env env-live.txt && \
+  crontab -l > crontab.txt 2>&1 && sudo certbot certificates > certbot.txt 2>&1 && \
+  docker ps -a > docker-ps.txt && sudo tar czf /tmp/cap.tar.gz -C /tmp cap' && \
+  scp -i <key.pem> ubuntu@<OLD_EC2_HOST>:/tmp/cap.tar.gz .
+```
+
+That archive contains live credentials — keep it out of the repo.
+
+**Then check three things:**
+
+1. **Diff the captured `.env` key names against the workflow.** Any variable
+   added on the server by hand and never added to GitHub Secrets will silently
+   vanish on the new box. This project has been bitten three separate times by a
+   missing env var that failed quietly rather than loudly.
+2. **Re-apply swap** (Step 2.6). It is not in the workflow or the Dockerfile.
+3. **Check external IP allowlists** — Supabase network restrictions and Upstash
+   in particular. A new server with a new IP will boot perfectly and be unable to
+   reach anything. Razorpay is fine; its webhook is configured by URL, so it
+   follows DNS.
+
+**Update exactly three GitHub Secrets:** `EC2_HOST`, `EC2_USERNAME`,
+`EC2_SSH_KEY`. Everything else — the workflow, the Docker image on Docker Hub,
+the other secrets — is unchanged. The pipeline is not being rebuilt; only its
+last step is being repointed.
+
+**Keep the old server running** until `https://<domain>/api/health` returns
+`{"status":"ok","db":"ok"}` from the new one.
+
+> [!TIP]
+> A fresh instance is the cheapest moment to right-size. Pick the instance type
+> you actually want now rather than migrating again later, and raise
+> `--memory=768m` in the workflow to match it.
