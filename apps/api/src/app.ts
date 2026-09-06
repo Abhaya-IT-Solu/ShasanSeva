@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import routes from './routes/index.js';
 import { errorHandler } from './middleware/validation.middleware.js';
 import { apiRateLimiter } from './middleware/rateLimit.middleware.js';
+import { getClientIp } from './lib/clientIp.js';
 import { env } from './config/env.js';
 import { logger } from './lib/utils.js';
 import { verifyWebhookSignature } from './services/razorpay.service.js';
@@ -12,6 +13,19 @@ import { eq, and } from 'drizzle-orm';
 import { createNotification } from './services/notification.service.js';
 
 const app: Application = express();
+
+// Requests arrive as: client → Cloudflare → nginx → this container, so the
+// socket peer is always nginx on the Docker bridge. Two trusted hops (nginx,
+// then the Cloudflare edge) make req.ip the actual client for logging.
+//
+// Deliberately a hop COUNT and not `true`. `trust proxy: true` tells Express to
+// believe the left-most X-Forwarded-For entry unconditionally, which any client
+// can set — they could then present a fresh address per request and walk
+// straight past the rate limiter. A count only skips the hops we know exist.
+//
+// Rate limiting does not rely on this: it calls getClientIp(), which prefers
+// Cloudflare's CF-Connecting-IP. See lib/clientIp.ts.
+app.set('trust proxy', 2);
 
 // Security middleware
 app.use(helmet());
@@ -102,7 +116,10 @@ app.use(express.urlencoded({ extended: true }));
 // Request logging
 app.use((req, _res, next) => {
     logger.info(`${req.method} ${req.path}`, {
-        ip: req.ip,
+        // Resolved through the proxy chain. If this ever starts logging
+        // 172.17.0.1 for real traffic again, the rate limiters have silently
+        // gone global — that is the symptom to watch for.
+        ip: getClientIp(req),
         userAgent: req.headers['user-agent'],
     });
     next();

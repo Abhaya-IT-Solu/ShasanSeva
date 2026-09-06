@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { redis, REDIS_KEYS } from '../lib/redis.js';
+import { getClientIp } from '../lib/clientIp.js';
 import { errorResponse, ErrorCodes } from '../lib/utils.js';
 
 interface RateLimitOptions {
@@ -17,8 +18,11 @@ export function rateLimitMiddleware(options: RateLimitOptions) {
 
     return async (req: Request, res: Response, next: NextFunction) => {
         try {
-            // Use IP address as default key
-            const ip = req.ip || req.socket.remoteAddress || 'unknown';
+            // Must be the real client, not the socket peer. Behind Cloudflare and
+            // nginx, req.ip alone is the Docker bridge address for every request
+            // on the platform, which silently turns each of these per-user limits
+            // into one global one.
+            const ip = getClientIp(req);
             const key = REDIS_KEYS.RATE_LIMIT(`${keyPrefix}:${ip}`);
 
             const requests = await redis.incr(key);

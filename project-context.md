@@ -1,6 +1,6 @@
 # ShasanSeva — Project Context
 
-> **Last updated**: 24 August 2026
+> **Last updated**: 6 September 2026
 > **Status**: Active development · Live in production
 > **Organization**: Abhaya IT Solutions
 > **Repo**: `Abhaya-IT-Solu/ShasanSeva` · default branch `master`
@@ -390,6 +390,8 @@ Only non-admin, non-search requests are cached. After changing anything that alt
 
 Redis-backed and **fails open** — if Redis is unreachable, requests pass rather than 500.
 
+Keyed on the real client address via `getClientIp()` ([lib/clientIp.ts](apps/api/src/lib/clientIp.ts)), which prefers Cloudflare's `CF-Connecting-IP`. These were global rather than per-user until 6 Sep 2026 — see Known Issues item 4 for what that cost and the one infrastructure step still outstanding.
+
 ---
 
 ## Design System
@@ -591,11 +593,32 @@ Dumps contain user PII — `backups/` is gitignored and must stay that way.
    - A `REFUNDED` state in the order lifecycle and its status badges (currently the machine has no terminal refunded state — `CANCELLED` is the nearest and means something different)
    - A refund notification type, and a decision on whether refunds are ever partial
 
-4. **Migration history is not replayable** (above).
+4. **Rate limiter client IP — fixed 6 Sep 2026, one step outstanding.**
 
-5. **Notification text is English-only** in the DB.
+   For most of the project's life `trust proxy` was unset, so `req.ip` was the socket peer — nginx on the Docker bridge, `172.17.0.1` — and since `rateLimit.middleware.ts` keyed on it, **every user on the platform shared a single bucket**. The general limiter was 100 req/min for everyone combined (~1.7 req/s), and auth was 10 logins per 15 minutes globally, which would have presented as random intermittent login failures.
 
-6. **Auth guards are client-side.** No server-side middleware enforcement beyond i18n routing; the API is the real boundary.
+   Fixed by [`lib/clientIp.ts`](apps/api/src/lib/clientIp.ts): prefer Cloudflare's `CF-Connecting-IP`, fall back to the left-most `X-Forwarded-For`, then `req.ip`; IPv4-mapped IPv6 is normalised so `::ffff:1.2.3.4` and `1.2.3.4` are one bucket. `app.set('trust proxy', 2)` covers the nginx and Cloudflare hops for logging.
+
+   `trust proxy` is a hop **count**, never `true`. With `true`, Express believes the left-most `X-Forwarded-For` entry unconditionally — a client can then send a fresh address per request and walk straight past the limiter.
+
+   Verified by exhausting one client's budget and confirming a second client was unaffected, plus that the two IPv6 spellings shared one bucket.
+
+   ⚠️ **Outstanding, and the reason this is not fully closed:** the headers are only trustworthy while traffic *must* traverse Cloudflare. Anyone who reaches the origin IP directly can forge `CF-Connecting-IP` and rotate around the limiter. Closing it is an infrastructure task — **restrict the EC2 security group on 80/443 to Cloudflare's published IP ranges**. Until that is done this is a large improvement, not an airtight control.
+
+   Watch for the regression: if container logs show `172.17.0.1` for real traffic again, the limiters have silently gone global.
+
+5. **The API does not answer on the raw IP, by design.** `server_name api.shasanseva.in` means nginx matches on the `Host` header; a request to `http://<elastic-ip>/api/health` matches no block, falls through to the port-80 block Certbot appended, and gets its `return 404`.
+
+   This is correct behaviour and mildly useful — IP-range scanners collect a cheap 404 instead of reaching Node. It is only ever confusing when *you* are testing by IP during a server migration, where a 404 looks like a broken deployment. Distinguish by the status code: **404 means nginx never proxied** (Host mismatch), **502 means it proxied and the container refused**.
+
+   To test by address without changing config:
+   `curl -H "Host: api.shasanseva.in" http://<elastic-ip>/api/health`
+
+6. **Migration history is not replayable** (above).
+
+7. **Notification text is English-only** in the DB.
+
+8. **Auth guards are client-side.** No server-side middleware enforcement beyond i18n routing; the API is the real boundary.
 
 ### Lessons that cost real time
 
@@ -677,6 +700,8 @@ pnpm db:backup
 
 | Date | Change |
 |---|---|
+| 2026-09-06 | **Rate limiters were global, not per-user** — `trust proxy` unset meant every request keyed on the Docker bridge IP, so the whole platform shared one 100 req/min bucket and 10 logins per 15 min. Fixed with `lib/clientIp.ts` (prefers `CF-Connecting-IP`) and `trust proxy: 2`; verified per-client isolation. Security-group lockdown to Cloudflare ranges still outstanding. |
+| 2026-09-06 | API migrated to a new EC2 instance (AWS trial ended). Also recorded why the API returns 404 on the raw IP (item 5), and rewrote `docs/ec2_deployment_guide.md` to match the server that was actually running: swap, autoheal, health check, memory cap, the hardened Nginx config, and Certbot's DNS ordering |
 | 2026-08-24 | Mobile admin integration guide for the order changes (`docs/MOBILE_ADMIN_PANEL_GUIDE.md`) |
 | 2026-08-24 | Gravincy footer credit; opening poster on the homepage, driven by the existing CAROUSEL announcement |
 | 2026-08-24 | Order queue filters and search; `order_events` timeline; two-sided notes with visibility; cancellation now requires a reason; user-authored notes; `completed_at`/`cancelled_at` populated |
