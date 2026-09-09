@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { api } from '@/lib/api';
 import styles from './adminSidebar.module.css';
 
 interface AdminSidebarProps {
@@ -48,11 +49,32 @@ export default function AdminSidebar({ activePage }: AdminSidebarProps) {
         return pathname.startsWith(path);
     };
 
+    // Unread-style count on the Enquiries link. Refetched on navigation so
+    // marking one contacted drops the badge without a reload. A failure here is
+    // silent on purpose — a missing badge must never break the whole sidebar.
+    const [openEnquiries, setOpenEnquiries] = useState(0);
+    useEffect(() => {
+        let cancelled = false;
+        const fetchCount = async () => {
+            try {
+                const res = await api.request<{ count: number }>('/api/enquiries/open-count');
+                if (!cancelled && res.success && res.data) {
+                    setOpenEnquiries(res.data.count);
+                }
+            } catch {
+                // ignore
+            }
+        };
+        fetchCount();
+        return () => { cancelled = true; };
+    }, [pathname]);
+
     const navLinks = [
         { href: '/admin/dashboard', label: '📊 Dashboard', key: 'dashboard' },
         { href: '/admin/orders', label: '📦 Orders', key: 'orders' },
         { href: '/admin/schemes', label: '📋 Schemes', key: 'schemes' },
         { href: '/admin/announcements', label: '📢 Announcements', key: 'announcements' },
+        { href: '/admin/enquiries', label: '💬 Enquiries', key: 'enquiries' },
         { href: '/admin/users', label: '👥 Users', key: 'users' },
     ];
 
@@ -109,7 +131,10 @@ export default function AdminSidebar({ activePage }: AdminSidebarProps) {
                             href={link.href}
                             className={`${styles.navLink} ${isActive(link.href) ? styles.active : ''}`}
                         >
-                            {link.label}
+                            <span>{link.label}</span>
+                            {link.key === 'enquiries' && openEnquiries > 0 && (
+                                <span className={styles.navCount}>{openEnquiries}</span>
+                            )}
                         </Link>
                     ))}
                 </nav>

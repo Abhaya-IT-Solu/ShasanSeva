@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { useAuth } from '@/lib/auth';
+import EnquiryForm from '@/components/EnquiryForm/EnquiryForm';
 import styles from './schemeDetail.module.css';
 
 interface RequiredDoc {
@@ -37,6 +38,7 @@ export default function SchemeDetailPage() {
     const t = useTranslations('SchemePage');
     const tCat = useTranslations('Categories');
     const tCommon = useTranslations('Common');
+    const tEnquiry = useTranslations('Enquiry');
     const locale = useLocale();
 
     const { isAuthenticated } = useAuth();
@@ -44,6 +46,7 @@ export default function SchemeDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [enquiryOpen, setEnquiryOpen] = useState(false);
 
     useEffect(() => {
         const fetchScheme = async () => {
@@ -280,12 +283,28 @@ export default function SchemeDetailPage() {
                             {t('applyButton')}
                         </button>
 
+                        {/* Not gated on isAuthenticated the way Apply is — this
+                            exists precisely for visitors who have not signed up. */}
+                        <button
+                            onClick={() => setEnquiryOpen(true)}
+                            className={`btn btn-secondary btn-full ${styles.enquiryButton}`}
+                        >
+                            {tEnquiry('askButton')}
+                        </button>
+
                         <p className={styles.applyNote}>
                             {t('applyNote')}
                         </p>
                     </div>
                 </aside>
             </main>
+
+            <EnquiryForm
+                isOpen={enquiryOpen}
+                onClose={() => setEnquiryOpen(false)}
+                schemeId={scheme.id}
+                schemeName={scheme.name}
+            />
 
             {/* Lightbox */}
             {lightboxOpen && scheme.referenceImageUrl && (

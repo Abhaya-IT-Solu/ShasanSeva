@@ -1,0 +1,165 @@
+/* Below the cookie banner (9999) and level with the opening poster (9998) —
+   the enquiry modal is opened by a click, so it can never race those. */
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.65);
+    animation: enquiryFadeIn 0.2s ease;
+}
+
+@keyframes enquiryFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.card {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: enquiryRise 0.25s ease;
+}
+
+@keyframes enquiryRise {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    color: #334155;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.close:hover {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 28px 26px 24px;
+}
+
+.title {
+    margin: 0;
+    padding-right: 32px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.subtitle {
+    margin: -6px 0 2px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #64748b;
+}
+
+.label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.req {
+    color: #dc2626;
+}
+
+.optional {
+    font-weight: 400;
+    color: #94a3b8;
+}
+
+.error {
+    padding: 10px 12px;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 13px;
+}
+
+.note {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #94a3b8;
+}
+
+/* Honeypot. Kept out of sight without display:none — some bots skip hidden
+   fields, and a field they skip catches nothing. */
+.honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 44px 28px 34px;
+    text-align: center;
+}
+
+.doneIcon {
+    font-size: 40px;
+    line-height: 1;
+}
+
+.done h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.done p {
+    margin: 0 0 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #64748b;
+}
+
+@media (max-width: 480px) {
+    .overlay {
+        padding: 12px;
+    }
+
+    .form {
+        padding: 24px 18px 20px;
+    }
+}

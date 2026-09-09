@@ -70,3 +70,21 @@ export const otpRateLimiter = rateLimitMiddleware({
     maxRequests: 5,           // 5 OTP requests per 10 minutes
     keyPrefix: 'otp',
 });
+
+// Enquiries are submitted with no login at all, so the IP is the only thing
+// tying requests together.
+//
+// The budget counts *attempts*, not stored enquiries: this middleware runs
+// before validateBody, as it must, so a rejected phone number or a tripped
+// honeypot spends one too. Anything as tight as 3 therefore locks out a real
+// visitor who mistypes twice and then corrects themselves. Five leaves room for
+// a couple of fumbles plus a genuine second question, and is still nowhere near
+// enough to be worth a spammer's time.
+//
+// Note this fails open when Redis is down (see above) — the honeypot in the
+// route is the second, Redis-independent layer.
+export const enquiryRateLimiter = rateLimitMiddleware({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 5,
+    keyPrefix: 'enquiry',
+});

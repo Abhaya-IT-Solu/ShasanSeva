@@ -3,3 +3,4 @@ export * from './api';
 export * from './scheme';
 export * from './order';
 export * from './notification';
+export * from './enquiry';

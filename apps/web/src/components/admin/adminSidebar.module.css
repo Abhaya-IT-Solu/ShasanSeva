@@ -194,3 +194,22 @@
 .builtBy a:hover {
     text-decoration: underline;
 }
+
+/* Count badge on the Enquiries link. Pushed to the right edge of the row, so
+   the nav label itself keeps its existing alignment. */
+.navCount {
+    margin-left: auto;
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: var(--radius-full, 999px);
+    background: #dc2626;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+}
+
+.navLink.active .navCount {
+    background: rgba(255, 255, 255, 0.25);
+}

@@ -1,4 +1,5 @@
 import { Link } from '@/i18n/routing';
+import EnquiryTrigger from '@/components/EnquiryForm/EnquiryTrigger';
 import styles from '../infoPage.module.css';
 
 export const metadata = {
@@ -48,6 +49,19 @@ export default function ContactPage() {
                             <p>By appointment only</p>
                         </div>
                     </div>
+                </div>
+
+                {/* Sits above the mailto details on purpose: a visitor who does
+                    not want to compose an email still has a way to reach us. */}
+                <div className={styles.card}>
+                    <h2>Send Us an Enquiry</h2>
+                    <p>
+                        Prefer not to write an email? Leave your name and mobile number with your
+                        question, and our team will call you back — no account needed.
+                    </p>
+                    <p style={{ marginTop: 16 }}>
+                        <EnquiryTrigger label="Send us an enquiry" />
+                    </p>
                 </div>
 
                 <div className={styles.card}>

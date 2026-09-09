@@ -475,5 +475,27 @@
     "Poster": {
         "close": "Close",
         "viewScheme": "View scheme"
+    },
+    "Enquiry": {
+        "title": "Ask us a question",
+        "subtitle": "Have a doubt about a scheme? Leave your details and our team will call you back.",
+        "subtitleScheme": "Have a doubt about {scheme}? Leave your details and our team will call you back.",
+        "name": "Your name",
+        "phone": "Mobile number",
+        "phonePlaceholder": "10-digit mobile number",
+        "email": "Email",
+        "optional": "optional",
+        "message": "Your question",
+        "messagePlaceholder": "Tell us what you would like to know about this scheme.",
+        "submit": "Send enquiry",
+        "close": "Close",
+        "successTitle": "Enquiry sent",
+        "successBody": "Thank you. Our team will contact you on the number you provided, usually within one working day.",
+        "errorPhone": "Enter a valid 10-digit Indian mobile number.",
+        "errorGeneric": "Could not send your enquiry. Please try again, or call us directly.",
+        "privacyNote": "We use these details only to answer your question. We never ask for passwords, OTPs or payment details over the phone.",
+        "askButton": "Have a doubt? Ask us",
+        "contactHeading": "Send us an enquiry",
+        "contactBody": "Prefer not to email? Leave your details and we will call you back."
     }
 }

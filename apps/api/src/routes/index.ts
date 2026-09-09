@@ -11,6 +11,7 @@ import notificationRoutes from './notification.routes.js';
 import proofRoutes from './proof.routes.js';
 import feedbackRoutes from './feedback.routes.js';
 import announcementRoutes from './announcement.routes.js';
+import enquiryRoutes from './enquiry.routes.js';
 import portalRoutes from './portal.routes.js';
 import { sql } from '@shasansetu/db';
 
@@ -46,6 +47,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/proofs', proofRoutes);
 router.use('/feedbacks', feedbackRoutes);
 router.use('/announcements', announcementRoutes);
+router.use('/enquiries', enquiryRoutes);
 router.use('/portal', portalRoutes);
 
 export default router;

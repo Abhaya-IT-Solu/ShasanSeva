@@ -425,6 +425,12 @@
     line-height: 1.5;
 }
 
+/* Sits directly under the primary Apply button — secondary weight, so it reads
+   as the alternative for someone not ready to pay yet. */
+.enquiryButton {
+    margin-top: 10px;
+}
+
 .applyNote {
     margin-top: 16px;
     font-size: 14px;
