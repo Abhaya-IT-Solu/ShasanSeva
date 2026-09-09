@@ -485,3 +485,64 @@
     border-radius: 8px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
+/* --- Official government source --- */
+
+.sourceNote {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: var(--color-gray-500, #64748b);
+}
+
+.sourceLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sourceLink:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+}
+
+/* The full URL is shown rather than a "visit site" label, so the destination is
+   readable before clicking — that visibility is the point of the source link. */
+.sourceUrlText {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* --- "Not a government entity" statement ---
+   Deliberately plain and always visible rather than a dismissible banner:
+   Google Play requires it to be easy to see. */
+.notGovernment {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid #fcd34d;
+    border-left: 4px solid #f59e0b;
+    border-radius: 8px;
+    background: #fffbeb;
+}
+
+.notGovernment .material-icons {
+    flex-shrink: 0;
+    color: #b45309;
+}
+
+.notGovernment p {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #78350f;
+}

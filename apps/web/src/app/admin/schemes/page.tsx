@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { isMissingGovernmentSource } from '@/lib/sourceUrl';
 import styles from '../admin.module.css';
 import schemeStyles from './schemes.module.css';
 
@@ -15,6 +16,7 @@ interface Scheme {
     serviceFee: string;
     status: string;
     displayOrder?: number;
+    sourceUrl?: string | null;
 }
 
 const CATEGORIES = [
@@ -186,7 +188,21 @@ export default function AdminSchemesPage() {
                     ) : (
                         filteredSchemes.map((scheme) => (
                             <div key={scheme.id} className={schemeStyles.tableRow}>
-                                <span className={schemeStyles.name}>{scheme.name}</span>
+                                <span className={schemeStyles.name}>
+                                    {scheme.name}
+                                    {/* Google Play's Misleading Claims policy requires a
+                                        verifiable source for government scheme information.
+                                        Flagged here so the backfill is visible in the list
+                                        rather than tracked in a spreadsheet. */}
+                                    {isMissingGovernmentSource(scheme) && (
+                                        <span
+                                            title="No official government source URL. Required for the Play Store policy — add one in Edit."
+                                            style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: '#b45309', whiteSpace: 'nowrap' }}
+                                        >
+                                            ⚠️ no source
+                                        </span>
+                                    )}
+                                </span>
                                 <span className={schemeStyles.category}>{scheme.category}</span>
                                 <span>{scheme.schemeType}</span>
                                 <span>₹{scheme.serviceFee}</span>

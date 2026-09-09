@@ -19,6 +19,24 @@ const translationSchema = z.object({
     benefits: z.string().optional(),
 });
 
+/**
+ * Official government page for a scheme.
+ *
+ * Format is enforced; the host is not. A hard `.gov.in` requirement would reject
+ * an edit to any unrelated field on every existing government scheme until its
+ * URL is backfilled, and some legitimate state portals sit on other domains. The
+ * admin UI warns instead, which is visible without being blocking. Tighten this
+ * once the backfill is complete.
+ *
+ * `https` only: the source link is presented as authoritative, so it should not
+ * be downgradeable in transit. Empty string maps to null so clearing the field
+ * in the admin form stores nothing rather than "".
+ */
+const sourceUrlSchema = z.union([
+    z.string().trim().url().max(500).startsWith('https://', 'Source URL must start with https://'),
+    z.literal(''),
+]).nullable().optional().transform((v) => (v ? v : null));
+
 // Validation schemas
 const createSchemeSchema = z.object({
     slug: z.string().min(3).max(255).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
@@ -39,6 +57,7 @@ const createSchemeSchema = z.object({
     averageCompletionDays: z.number().int().min(1).max(3650).optional(),
     logoUrl: z.string().optional().nullable(),
     referenceImageUrl: z.string().optional().nullable(),
+    sourceUrl: sourceUrlSchema,
     status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
     // 0 = no preference (sorts last, alphabetically). 1+ = explicit priority.
     displayOrder: z.number().int().min(0).max(9999).default(0),
@@ -68,6 +87,7 @@ const updateSchemeSchema = z.object({
     averageCompletionDays: z.number().int().min(1).max(3650).optional().nullable(),
     logoUrl: z.string().optional().nullable(),
     referenceImageUrl: z.string().optional().nullable(),
+    sourceUrl: sourceUrlSchema,
     status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
     displayOrder: z.number().int().min(0).max(9999).optional(),
     translations: z.object({
@@ -138,6 +158,8 @@ router.get('/', validateQuery(schemeFiltersSchema), async (req, res) => {
             serviceFee: schemes.serviceFee,
             averageCompletionDays: schemes.averageCompletionDays,
             logoUrl: schemes.logoUrl,
+            // Already an absolute external URL — never passed through getPublicUrl()
+            sourceUrl: schemes.sourceUrl,
             status: schemes.status,
             displayOrder: schemes.displayOrder,
             // Translation fields
@@ -260,6 +282,7 @@ router.get('/by-id/:id', async (req, res) => {
             displayOrder: scheme.displayOrder,
             logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
             referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
+            sourceUrl: scheme.sourceUrl,
             translations,
         }));
     } catch (error) {
@@ -306,6 +329,7 @@ router.get('/:slug', async (req, res) => {
             averageCompletionDays: schemes.averageCompletionDays,
             logoUrl: schemes.logoUrl,
             referenceImageUrl: schemes.referenceImageUrl,
+            sourceUrl: schemes.sourceUrl,
             requiredDocs: schemes.requiredDocs,
             customFields: schemes.customFields,
             status: schemes.status,
@@ -355,6 +379,7 @@ router.get('/:slug', async (req, res) => {
             requiredDocs: transformedDocs,
             logoUrl: scheme.logoUrl ? getPublicUrl(scheme.logoUrl) : null,
             referenceImageUrl: scheme.referenceImageUrl ? getPublicUrl(scheme.referenceImageUrl) : null,
+            sourceUrl: scheme.sourceUrl,
         };
 
         // Cache the result for public requests
@@ -418,6 +443,7 @@ router.post('/', authMiddleware, adminMiddleware, validateBody(createSchemeSchem
             averageCompletionDays: data.averageCompletionDays?.toString(),
             logoUrl: data.logoUrl || null,
             referenceImageUrl: data.referenceImageUrl || null,
+            sourceUrl: data.sourceUrl || null,
             status: data.status,
             displayOrder: data.displayOrder,
             createdBy: adminId,
@@ -530,6 +556,9 @@ router.patch('/:id', authMiddleware, adminMiddleware, validateBody(updateSchemeS
         }
         if (updates.logoUrl !== undefined) schemeUpdates.logoUrl = updates.logoUrl;
         if (updates.referenceImageUrl !== undefined) schemeUpdates.referenceImageUrl = updates.referenceImageUrl;
+        // !== undefined, not truthiness — null is a legal value here and means
+        // "the admin cleared the source URL", which must actually be saved.
+        if (updates.sourceUrl !== undefined) schemeUpdates.sourceUrl = updates.sourceUrl;
 
         // Update legacy fields from English translation
         if (updates.translations?.en) {

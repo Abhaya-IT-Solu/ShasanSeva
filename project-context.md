@@ -53,7 +53,7 @@ f1ebe7d  2026-06-23  Merge PR #2 — feature/custom-forms (developer portal)
 
 ShasanSeva is a **Government Scheme Assistance Platform** connecting Indian citizens with government and private schemes (certificates, loans, jobs, licences, subsidies). Users browse schemes, fill scheme-specific application forms, upload required documents, pay a service fee via Razorpay, and receive managed assistance from human admins who do the actual government-facing legwork and return proof of completion.
 
-**It is a paid assistance service, not a government body.** Approval is never guaranteed — the fee buys document handling and application support. This distinction is legally load-bearing and is stated in the footer disclaimer, Terms, FAQ, and the Refund Policy; keep those four consistent when editing any of them.
+**It is a paid assistance service, not a government body.** Approval is never guaranteed — the fee buys document handling and application support. This distinction is legally load-bearing and is stated in the footer disclaimer (every page), the scheme detail page, Terms, FAQ, the Refund Policy and `/disclaimer`; keep them consistent when editing any of them. It is also a **Google Play policy requirement** — see Known Issues item 7.
 
 Bilingual throughout: **English** and **Marathi** (मराठी), with Marathi as the default locale.
 
@@ -165,10 +165,12 @@ No Tailwind — some JSX carries Tailwind-*looking* class names, but they resolv
 One row per admin (UNIQUE `admin_id`). Orders handled/completed/cancelled/in-progress, documents verified/rejected, `avg_completion_time_hours`, `last_active_at`.
 
 ### `schemes`
-`id` · `name` · `slug` UNIQUE · `description` · `category` (STUDENT/FARMER/LOAN/CERTIFICATE/JOBS/HEALTH/GOVT_CARD/LICENCE/TAX/OTHER) · `scheme_type` (GOVERNMENT/PRIVATE) · `eligibility` · `benefits` · `required_docs` jsonb · `custom_fields` jsonb · `service_fee` decimal · `average_completion_days` · `logo_url` · `reference_image_url` · `status` (ACTIVE/INACTIVE) · `created_by`
+`id` · `name` · `slug` UNIQUE · `description` · `category` (STUDENT/FARMER/LOAN/CERTIFICATE/JOBS/HEALTH/GOVT_CARD/LICENCE/TAX/OTHER) · `scheme_type` (GOVERNMENT/PRIVATE) · `eligibility` · `benefits` · `required_docs` jsonb · `custom_fields` jsonb · `service_fee` decimal · `average_completion_days` · `logo_url` · `reference_image_url` · `source_url` · `display_order` · `status` (ACTIVE/INACTIVE) · `created_by`
 **Indexes**: category, status, scheme_type
 
 > `logo_url` and `reference_image_url` store **R2 object keys, not URLs**. Read paths convert key→URL via `getPublicUrl()`. Never write a resolved URL into these columns.
+
+> `source_url` is the opposite: an **absolute external URL** to the official government page for that scheme, never an R2 key and never passed through `getPublicUrl()`. Nullable, and every client must hide the source link when it is null rather than substituting a generic portal — see Known Issues item 7.
 
 ### `scheme_translations`
 `scheme_id` FK · `locale` (`en`/`mr`) · `name` · `description` · `eligibility` · `benefits` · `translated_by` — UNIQUE(`scheme_id`, `locale`)
@@ -614,11 +616,25 @@ Dumps contain user PII — `backups/` is gitignored and must stay that way.
    To test by address without changing config:
    `curl -H "Host: api.shasanseva.in" http://<elastic-ip>/api/health`
 
-6. **Migration history is not replayable** (above).
+6. **Google Play "Misleading Claims" — partially closed, backfill outstanding.** ⚠️
 
-7. **Notification text is English-only** in the DB.
+   The Android app was flagged for presenting government scheme information without (a) a clickable link to the official government source, and (b) a prominent statement that ShasanSeva is not a government entity.
 
-8. **Auth guards are client-side.** No server-side middleware enforcement beyond i18n routing; the API is the real boundary.
+   The same gap existed on the website: "not a government entity" appeared only on `/faq` and `/disclaimer`, both pages a user must deliberately navigate to. The footer — on every page — said only "paid assistance platform … we do not guarantee approval", which is not the same claim.
+
+   Now in place: `schemes.source_url`, exposed as `sourceUrl` on every scheme endpoint; an authoring field in both admin scheme forms with an advisory `.gov.in` check; a source-link card and an always-visible not-a-government banner on the web scheme detail page; and the explicit sentence in the footer in both locales.
+
+   **Outstanding — this is the part that actually satisfies the policy:** every scheme needs a real `source_url` entered. Until then the card is correctly hidden and a reviewer sees no source. The admin scheme list flags government schemes that lack one.
+
+   Two rules that must not be softened:
+   - **Never substitute a generic portal** (`india.gov.in` and the like) when `sourceUrl` is null. Presenting a portal that does not document the scheme as its official source is a stronger misleading claim than showing nothing — it was proposed and rejected.
+   - **The URL must be the page for that specific scheme**, not a department homepage.
+
+7. **Migration history is not replayable** (above).
+
+8. **Notification text is English-only** in the DB.
+
+9. **Auth guards are client-side.** No server-side middleware enforcement beyond i18n routing; the API is the real boundary.
 
 ### Lessons that cost real time
 
@@ -700,6 +716,8 @@ pnpm db:backup
 
 | Date | Change |
 |---|---|
+| 2026-09-09 | `schemes.source_url` added and surfaced everywhere (API, admin forms, admin list flag, web scheme page) plus an explicit "not a government entity" statement in the footer and on scheme pages — Google Play Misleading Claims policy. Real URLs still need backfilling; see Known Issues item 6 |
+| 2026-09-09 | Public scheme enquiries: unauthenticated form with IP rate limit and honeypot, admin queue with status and internal notes, sidebar count |
 | 2026-09-06 | **Rate limiters were global, not per-user** — `trust proxy` unset meant every request keyed on the Docker bridge IP, so the whole platform shared one 100 req/min bucket and 10 logins per 15 min. Fixed with `lib/clientIp.ts` (prefers `CF-Connecting-IP`) and `trust proxy: 2`; verified per-client isolation. Security-group lockdown to Cloudflare ranges still outstanding. |
 | 2026-09-06 | API migrated to a new EC2 instance (AWS trial ended). Also recorded why the API returns 404 on the raw IP (item 5), and rewrote `docs/ec2_deployment_guide.md` to match the server that was actually running: swap, autoheal, health check, memory cap, the hardened Nginx config, and Certbot's DNS ordering |
 | 2026-08-24 | Mobile admin integration guide for the order changes (`docs/MOBILE_ADMIN_PANEL_GUIDE.md`) |

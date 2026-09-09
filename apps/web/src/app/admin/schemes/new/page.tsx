@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { getSourceUrlWarning } from '@/lib/sourceUrl';
 import type { CustomFormField } from '@shasansetu/types';
 import styles from '../../admin.module.css';
 import formStyles from './newScheme.module.css';
@@ -80,9 +81,13 @@ export default function NewSchemePage() {
         status: 'ACTIVE',
         averageCompletionDays: '',
         displayOrder: '',
+        sourceUrl: '',
         logoUrl: '',
         referenceImageUrl: '',
     });
+
+    // Advisory only — never blocks saving. See lib/sourceUrl.ts.
+    const sourceUrlWarning = getSourceUrlWarning(formData.sourceUrl, formData.schemeType);
 
     // Image upload states — for new scheme, use URL input (upload after creation)
     const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -228,6 +233,7 @@ export default function NewSchemePage() {
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : undefined,
                     displayOrder: formData.displayOrder ? Number(formData.displayOrder) : 0,
+                    sourceUrl: formData.sourceUrl.trim() || null,
                     translations: {
                         en: {
                             name: formData.name,
@@ -484,6 +490,28 @@ export default function NewSchemePage() {
                                     </span>
                                 </div>
 
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Official Government Source URL</label>
+                                <input
+                                    type="url"
+                                    name="sourceUrl"
+                                    className="input"
+                                    value={formData.sourceUrl}
+                                    onChange={handleInputChange}
+                                    placeholder="https://mahadbt.maharashtra.gov.in/scheme/..."
+                                    maxLength={500}
+                                />
+                                <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                                    The official page for <strong>this specific scheme</strong>, not a portal homepage.
+                                    Shown to users as the source; left out entirely when blank.
+                                </span>
+                                {sourceUrlWarning && (
+                                    <span style={{ fontSize: 12, color: '#b45309', marginTop: 4 }}>
+                                        ⚠️ {sourceUrlWarning}
+                                    </span>
+                                )}
                             </div>
                         </section>
 

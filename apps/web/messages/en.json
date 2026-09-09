@@ -50,7 +50,7 @@
         "termsOfService": "Terms of Service",
         "refundPolicy": "Refund Policy",
         "disclaimerLink": "Disclaimer",
-        "disclaimer": "Disclaimer: ShasanSeva is a paid assistance platform. We do not guarantee approval of any scheme. We provide professional assistance with document handling and application support.",
+        "disclaimer": "Disclaimer: ShasanSeva is a private paid assistance platform. We are not a government entity and are not affiliated with or endorsed by any government department. We do not guarantee approval of any scheme. We provide professional assistance with document handling and application support.",
         "builtBy": "Built by <link>Gravincy</link>",
         "deleteAccount": "Delete Account"
     },
@@ -227,7 +227,10 @@
         "days": "days",
         "schemeTypeLabel": "Scheme Type",
         "referenceImage": "Reference / Sample Image",
-        "clickToEnlarge": "Click to view full size"
+        "clickToEnlarge": "Click to view full size",
+        "officialSource": "Official Government Source",
+        "officialSourceNote": "Verify this scheme's details on the official government website.",
+        "notGovernment": "ShasanSeva is not a government entity and is not affiliated with or endorsed by any government department. We are a private paid assistance service. Eligibility and approval are decided solely by the relevant government authority."
     },
     "DashboardPage": {
         "goodMorning": "Good Morning",

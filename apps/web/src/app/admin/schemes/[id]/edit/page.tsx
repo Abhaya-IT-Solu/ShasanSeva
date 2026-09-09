@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { getSourceUrlWarning } from '@/lib/sourceUrl';
 import type { CustomFormField } from '@shasansetu/types';
 import styles from '../../../admin.module.css';
 import formStyles from '../../new/newScheme.module.css';
@@ -41,6 +42,7 @@ interface SchemeData {
     customFields?: CustomFormField[];
     logoUrl?: string | null;
     referenceImageUrl?: string | null;
+    sourceUrl?: string | null;
 }
 
 
@@ -124,8 +126,12 @@ export default function EditSchemePage() {
         serviceFee: '',
         averageCompletionDays: '',
         displayOrder: '',
+        sourceUrl: '',
         status: 'ACTIVE',
     });
+
+    // Advisory only — never blocks saving. See lib/sourceUrl.ts.
+    const sourceUrlWarning = getSourceUrlWarning(formData.sourceUrl, formData.schemeType);
 
     // Image upload states
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -184,6 +190,7 @@ export default function EditSchemePage() {
                         averageCompletionDays: scheme.averageCompletionDays || '',
                         // 0 is the "no preference" default — show it as blank, not "0"
                         displayOrder: scheme.displayOrder ? String(scheme.displayOrder) : '',
+                        sourceUrl: scheme.sourceUrl || '',
                         status: scheme.status || 'ACTIVE',
                     });
 
@@ -400,6 +407,7 @@ export default function EditSchemePage() {
                     serviceFee: formData.serviceFee,
                     averageCompletionDays: formData.averageCompletionDays ? Number(formData.averageCompletionDays) : null,
                     displayOrder: formData.displayOrder ? Number(formData.displayOrder) : 0,
+                    sourceUrl: formData.sourceUrl.trim() || null,
                     status: formData.status,
                     requiredDocs: requiredDocs.filter(doc => doc.type && doc.label),
                     // Only sent when the admin actually changed an image. The API
@@ -611,7 +619,29 @@ export default function EditSchemePage() {
                                         Lower numbers appear first. Blank = sort alphabetically, after the numbered ones.
                                     </span>
                                   </div>
-                                
+
+                            </div>
+
+                            <div className="input-group">
+                                <label className="input-label">Official Government Source URL</label>
+                                <input
+                                    type="url"
+                                    name="sourceUrl"
+                                    className="input"
+                                    value={formData.sourceUrl}
+                                    onChange={handleInputChange}
+                                    placeholder="https://mahadbt.maharashtra.gov.in/scheme/..."
+                                    maxLength={500}
+                                />
+                                <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                                    The official page for <strong>this specific scheme</strong>, not a portal homepage.
+                                    Shown to users as the source; left out entirely when blank.
+                                </span>
+                                {sourceUrlWarning && (
+                                    <span style={{ fontSize: 12, color: '#b45309', marginTop: 4 }}>
+                                        ⚠️ {sourceUrlWarning}
+                                    </span>
+                                )}
                             </div>
 
                             <div className="input-group">

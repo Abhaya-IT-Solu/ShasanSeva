@@ -36,6 +36,16 @@ export const schemes = pgTable('schemes', {
     averageCompletionDays: decimal('average_completion_days', { precision: 5, scale: 0 }),
     logoUrl: text('logo_url'),                     // Optional: R2 key for scheme logo
     referenceImageUrl: text('reference_image_url'), // Optional: R2 key for reference/sample image
+    // Official government page for THIS scheme — an absolute external URL, not an
+    // R2 key, so it is never passed through getPublicUrl(). Required by Google
+    // Play's Misleading Claims policy: a scheme presented without a verifiable
+    // source reads as an implied government association.
+    //
+    // Nullable, and the UI hides the link entirely when it is null. A generic
+    // fallback (india.gov.in and the like) is deliberately NOT used — presenting
+    // a portal that does not document the scheme as its "official source" is a
+    // stronger misleading claim than showing nothing.
+    sourceUrl: text('source_url'),
     status: varchar('status', { length: 20 }).default('ACTIVE'), // ACTIVE, INACTIVE
     // Admin-controlled ordering within a category. Lower sorts first; ties fall back
     // to translated name. Seeded in steps of 10 so schemes can be inserted between

@@ -22,6 +22,8 @@ export interface SchemeListItem {
     serviceFee: string;
     status: string;
     customFields?: CustomFormField[];
+    /** Official government page for this scheme. Null when not yet recorded — clients must hide the source link rather than substituting a generic portal. */
+    sourceUrl?: string | null;
 }
 
 export interface SchemeDetail {
@@ -37,6 +39,8 @@ export interface SchemeDetail {
     customFields?: CustomFormField[];
     serviceFee: string;
     status: string;
+    /** Official government page for this scheme. Null when not yet recorded — clients must hide the source link rather than substituting a generic portal. */
+    sourceUrl?: string | null;
 }
 
 export interface RequiredDocumentInfo {

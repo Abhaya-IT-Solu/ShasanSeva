@@ -30,6 +30,7 @@ interface Scheme {
     averageCompletionDays?: string;
     logoUrl?: string | null;
     referenceImageUrl?: string | null;
+    sourceUrl?: string | null;
 }
 
 export default function SchemeDetailPage() {
@@ -250,6 +251,36 @@ export default function SchemeDetailPage() {
                             </div>
                         </section>
                     )}
+                {/* Official government source. Rendered only when a URL is on
+                    record — a generic portal fallback would imply this page is
+                    sourced from somewhere it is not, which is the misleading
+                    claim we are addressing rather than creating. */}
+                {scheme.sourceUrl && (
+                    <section className={styles.section}>
+                        <h2>
+                            <span className="material-icons" style={{ fontSize: 20 }}>account_balance</span>
+                            {t('officialSource')}
+                        </h2>
+                        <p className={styles.sourceNote}>{t('officialSourceNote')}</p>
+                        <a
+                            href={scheme.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            className={styles.sourceLink}
+                        >
+                            <span className="material-icons" style={{ fontSize: 18 }}>open_in_new</span>
+                            <span className={styles.sourceUrlText}>{scheme.sourceUrl}</span>
+                        </a>
+                    </section>
+                )}
+
+                {/* Not-a-government-entity statement. In the main column and
+                    always rendered: Google Play requires this to be easy to see,
+                    and the sidebar copy of it sits below the fold on mobile. */}
+                <section className={styles.notGovernment}>
+                    <span className="material-icons" style={{ fontSize: 20 }}>info</span>
+                    <p>{t('notGovernment')}</p>
+                </section>
                 </div>
 
                 {/* Sidebar - Apply Card */}
