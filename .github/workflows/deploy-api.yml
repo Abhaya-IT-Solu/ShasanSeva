@@ -1,6 +1,6 @@
 # .github/workflows/deploy-api.yml
 #
-# This workflow runs every time code is pushed to the 'main' branch.
+# This workflow runs every time code is pushed to the 'main' branch. 
 # It builds a Docker image of the API, pushes it to Docker Hub,
 # then SSHes into EC2 to pull and run the new image.
 
